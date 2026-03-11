@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Japanese Literary Studies — Interactive Visualizations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f6f3ee;
+  --bg-card: #ffffff;
+  --bg-dash: #faf5f0;
+  --bg-tag: #f0ebe5;
+  --bg-tag-active: #8b3a3a;
+  --text: #2c2826;
+  --text-muted: #6b6460;
+  --text-light: #9e9590;
+  --accent: #8b3a3a;
+  --accent-light: #c4847a;
+  --accent-pale: #e8d5d0;
+  --border: #e0dbd5;
+  --border-hover: #c4b8ae;
+}
+
+[data-theme="dark"] {
+  --bg: #1a1816;
+  --bg-card: #242120;
+  --bg-dash: #2a2522;
+  --bg-tag: #2e2a27;
+  --bg-tag-active: #c4847a;
+  --text: #e8e2da;
+  --text-muted: #9e9590;
+  --text-light: #6b6460;
+  --accent: #c4847a;
+  --accent-light: #d4a69e;
+  --accent-pale: #3a2e2b;
+  --border: #3a3533;
+  --border-hover: #5a524d;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Source Sans 3', sans-serif;
+  font-weight: 400;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  position: relative;
+  min-height: 100vh;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: -1;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 48px;
+  animation: fadeUp 0.6s ease-out;
+}
+
+.ja {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.8rem;
+  font-weight: 300;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+.sub {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  font-weight: 300;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.stats-bar {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 32px;
+  margin: 32px 0;
+  padding: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  animation: fadeUp 0.7s ease-out;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--accent);
+  display: block;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  transition: all 0.2s ease;
+  z-index: 100;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.05);
+  border-color: var(--accent);
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 32px;
+  border-bottom: 2px solid var(--border);
+  animation: fadeUp 0.8s ease-out;
+}
+
+.tab {
+  flex: 1;
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+.tab-content {
+  display: none;
+  animation: fadeUp 0.4s ease-out;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.branch-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.branch-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 32px;
+  text-decoration: none;
+  color: var(--text);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.branch-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border-color: var(--accent-light);
+}
+
+.branch-card::after {
+  content: '→';
+  position: absolute;
+  right: 32px;
+  top: 32px;
+  font-size: 1.5rem;
+  color: var(--accent-light);
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s ease;
+}
+
+.branch-card:hover::after {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.branch-number {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.9rem;
+  color: var(--accent);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+.branch-card h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  line-height: 1.3;
+}
+
+.branch-card p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.branch-meta {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.tag-section {
+  margin-bottom: 32px;
+}
+
+.tag-category {
+  margin-bottom: 24px;
+}
+
+.tag-parent {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg-tag);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 4px;
+}
+
+.tag-parent:hover {
+  background: var(--accent-pale);
+  border-color: var(--accent-light);
+}
+
+.tag-parent.active {
+  background: var(--bg-tag-active);
+  color: white;
+  border-color: var(--bg-tag-active);
+}
+
+.tag-parent .expand-icon {
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+
+.tag-children {
+  display: none;
+  margin: 12px 0 0 24px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-children.visible {
+  display: flex;
+}
+
+.tag-child {
+  padding: 6px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tag-child:hover {
+  background: var(--accent-pale);
+  border-color: var(--accent-light);
+}
+
+.tag-child.active {
+  background: var(--accent-light);
+  color: white;
+  border-color: var(--accent-light);
+}
+
+.filter-results {
+  margin-top: 32px;
+}
+
+.filter-results h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem;
+  margin-bottom: 16px;
+}
+
+.results-count {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 24px;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.viz-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 20px;
+  text-decoration: none;
+  color: var(--text);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.viz-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border-color: var(--border-hover);
+}
+
+.viz-card h4 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--accent);
+}
+
+.viz-card p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.viz-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.viz-tag {
+  padding: 3px 8px;
+  background: var(--bg-tag);
+  border-radius: 10px;
+  font-size: 0.75rem;
+  color: var(--text-light);
+}
+
+.viz-tag.highlight {
+  background: var(--accent-pale);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.tour-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.tour-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 28px;
+  text-decoration: none;
+  color: var(--text);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.tour-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border-color: var(--accent-light);
+}
+
+.tour-card::after {
+  content: '→';
+  position: absolute;
+  right: 28px;
+  bottom: 28px;
+  font-size: 1.5rem;
+  color: var(--accent-light);
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s ease;
+}
+
+.tour-card:hover::after {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.tour-label {
+  font-size: 0.8rem;
+  color: var(--accent);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
+
+.tour-card h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  line-height: 1.3;
+  color: var(--accent);
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 680px) {
+  .branch-grid,
+  .tour-grid,
+  .viz-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-bar {
+    gap: 20px;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+  }
+
+  h1 {
+    font-size: 2.2rem;
+  }
+
+  .ja {
+    font-size: 1.5rem;
+  }
+}
+</style>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
+</head>
+<body>
+
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">◑</button>
+
+<div class="container">
+  <header>
+    <div class="ja">日本文学研究</div>
+    <h1>Japanese Literary Studies</h1>
+    <p class="sub">Mapping an academic field through network analysis, content mining, and interactive visualization — 1915 to the present</p>
+  </header>
+
+  <div class="stats-bar">
+    <div class="stat">
+      <span class="stat-value">7,922</span>
+      <span class="stat-label">Dissertations</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">13,592</span>
+      <span class="stat-label">Conference Papers</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">81,203</span>
+      <span class="stat-label">Citations</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">36,767</span>
+      <span class="stat-label">Translations</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">75</span>
+      <span class="stat-label">Visualizations</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="browse">Browse</button>
+    <button class="tab" data-tab="filter">Filter by Topic</button>
+    <button class="tab" data-tab="tours">Guided Tours</button>
+  </div>
+
+  <div id="browse" class="tab-content active">
+    <div class="branch-grid">
+      <a href="networks_branch.html" class="branch-card">
+        <div class="branch-number">I. Branch</div>
+        <h3>Scholarly Networks</h3>
+        <p>Advisor–advisee lineages, citation flows, book review relationships, authority metrics</p>
+        <div class="branch-meta">5,133 scholars · 3,871 edges · ~14 viz</div>
+      </a>
+
+      <a href="conferences_branch.html" class="branch-card">
+        <div class="branch-number">II. Branch</div>
+        <h3>Conferences</h3>
+        <p>Participation networks and topic trends at AJLS, AAS, MLA, ACLA, SCMS</p>
+        <div class="branch-meta">5 venues · 13,592 papers · ~43 viz</div>
+      </a>
+
+      <a href="content_branch.html" class="branch-card">
+        <div class="branch-number">III. Branch</div>
+        <h3>Content Analysis</h3>
+        <p>Dissertation topic clustering, journal term evolution, field trends</p>
+        <div class="branch-meta">Dissertations · Journals · ~10 viz</div>
+      </a>
+
+      <a href="career_branch.html" class="branch-card">
+        <div class="branch-number">IV. Branch</div>
+        <h3>Career & Job Market</h3>
+        <p>PhD-to-employment flows, placement, sixty years of job listings</p>
+        <div class="branch-meta">4,280 listings · 1966–2025 · 3 viz</div>
+      </a>
+
+      <a href="about.html" class="branch-card">
+        <div class="branch-number">VI. Information</div>
+        <h3>About & Methods</h3>
+        <p>Data sources, methodology, caveats, attribution</p>
+        <div class="branch-meta">Provenance · Methods</div>
+      </a>
+    </div>
+  </div>
+
+  <div id="filter" class="tab-content">
+    <div class="tag-section">
+      <div class="tag-category">
+        <span class="tag-parent" data-parent="conferences">
+          Conferences <span class="expand-icon">▾</span>
+        </span>
+        <div class="tag-children" id="conferences-children">
+          <span class="tag-child" data-child="ajls">AJLS</span>
+          <span class="tag-child" data-child="aas">AAS</span>
+          <span class="tag-child" data-child="mla">MLA</span>
+          <span class="tag-child" data-child="acla">ACLA</span>
+          <span class="tag-child" data-child="scms">SCMS</span>
+        </div>
+      </div>
+
+      <div class="tag-category">
+        <span class="tag-parent" data-parent="networks">
+          Networks <span class="expand-icon">▾</span>
+        </span>
+        <div class="tag-children" id="networks-children">
+          <span class="tag-child" data-child="genealogy">Genealogy</span>
+          <span class="tag-child" data-child="citation">Citation</span>
+          <span class="tag-child" data-child="reviewers">Reviewers</span>
+          <span class="tag-child" data-child="co-presentation">Co-presentation</span>
+          <span class="tag-child" data-child="mentorship">Mentorship</span>
+        </div>
+      </div>
+
+      <div class="tag-category">
+        <span class="tag-parent" data-parent="content">
+          Content <span class="expand-icon">▾</span>
+        </span>
+        <div class="tag-children" id="content-children">
+          <span class="tag-child" data-child="dissertations">Dissertations</span>
+          <span class="tag-child" data-child="journals">Journals</span>
+          <span class="tag-child" data-child="canon">Canon</span>
+          <span class="tag-child" data-child="job listings">Job Listings</span>
+        </div>
+      </div>
+
+      <div class="tag-category">
+        <span class="tag-parent" data-parent="timeline">
+          Timeline <span class="expand-icon">▾</span>
+        </span>
+        <div class="tag-children" id="timeline-children">
+          <span class="tag-child" data-child="networks-time">Networks</span>
+          <span class="tag-child" data-child="conferences-time">Conferences</span>
+          <span class="tag-child" data-child="dissertations-time">Dissertations</span>
+          <span class="tag-child" data-child="journals-time">Journals</span>
+          <span class="tag-child" data-child="job market">Job Market</span>
+          <span class="tag-child" data-child="canon-time">Canon</span>
+        </div>
+      </div>
+
+      <div class="tag-category">
+        <span class="tag-parent" data-parent="canon">
+          Canon <span class="expand-icon">▾</span>
+        </span>
+        <div class="tag-children" id="canon-children">
+          <span class="tag-child" data-child="encyclopedia">Encyclopedia</span>
+          <span class="tag-child" data-child="translations">Translations</span>
+          <span class="tag-child" data-child="authors">Authors</span>
+          <span class="tag-child" data-child="works">Works</span>
+          <span class="tag-child" data-child="movements">Movements</span>
+        </div>
+      </div>
+
+      <div class="tag-category">
+        <span class="tag-parent" data-parent="institutions">
+          Institutions <span class="expand-icon">▾</span>
+        </span>
+        <div class="tag-children" id="institutions-children">
+          <span class="tag-child" data-child="placement">Placement</span>
+          <span class="tag-child" data-child="signatures">Signatures</span>
+          <span class="tag-child" data-child="rankings">Rankings</span>
+          <span class="tag-child" data-child="conference presence">Conference Presence</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-results" id="filterResults" style="display: none;">
+      <h3>Results</h3>
+      <div class="results-count" id="resultsCount"></div>
+      <div class="viz-grid" id="vizGrid"></div>
+    </div>
+  </div>
+
+  <div id="tours" class="tab-content">
+    <div class="tour-grid">
+      <a href="tour_field_change.html" class="tour-card">
+        <div class="tour-label">Guided Tour</div>
+        <h3>How has the field changed since 1990?</h3>
+      </a>
+
+      <a href="tour_institutions.html" class="tour-card">
+        <div class="tour-label">Guided Tour</div>
+        <h3>Which institutions dominate?</h3>
+      </a>
+
+      <a href="tour_canon.html" class="tour-card">
+        <div class="tour-label">Guided Tour</div>
+        <h3>What counts as canonical?</h3>
+      </a>
+
+      <a href="tour_who_studies.html" class="tour-card">
+        <div class="tour-label">Guided Tour</div>
+        <h3>Who studies what?</h3>
+      </a>
+
+      <a href="tour_global.html" class="tour-card">
+        <div class="tour-label">Guided Tour</div>
+        <h3>How global is the field?</h3>
+      </a>
+
+      <a href="tour_job_market.html" class="tour-card">
+        <div class="tour-label">Guided Tour</div>
+        <h3>History of the job market</h3>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+// Theme toggle
+const themeToggle = document.getElementById('themeToggle');
+const html = document.documentElement;
+
+const savedTheme = localStorage.getItem('theme') ||
+  (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+html.setAttribute('data-theme', savedTheme);
+
+themeToggle.addEventListener('click', () => {
+  const currentTheme = html.getAttribute('data-theme');
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+});
+
+// Tab switching
+const tabs = document.querySelectorAll('.tab');
+const tabContents = document.querySelectorAll('.tab-content');
+
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    const targetId = tab.getAttribute('data-tab');
+
+    tabs.forEach(t => t.classList.remove('active'));
+    tabContents.forEach(tc => tc.classList.remove('active'));
+
+    tab.classList.add('active');
+    document.getElementById(targetId).classList.add('active');
+  });
+});
+
+// Visualization catalog
+const VIZS = [
+  // Networks - Core
+  {title: 'Flagship Network', desc: 'Complete advisor-advisee network with citation and review edges', href: 'networks/core/japanese_lit_network_visualization.html', tags: ['networks', 'genealogy', 'citation', 'reviewers', 'mentorship']},
+  {title: 'Core Network', desc: 'Simplified network showing only highly connected scholars', href: 'networks/core/core_network_visualization.html', tags: ['networks', 'genealogy', 'citation']},
+  {title: 'Advisor Genealogy', desc: 'Tree visualization of mentorship lineages', href: 'networks/core/advisor_genealogy.html', tags: ['networks', 'genealogy', 'mentorship']},
+
+  // Networks - Authority
+  {title: 'Authority Explorer', desc: 'Multi-metric ranking of scholarly influence', href: 'networks/authority/authority_explorer.html', tags: ['networks', 'citation', 'reviewers', 'institutions', 'rankings']},
+  {title: 'Multiplex Network', desc: 'Combined view of all relationship types', href: 'networks/authority/multiplex_network.html', tags: ['networks', 'genealogy', 'citation', 'reviewers']},
+  {title: 'Intellectual Flow', desc: 'Generational knowledge transfer patterns', href: 'networks/authority/intellectual_flow.html', tags: ['networks', 'genealogy', 'timeline', 'networks-time']},
+  {title: 'Multilayer Network', desc: 'Stacked view of advisor, citation, and review layers', href: 'networks/authority/multilayer_network.html', tags: ['networks', 'genealogy', 'citation', 'reviewers']},
+  {title: 'Radial Hierarchy', desc: 'Circular layout of academic lineages', href: 'networks/authority/radial_hierarchy.html', tags: ['networks', 'genealogy', 'mentorship']},
+
+  // Networks - Cross-venue
+  {title: 'Cross-Conference Dashboard', desc: 'Comparative statistics across all five venues', href: 'networks/cross-venue/cross_conference_dashboard.html', tags: ['conferences', 'ajls', 'aas', 'mla', 'acla', 'scms', 'timeline']},
+  {title: 'Field Connections Map', desc: 'How different venues connect the field', href: 'networks/cross-venue/field_connections_map.html', tags: ['conferences', 'networks', 'co-presentation']},
+  {title: 'Cross-Source Comparison', desc: 'Comparing network structures across conferences', href: 'networks/cross-venue/cross_source_comparison.html', tags: ['conferences', 'networks']},
+
+  // AJLS
+  {title: 'AJLS Dashboard', desc: 'Overview of AJLS conference participation', href: 'networks/ajls/ajls_dashboard.html', tags: ['conferences', 'ajls', 'timeline']},
+  {title: 'AJLS Network', desc: 'Co-presentation network at AJLS', href: 'networks/ajls/ajls_copanel_network.html', tags: ['conferences', 'ajls', 'networks', 'co-presentation']},
+  {title: 'AJLS Topics', desc: 'Thematic analysis of paper titles', href: 'networks/ajls/ajls_panel_themes.html', tags: ['conferences', 'ajls', 'content', 'timeline']},
+  {title: 'AJLS Timeline', desc: 'Evolution of participation over time', href: 'networks/ajls/ajls_topic_evolution.html', tags: ['conferences', 'ajls', 'timeline', 'conferences-time']},
+  {title: 'AJLS Institutions', desc: 'Institutional representation at AJLS', href: 'networks/ajls/ajls_institutional_presence.html', tags: ['conferences', 'ajls', 'institutions', 'conference presence']},
+  {title: 'AJLS Participants', desc: 'Career trajectories of AJLS presenters', href: 'networks/ajls/ajls_presenter_careers.html', tags: ['conferences', 'ajls', 'timeline']},
+  {title: 'AJLS Geography', desc: 'Geographic distribution of AJLS participants', href: 'networks/ajls/ajls_geography.html', tags: ['conferences', 'ajls', 'institutions']},
+
+  // AAS
+  {title: 'AAS Dashboard', desc: 'Overview of AAS conference participation', href: 'networks/aas/aas_dashboard.html', tags: ['conferences', 'aas', 'timeline']},
+  {title: 'AAS Network', desc: 'Co-presentation network at AAS', href: 'networks/aas/aas_copanel_network.html', tags: ['conferences', 'aas', 'networks', 'co-presentation']},
+  {title: 'AAS Topics', desc: 'Thematic analysis of paper titles', href: 'networks/aas/aas_panel_themes.html', tags: ['conferences', 'aas', 'content', 'timeline']},
+  {title: 'AAS Timeline', desc: 'Evolution of participation over time', href: 'networks/aas/aas_topic_evolution.html', tags: ['conferences', 'aas', 'timeline', 'conferences-time']},
+  {title: 'AAS Institutions', desc: 'Institutional representation at AAS', href: 'networks/aas/aas_institutional_presence.html', tags: ['conferences', 'aas', 'institutions', 'conference presence']},
+  {title: 'AAS Participants', desc: 'Career trajectories of AAS presenters', href: 'networks/aas/aas_presenter_careers.html', tags: ['conferences', 'aas', 'timeline']},
+  {title: 'AAS Geography', desc: 'Geographic distribution of AAS participants', href: 'networks/aas/aas_geography.html', tags: ['conferences', 'aas', 'institutions']},
+
+  // MLA
+  {title: 'MLA Dashboard', desc: 'Overview of MLA convention participation', href: 'networks/mla/mla_dashboard.html', tags: ['conferences', 'mla', 'timeline']},
+  {title: 'MLA Network', desc: 'Co-presentation network at MLA', href: 'networks/mla/mla_copanel_network.html', tags: ['conferences', 'mla', 'networks', 'co-presentation']},
+  {title: 'MLA Topics', desc: 'Thematic analysis of paper titles', href: 'networks/mla/mla_panel_themes.html', tags: ['conferences', 'mla', 'content', 'timeline']},
+  {title: 'MLA Timeline', desc: 'Evolution of participation over time', href: 'networks/mla/mla_topic_evolution.html', tags: ['conferences', 'mla', 'timeline', 'conferences-time']},
+  {title: 'MLA Institutions', desc: 'Institutional representation at MLA', href: 'networks/mla/mla_institutional_presence.html', tags: ['conferences', 'mla', 'institutions', 'conference presence']},
+  {title: 'MLA Participants', desc: 'Career trajectories of MLA presenters', href: 'networks/mla/mla_presenter_careers.html', tags: ['conferences', 'mla', 'timeline']},
+  {title: 'MLA Cross-disciplinary', desc: 'How Japanese lit studies connects to other MLA divisions', href: 'networks/mla/mla_crossdisciplinary.html', tags: ['conferences', 'mla', 'networks']},
+  {title: 'MLA Geography', desc: 'Geographic distribution of MLA participants', href: 'networks/mla/mla_geography.html', tags: ['conferences', 'mla', 'institutions']},
+
+  // ACLA
+  {title: 'ACLA Dashboard', desc: 'Overview of ACLA conference participation', href: 'networks/acla/acla_dashboard.html', tags: ['conferences', 'acla', 'timeline']},
+  {title: 'ACLA Network', desc: 'Co-presentation network at ACLA', href: 'networks/acla/acla_copanel_network.html', tags: ['conferences', 'acla', 'networks', 'co-presentation']},
+  {title: 'ACLA Topics', desc: 'Thematic analysis of paper titles', href: 'networks/acla/acla_panel_themes.html', tags: ['conferences', 'acla', 'content', 'timeline']},
+  {title: 'ACLA Timeline', desc: 'Evolution of participation over time', href: 'networks/acla/acla_topic_evolution.html', tags: ['conferences', 'acla', 'timeline', 'conferences-time']},
+  {title: 'ACLA Institutions', desc: 'Institutional representation at ACLA', href: 'networks/acla/acla_institutional_presence.html', tags: ['conferences', 'acla', 'institutions', 'conference presence']},
+  {title: 'ACLA Participants', desc: 'Career trajectories of ACLA presenters', href: 'networks/acla/acla_presenter_careers.html', tags: ['conferences', 'acla', 'timeline']},
+  {title: 'ACLA Geography', desc: 'Geographic distribution of ACLA participants', href: 'networks/acla/acla_geography.html', tags: ['conferences', 'acla', 'institutions']},
+
+  // SCMS
+  {title: 'SCMS Dashboard', desc: 'Overview of SCMS conference participation', href: 'networks/scms/scms_dashboard.html', tags: ['conferences', 'scms', 'timeline']},
+  {title: 'SCMS Network', desc: 'Co-presentation network at SCMS', href: 'networks/scms/scms_copanel_network.html', tags: ['conferences', 'scms', 'networks', 'co-presentation']},
+  {title: 'SCMS Topics', desc: 'Thematic analysis of paper titles', href: 'networks/scms/scms_panel_themes.html', tags: ['conferences', 'scms', 'content', 'timeline']},
+  {title: 'SCMS Timeline', desc: 'Evolution of participation over time', href: 'networks/scms/scms_topic_evolution.html', tags: ['conferences', 'scms', 'timeline', 'conferences-time']},
+  {title: 'SCMS Institutions', desc: 'Institutional representation at SCMS', href: 'networks/scms/scms_institutional_presence.html', tags: ['conferences', 'scms', 'institutions', 'conference presence']},
+  {title: 'SCMS Participants', desc: 'Career trajectories of SCMS presenters', href: 'networks/scms/scms_presenter_careers.html', tags: ['conferences', 'scms', 'timeline']},
+  {title: 'SCMS Geography', desc: 'Geographic distribution of SCMS participants', href: 'networks/scms/scms_geography.html', tags: ['conferences', 'scms', 'institutions']},
+
+  // Content - Dissertations
+  {title: 'Dissertation Content Dashboard', desc: 'Overview of dissertation topic trends', href: 'content/dissertations/content_dashboard.html', tags: ['content', 'dissertations', 'timeline']},
+  {title: 'Modern Japanese Literature Dashboard', desc: 'Filtered view of modern literature dissertations', href: 'content/dissertations/modern_japanlit_dashboard.html', tags: ['content', 'dissertations', 'timeline']},
+  {title: 'Topic Diffusion', desc: 'How dissertation topics spread across institutions', href: 'content/dissertations/topic_diffusion_timeline.html', tags: ['content', 'dissertations', 'timeline', 'dissertations-time', 'institutions']},
+  {title: 'Institutional Signatures', desc: 'Distinctive research topics by institution', href: 'content/dissertations/institutional_signatures.html', tags: ['content', 'dissertations', 'institutions', 'signatures']},
+  {title: 'Advisee Drift', desc: 'How students diverge from advisor topics', href: 'content/dissertations/advisee_drift_analysis.html', tags: ['content', 'dissertations', 'networks', 'mentorship']},
+  {title: 'Schools & Clusters', desc: 'Institutional groupings by research similarity', href: 'content/dissertations/schools_and_clusters.html', tags: ['content', 'dissertations', 'institutions']},
+  {title: 'Field Evolution', desc: 'Changing patterns in dissertation research', href: 'content/dissertations/field_evolution.html', tags: ['content', 'dissertations', 'timeline', 'dissertations-time']},
+
+  // Content - Journals
+  {title: 'Journal Term Trends', desc: 'Keyword frequency over time in major journals', href: 'content/journals/journal_term_trends.html', tags: ['content', 'journals', 'timeline', 'journals-time']},
+  {title: 'Journal Content Evolution', desc: 'Thematic shifts in journal publishing', href: 'content/journals/journal_content_evolution.html', tags: ['content', 'journals', 'timeline', 'journals-time']},
+  {title: 'Journal Wordclouds', desc: 'Visual term frequency by journal', href: 'content/journals/journal_wordclouds.html', tags: ['content', 'journals']},
+
+  // Career
+  {title: 'Career Paths Explorer', desc: 'PhD-to-employment trajectories', href: 'career/career_paths.html', tags: ['institutions', 'placement', 'timeline']},
+  {title: 'Job Market Trends', desc: 'Sixty years of Japanese literature job listings', href: 'career/job_market_trends.html', tags: ['content', 'job listings', 'timeline', 'job market']},
+  {title: 'MLA Job Content Analysis', desc: 'Thematic analysis of job descriptions', href: 'career/mla_job_content.html', tags: ['content', 'job listings', 'timeline']},
+
+  // Encyclopedia
+  {title: 'Three-Axis Canonicity', desc: 'Japanese, academic, and translation reception scores', href: 'jlit/canon.html', tags: ['canon', 'encyclopedia', 'authors']},
+  {title: 'Author & Setting Geography', desc: 'Birthplaces and story locations', href: 'jlit/geography.html', tags: ['canon', 'encyclopedia', 'authors', 'works']},
+  {title: 'Translation Flows', desc: 'Chord diagram of authors and languages', href: 'jlit/translations.html', tags: ['canon', 'encyclopedia', 'translations', 'authors']},
+  {title: 'Literary Network', desc: 'Influence relationships among authors', href: 'jlit/network.html', tags: ['canon', 'encyclopedia', 'networks', 'authors']},
+  {title: 'Historical Timeline', desc: 'Author lifespans and major works 626-2029', href: 'jlit/timeline.html', tags: ['canon', 'encyclopedia', 'timeline', 'canon-time', 'authors', 'works']},
+  {title: 'Collected Works (Zenshū)', desc: 'Publisher trends in complete works editions', href: 'jlit/zenshu.html', tags: ['canon', 'encyclopedia', 'timeline', 'authors']},
+  {title: 'Literary Movements', desc: 'Schools and movements browser', href: 'jlit/movements.html', tags: ['canon', 'encyclopedia', 'movements', 'timeline']},
+  {title: 'Works Browser', desc: 'Searchable database of 17,000+ works', href: 'jlit/works.html', tags: ['canon', 'encyclopedia', 'works']},
+  {title: 'Genre Stream', desc: 'Genre popularity over time', href: 'jlit/genres.html', tags: ['canon', 'encyclopedia', 'works', 'timeline', 'canon-time']},
+  {title: 'Thematic Analysis', desc: 'NLP-based themes, tones, and motifs', href: 'jlit/themes.html', tags: ['canon', 'encyclopedia', 'works', 'content']},
+
+  // Translation suite (root level)
+  {title: 'Translation Dashboard', desc: 'Overview of Japanese literature in translation', href: 'translation_dashboard.html', tags: ['canon', 'translations', 'timeline']},
+  {title: 'Translation Author Flows', desc: 'Sankey diagram of translation pathways', href: 'translation_author_flows.html', tags: ['canon', 'translations', 'authors']},
+  {title: 'Translation Language Map', desc: 'Global reach of Japanese literature', href: 'translation_language_map.html', tags: ['canon', 'translations']},
+  {title: 'Translator Network', desc: 'Connections among translators', href: 'translator_network.html', tags: ['canon', 'translations', 'networks']},
+
+  // Special visualizations
+  {title: 'Blind Spots Explorer', desc: 'Understudied authors in the encyclopedia', href: 'blind_spots_explorer.html', tags: ['canon', 'encyclopedia', 'authors', 'content']},
+  {title: 'Nobel Paradox', desc: 'Why Nobel laureates aren\'t canonical in Japan', href: 'nobel_paradox.html', tags: ['canon', 'encyclopedia', 'authors']},
+  {title: 'Supply & Demand', desc: 'PhD production vs job openings', href: 'supply_demand.html', tags: ['content', 'job listings', 'timeline', 'job market']},
+];
+
+// Filter logic
+let activeParent = null;
+let activeChildren = [];
+
+const tagParents = document.querySelectorAll('.tag-parent');
+const filterResults = document.getElementById('filterResults');
+const resultsCount = document.getElementById('resultsCount');
+const vizGrid = document.getElementById('vizGrid');
+
+tagParents.forEach(parent => {
+  parent.addEventListener('click', () => {
+    const parentTag = parent.getAttribute('data-parent');
+    const childrenDiv = document.getElementById(`${parentTag}-children`);
+
+    // Toggle expansion
+    if (activeParent === parentTag) {
+      // Collapse
+      childrenDiv.classList.remove('visible');
+      parent.classList.remove('active');
+      activeParent = null;
+      activeChildren = [];
+    } else {
+      // Collapse all others
+      document.querySelectorAll('.tag-children').forEach(div => div.classList.remove('visible'));
+      document.querySelectorAll('.tag-parent').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tag-child').forEach(c => c.classList.remove('active'));
+
+      // Expand this one
+      childrenDiv.classList.add('visible');
+      parent.classList.add('active');
+      activeParent = parentTag;
+      activeChildren = [];
+    }
+
+    updateFilterResults();
+  });
+});
+
+// Child tag clicks
+document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('tag-child')) {
+    e.stopPropagation();
+    const childTag = e.target.getAttribute('data-child');
+
+    if (activeChildren.includes(childTag)) {
+      activeChildren = activeChildren.filter(t => t !== childTag);
+      e.target.classList.remove('active');
+    } else {
+      activeChildren.push(childTag);
+      e.target.classList.add('active');
+    }
+
+    updateFilterResults();
+  }
+});
+
+function updateFilterResults() {
+  if (!activeParent) {
+    filterResults.style.display = 'none';
+    return;
+  }
+
+  // Filter visualizations
+  let filtered = VIZS.filter(viz => viz.tags.includes(activeParent));
+
+  if (activeChildren.length > 0) {
+    filtered = filtered.filter(viz =>
+      activeChildren.every(child => viz.tags.includes(child))
+    );
+  }
+
+  // Display results
+  if (filtered.length === 0) {
+    resultsCount.textContent = 'No visualizations match these filters.';
+    vizGrid.innerHTML = '';
+  } else {
+    resultsCount.textContent = `${filtered.length} visualization${filtered.length === 1 ? '' : 's'}`;
+
+    vizGrid.innerHTML = filtered.map(viz => {
+      const highlightTags = [activeParent, ...activeChildren];
+      const tagHTML = viz.tags.slice(0, 5).map(tag => {
+        const isHighlight = highlightTags.includes(tag);
+        return `<span class="viz-tag ${isHighlight ? 'highlight' : ''}">${tag}</span>`;
+      }).join('');
+
+      return `
+        <a href="${viz.href}" class="viz-card">
+          <h4>${viz.title}</h4>
+          <p>${viz.desc}</p>
+          <div class="viz-tags">${tagHTML}</div>
+        </a>
+      `;
+    }).join('');
+  }
+
+  filterResults.style.display = 'block';
+}
+</script>
+
+</body>
+</html>

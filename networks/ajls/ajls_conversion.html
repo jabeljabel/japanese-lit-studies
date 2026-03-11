@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AJLS Presentation→Proceedings Conversion</title>
+<style>
+:root {
+  --bg: #1a1a2e; --bg2: #16213e; --bg3: #0f3460;
+  --fg: #e0e0e0; --fg2: #a0a0b0; --accent: #e94560;
+  --accent2: #0ea5e9; --accent3: #22c55e; --accent4: #f59e0b;
+  --border: #334155; --card: #1e293b; --hover: #334155;
+}
+.light-mode {
+  --bg: #f8fafc; --bg2: #e2e8f0; --bg3: #cbd5e1;
+  --fg: #1e293b; --fg2: #64748b; --accent: #dc2626;
+  --accent2: #2563eb; --accent3: #16a34a; --accent4: #d97706;
+  --border: #cbd5e1; --card: #ffffff; --hover: #f1f5f9;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg); color: var(--fg); line-height: 1.5;
+}
+.header {
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  padding: 12px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header h1 { font-size: 18px; font-weight: 600; white-space: nowrap; }
+.header .subtitle { font-size: 13px; color: var(--fg2); }
+.tabs {
+  display: flex; gap: 2px; background: var(--bg); border-bottom: 2px solid var(--border);
+  padding: 0 24px;
+}
+.tab {
+  padding: 10px 20px; cursor: pointer; font-size: 14px; font-weight: 500;
+  color: var(--fg2); border-bottom: 2px solid transparent; margin-bottom: -2px;
+  transition: all 0.2s;
+}
+.tab:hover { color: var(--fg); background: var(--hover); }
+.tab.active { color: var(--accent2); border-bottom-color: var(--accent2); }
+.controls {
+  display: flex; gap: 8px; margin-left: auto; align-items: center;
+}
+.btn {
+  padding: 5px 12px; font-size: 12px; border: 1px solid var(--border);
+  background: var(--bg2); color: var(--fg); border-radius: 4px; cursor: pointer;
+}
+.btn:hover { background: var(--hover); }
+.panel { display: none; padding: 24px; }
+.panel.active { display: block; }
+.stats-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px; margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  padding: 16px; text-align: center;
+}
+.stat-card .value { font-size: 32px; font-weight: 700; color: var(--accent2); }
+.stat-card .label { font-size: 12px; color: var(--fg2); margin-top: 4px; }
+.stat-card.highlight .value { color: var(--accent); }
+.stat-card.green .value { color: var(--accent3); }
+.chart-container {
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  padding: 20px; margin-bottom: 20px;
+}
+.chart-title {
+  font-size: 15px; font-weight: 600; margin-bottom: 4px;
+}
+.chart-subtitle {
+  font-size: 12px; color: var(--fg2); margin-bottom: 16px;
+}
+svg text { fill: var(--fg); }
+svg .axis text { font-size: 11px; fill: var(--fg2); }
+svg .axis line, svg .axis path { stroke: var(--border); }
+svg .grid line { stroke: var(--border); opacity: 0.3; }
+.category-tabs {
+  display: flex; gap: 2px; margin-bottom: 16px;
+}
+.cat-tab {
+  padding: 6px 14px; cursor: pointer; font-size: 12px; font-weight: 500;
+  color: var(--fg2); background: var(--bg2); border-radius: 4px;
+  border: 1px solid var(--border);
+}
+.cat-tab:hover { color: var(--fg); }
+.cat-tab.active { color: #fff; background: var(--accent2); border-color: var(--accent2); }
+.example-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.example-table th {
+  text-align: left; padding: 8px 12px; background: var(--bg2);
+  border-bottom: 2px solid var(--border); font-weight: 600; font-size: 12px;
+  color: var(--fg2); text-transform: uppercase; letter-spacing: 0.5px;
+}
+.example-table td {
+  padding: 8px 12px; border-bottom: 1px solid var(--border);
+  vertical-align: top; max-width: 350px;
+}
+.example-table tr:hover { background: var(--hover); }
+.sim-bar {
+  display: inline-block; height: 8px; border-radius: 4px; min-width: 4px;
+  vertical-align: middle; margin-right: 6px;
+}
+.note {
+  font-size: 12px; color: var(--fg2); margin-top: 12px; padding: 12px;
+  background: var(--bg2); border-radius: 6px; border-left: 3px solid var(--accent4);
+}
+.tooltip {
+  position: absolute; pointer-events: none; background: var(--card);
+  border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px;
+  font-size: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 100;
+  max-width: 320px;
+}
+.tooltip .tt-label { font-weight: 600; margin-bottom: 4px; }
+.tooltip .tt-row { display: flex; justify-content: space-between; gap: 12px; }
+.legend {
+  display: flex; gap: 16px; font-size: 12px; margin-bottom: 12px; flex-wrap: wrap;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 5px;
+}
+.legend-swatch {
+  width: 14px; height: 14px; border-radius: 3px;
+}
+.divider {
+  width: 100%; height: 1px; background: var(--border); margin: 20px 0;
+}
+@media (max-width: 768px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .header { padding: 10px 16px; }
+  .panel { padding: 16px; }
+}
+</style>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
+</head>
+<body>
+<div class="header">
+  <h1>Presentation → Proceedings Conversion</h1>
+  <span class="subtitle">AJLS Conference Presentations vs. PAJLS Proceedings Articles (1999–2025)</span>
+  <div class="controls">
+    <button class="btn" onclick="toggleTheme()">Light/Dark</button>
+    <button class="btn" onclick="exportPNG()">PNG</button>
+  </div>
+</div>
+
+<div class="tabs" id="mainTabs">
+  <div class="tab active" data-tab="overview">Conversion Overview</div>
+  <div class="tab" data-tab="topics">Topic Analysis</div>
+  <div class="tab" data-tab="similarity">Title Matching</div>
+</div>
+
+<div id="tooltip" class="tooltip" style="display:none"></div>
+
+<!-- TAB 1: OVERVIEW -->
+<div class="panel active" id="panel-overview">
+  <div class="stats-grid" id="overviewStats"></div>
+  <div class="chart-container">
+    <div class="chart-title">Presentations vs. Proceedings Publications by Year</div>
+    <div class="chart-subtitle">Stacked bars show published (matched to PAJLS volume) vs. unpublished presentations. Line shows conversion rate.</div>
+    <div class="legend" id="yearLegend"></div>
+    <svg id="yearChart"></svg>
+  </div>
+  <div class="note">
+    <strong>Methodology:</strong> A presentation is "matched" if the presenter appears as an author
+    in the PAJLS proceedings volume corresponding to that conference year (PAJLS vol N = year 1998+N).
+    Name matching uses normalized comparison (stripping middle initials, CJK characters) with
+    last-name + first-initial fallback. Years without a corresponding PAJLS volume (2023–2025,
+    plus PAJLS12=2010 missing from the contributors index) show as "No Volume" and are excluded
+    from the overall conversion rate.
+  </div>
+</div>
+
+<!-- TAB 2: TOPICS -->
+<div class="panel" id="panel-topics">
+  <div class="stats-grid" id="topicStats"></div>
+  <div class="chart-container">
+    <div class="chart-title">Conversion Rate by Topic</div>
+    <div class="chart-subtitle">What percentage of presentations on each topic led to a proceedings publication?</div>
+    <div class="category-tabs" id="catTabs"></div>
+    <div class="legend" id="topicLegend"></div>
+    <svg id="topicChart"></svg>
+  </div>
+  <div class="chart-container">
+    <div class="chart-title">Publication Gap: Over- and Under-Represented Topics</div>
+    <div class="chart-subtitle">Diverging bars show how much each topic's share in proceedings differs from its share in all presentations. Positive = over-represented in proceedings.</div>
+    <svg id="gapChart"></svg>
+  </div>
+</div>
+
+<!-- TAB 3: SIMILARITY -->
+<div class="panel" id="panel-similarity">
+  <div class="stats-grid" id="simStats"></div>
+  <div class="chart-container">
+    <div class="chart-title">Title Similarity Distribution</div>
+    <div class="chart-subtitle">Jaccard word similarity between presentation title and proceedings article title for matched pairs. Higher = more similar wording.</div>
+    <svg id="simChart"></svg>
+  </div>
+  <div class="chart-container">
+    <div class="chart-title">Matched Title Pairs</div>
+    <div class="chart-subtitle">Examples of presentation titles and their corresponding proceedings articles, sorted by similarity.</div>
+    <div style="max-height:500px;overflow-y:auto">
+      <table class="example-table" id="exampleTable"></table>
+    </div>
+  </div>
+  <div class="note">
+    <strong>About title similarity:</strong> Titles frequently change between conference presentation
+    and proceedings publication. Jaccard similarity measures word overlap (excluding stopwords).
+    Scores above 0.5 generally indicate the same paper; below 0.2 suggests the presenter
+    wrote a substantially different article for the volume. Some presenters contribute
+    entirely new papers to the proceedings that differ from their conference talk.
+  </div>
+</div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+const DATA = {"overall": {"total_presentations": 1025, "total_matched": 315, "overall_rate": 0.307, "valid_presentations": 824, "valid_matched": 315, "valid_rate": 0.382, "unique_presenters": 611, "unique_published": 247, "unique_never_published": 364, "years_with_volume": 22, "years_without_volume": 4}, "yearly": [{"year": 1999, "presented": 32, "matched": 25, "unmatched": 7, "rate": 0.781, "no_volume": false, "volume": "PAJLS01"}, {"year": 2000, "presented": 25, "matched": 20, "unmatched": 5, "rate": 0.8, "no_volume": false, "volume": "PAJLS02"}, {"year": 2001, "presented": 25, "matched": 14, "unmatched": 11, "rate": 0.56, "no_volume": false, "volume": "PAJLS03"}, {"year": 2002, "presented": 31, "matched": 13, "unmatched": 18, "rate": 0.419, "no_volume": false, "volume": "PAJLS04"}, {"year": 2003, "presented": 48, "matched": 29, "unmatched": 19, "rate": 0.604, "no_volume": false, "volume": "PAJLS05"}, {"year": 2004, "presented": 27, "matched": 19, "unmatched": 8, "rate": 0.704, "no_volume": false, "volume": "PAJLS06"}, {"year": 2005, "presented": 28, "matched": 11, "unmatched": 17, "rate": 0.393, "no_volume": false, "volume": "PAJLS07"}, {"year": 2006, "presented": 43, "matched": 21, "unmatched": 22, "rate": 0.488, "no_volume": false, "volume": "PAJLS08"}, {"year": 2007, "presented": 45, "matched": 18, "unmatched": 27, "rate": 0.4, "no_volume": false, "volume": "PAJLS09"}, {"year": 2008, "presented": 35, "matched": 13, "unmatched": 22, "rate": 0.371, "no_volume": false, "volume": "PAJLS10"}, {"year": 2009, "presented": 38, "matched": 18, "unmatched": 20, "rate": 0.474, "no_volume": false, "volume": "PAJLS11"}, {"year": 2010, "presented": 43, "matched": 0, "unmatched": 43, "rate": 0.0, "no_volume": true, "volume": ""}, {"year": 2011, "presented": 25, "matched": 14, "unmatched": 11, "rate": 0.56, "no_volume": false, "volume": "PAJLS13"}, {"year": 2012, "presented": 46, "matched": 12, "unmatched": 34, "rate": 0.261, "no_volume": false, "volume": "PAJLS14"}, {"year": 2013, "presented": 39, "matched": 13, "unmatched": 26, "rate": 0.333, "no_volume": false, "volume": "PAJLS15"}, {"year": 2014, "presented": 18, "matched": 3, "unmatched": 15, "rate": 0.167, "no_volume": false, "volume": "PAJLS16"}, {"year": 2015, "presented": 46, "matched": 10, "unmatched": 36, "rate": 0.217, "no_volume": false, "volume": "PAJLS17"}, {"year": 2016, "presented": 48, "matched": 12, "unmatched": 36, "rate": 0.25, "no_volume": false, "volume": "PAJLS18"}, {"year": 2017, "presented": 32, "matched": 10, "unmatched": 22, "rate": 0.312, "no_volume": false, "volume": "PAJLS19"}, {"year": 2018, "presented": 43, "matched": 11, "unmatched": 32, "rate": 0.256, "no_volume": false, "volume": "PAJLS20"}, {"year": 2019, "presented": 49, "matched": 14, "unmatched": 35, "rate": 0.286, "no_volume": false, "volume": "PAJLS21"}, {"year": 2020, "presented": 69, "matched": 8, "unmatched": 61, "rate": 0.116, "no_volume": false, "volume": "PAJLS22"}, {"year": 2022, "presented": 32, "matched": 7, "unmatched": 25, "rate": 0.219, "no_volume": false, "volume": "PAJLS23"}, {"year": 2023, "presented": 59, "matched": 0, "unmatched": 59, "rate": 0.0, "no_volume": true, "volume": ""}, {"year": 2024, "presented": 49, "matched": 0, "unmatched": 49, "rate": 0.0, "no_volume": true, "volume": ""}, {"year": 2025, "presented": 50, "matched": 0, "unmatched": 50, "rate": 0.0, "no_volume": true, "volume": ""}], "topics": {"literary_figure": [{"term": "Genji monogatari", "presented": 15, "matched": 4, "unmatched": 11, "rate": 0.267}, {"term": "Tanizaki Jun'ichirō", "presented": 14, "matched": 6, "unmatched": 8, "rate": 0.429}, {"term": "Natsume Sōseki", "presented": 14, "matched": 7, "unmatched": 7, "rate": 0.5}, {"term": "Nakagami Kenji", "presented": 8, "matched": 3, "unmatched": 5, "rate": 0.375}, {"term": "Mishima Yukio", "presented": 7, "matched": 1, "unmatched": 6, "rate": 0.143}, {"term": "Dazai Osamu", "presented": 6, "matched": 3, "unmatched": 3, "rate": 0.5}, {"term": "Tawada Yōko", "presented": 6, "matched": 4, "unmatched": 2, "rate": 0.667}, {"term": "Ōe Kenzaburō", "presented": 5, "matched": 1, "unmatched": 4, "rate": 0.2}, {"term": "Ōba Minako", "presented": 5, "matched": 4, "unmatched": 1, "rate": 0.8}, {"term": "Murakami Haruki", "presented": 5, "matched": 1, "unmatched": 4, "rate": 0.2}, {"term": "Akutagawa Ryūnosuke", "presented": 4, "matched": 1, "unmatched": 3, "rate": 0.25}, {"term": "Izumi Kyōka", "presented": 4, "matched": 2, "unmatched": 2, "rate": 0.5}, {"term": "Murasaki Shikibu", "presented": 4, "matched": 3, "unmatched": 1, "rate": 0.75}, {"term": "Medoruma Shun", "presented": 4, "matched": 2, "unmatched": 2, "rate": 0.5}, {"term": "Enchi Fumiko", "presented": 4, "matched": 2, "unmatched": 2, "rate": 0.5}, {"term": "Matsuo Bashō", "presented": 3, "matched": 3, "unmatched": 0, "rate": 1.0}, {"term": "Kawabata Yasunari", "presented": 3, "matched": 2, "unmatched": 1, "rate": 0.667}, {"term": "Zeami", "presented": 3, "matched": 0, "unmatched": 3, "rate": 0.0}, {"term": "Nagai Kafū", "presented": 3, "matched": 3, "unmatched": 0, "rate": 1.0}, {"term": "Mori Ōgai", "presented": 3, "matched": 0, "unmatched": 3, "rate": 0.0}, {"term": "Hayashi Fumiko", "presented": 2, "matched": 0, "unmatched": 2, "rate": 0.0}, {"term": "Chikamatsu", "presented": 2, "matched": 1, "unmatched": 1, "rate": 0.5}, {"term": "Kirino Natsuo", "presented": 2, "matched": 0, "unmatched": 2, "rate": 0.0}, {"term": "Yoshimoto Banana", "presented": 2, "matched": 1, "unmatched": 1, "rate": 0.5}, {"term": "Kawakami Hiromi", "presented": 2, "matched": 1, "unmatched": 1, "rate": 0.5}, {"term": "Ihara Saikaku", "presented": 2, "matched": 0, "unmatched": 2, "rate": 0.0}, {"term": "Higuchi Ichiyō", "presented": 2, "matched": 0, "unmatched": 2, "rate": 0.0}, {"term": "Kawakami Mieko", "presented": 2, "matched": 0, "unmatched": 2, "rate": 0.0}, {"term": "Yosano Akiko", "presented": 1, "matched": 1, "unmatched": 0, "rate": 1.0}, {"term": "Sei Shōnagon", "presented": 1, "matched": 1, "unmatched": 0, "rate": 1.0}, {"term": "Abe Kōbō", "presented": 1, "matched": 0, "unmatched": 1, "rate": 0.0}, {"term": "Kamo no Chōmei", "presented": 1, "matched": 1, "unmatched": 0, "rate": 1.0}, {"term": "Yoshida Kenkō", "presented": 1, "matched": 0, "unmatched": 1, "rate": 0.0}, {"term": "Furukawa Hideo", "presented": 1, "matched": 0, "unmatched": 1, "rate": 0.0}, {"term": "Shimao Toshio", "presented": 1, "matched": 0, "unmatched": 1, "rate": 0.0}], "theme": [{"term": "Gender & Sexuality", "presented": 77, "matched": 37, "unmatched": 40, "rate": 0.481}, {"term": "Technology & Media", "presented": 77, "matched": 19, "unmatched": 58, "rate": 0.247}, {"term": "Modernity & Modernism", "presented": 60, "matched": 18, "unmatched": 42, "rate": 0.3}, {"term": "Space & Place", "presented": 52, "matched": 17, "unmatched": 35, "rate": 0.327}, {"term": "Empire & Colonialism", "presented": 47, "matched": 12, "unmatched": 35, "rate": 0.255}, {"term": "War & Memory", "presented": 45, "matched": 15, "unmatched": 30, "rate": 0.333}, {"term": "Nature & Environment", "presented": 32, "matched": 12, "unmatched": 20, "rate": 0.375}, {"term": "Translation & World Lit", "presented": 28, "matched": 6, "unmatched": 22, "rate": 0.214}, {"term": "Nation & Identity", "presented": 25, "matched": 9, "unmatched": 16, "rate": 0.36}, {"term": "Religion & Spirituality", "presented": 23, "matched": 6, "unmatched": 17, "rate": 0.261}, {"term": "Childhood & Education", "presented": 21, "matched": 3, "unmatched": 18, "rate": 0.143}, {"term": "Sound & Music", "presented": 20, "matched": 4, "unmatched": 16, "rate": 0.2}, {"term": "Body & Affect", "presented": 18, "matched": 6, "unmatched": 12, "rate": 0.333}, {"term": "Race & Ethnicity", "presented": 14, "matched": 3, "unmatched": 11, "rate": 0.214}, {"term": "Food & Material Culture", "presented": 2, "matched": 0, "unmatched": 2, "rate": 0.0}], "period": [{"term": "Edo/Early Modern", "presented": 30, "matched": 8, "unmatched": 22, "rate": 0.267}, {"term": "Classical/Heian", "presented": 27, "matched": 11, "unmatched": 16, "rate": 0.407}, {"term": "Contemporary", "presented": 26, "matched": 8, "unmatched": 18, "rate": 0.308}, {"term": "Medieval", "presented": 16, "matched": 6, "unmatched": 10, "rate": 0.375}, {"term": "Meiji/Taishō", "presented": 15, "matched": 5, "unmatched": 10, "rate": 0.333}, {"term": "Prewar/Shōwa", "presented": 13, "matched": 5, "unmatched": 8, "rate": 0.385}, {"term": "Postwar", "presented": 13, "matched": 4, "unmatched": 9, "rate": 0.308}], "genre": [{"term": "Drama/Theater", "presented": 91, "matched": 27, "unmatched": 64, "rate": 0.297}, {"term": "Poetry", "presented": 84, "matched": 29, "unmatched": 55, "rate": 0.345}, {"term": "Novel/Fiction", "presented": 59, "matched": 23, "unmatched": 36, "rate": 0.39}, {"term": "Translation", "presented": 34, "matched": 6, "unmatched": 28, "rate": 0.176}, {"term": "Film/Cinema", "presented": 24, "matched": 1, "unmatched": 23, "rate": 0.042}, {"term": "Anime/Manga", "presented": 21, "matched": 5, "unmatched": 16, "rate": 0.238}, {"term": "Digital/New Media", "presented": 19, "matched": 3, "unmatched": 16, "rate": 0.158}, {"term": "Diary/Life Writing", "presented": 12, "matched": 5, "unmatched": 7, "rate": 0.417}, {"term": "Essay/Criticism", "presented": 3, "matched": 1, "unmatched": 2, "rate": 0.333}]}, "similarity": {"histogram": [{"bin": "0.0-0.1", "label": "0%", "count": 5}, {"bin": "0.1-0.2", "label": "10%", "count": 10}, {"bin": "0.2-0.3", "label": "20%", "count": 18}, {"bin": "0.3-0.4", "label": "30%", "count": 11}, {"bin": "0.4-0.5", "label": "40%", "count": 6}, {"bin": "0.5-0.6", "label": "50%", "count": 13}, {"bin": "0.6-0.7", "label": "60%", "count": 23}, {"bin": "0.7-0.8", "label": "70%", "count": 22}, {"bin": "0.8-0.9", "label": "80%", "count": 19}, {"bin": "0.9-1.0", "label": "90%", "count": 95}], "examples": [{"person": "Peter Flueckiger", "year": 1999, "pres_title": "The Discourse of 'Makoto' and the Canonization of Tokugawa Waka", "proc_title": "The discourse of ‘makoto’ and the canonization of Tokugawa waka", "similarity": 1.0}, {"person": "Masaaki Kinugasa", "year": 1999, "pres_title": "Aesthetic Politics and Literary History: Shinkokinshū and Kazamaki Keijirō", "proc_title": "Aesthetic politics and literary history: Shinkokinshū and Kazamaki Keijirō", "similarity": 1.0}, {"person": "Atsuko Ueda", "year": 1999, "pres_title": "De-Politicization of Literature: Social Darwinism and Interiority", "proc_title": "De-politicization of literature: social Darwinism and interiority", "similarity": 1.0}, {"person": "Paul S. Atkins", "year": 1999, "pres_title": "Fabricating Teika: The Usagi Forgeries and Their Authentic Influence", "proc_title": "Fabricating Teika: the usagi forgeries and their authentic influence", "similarity": 1.0}, {"person": "Stefania Burk", "year": 1999, "pres_title": "Political License and the Poetic Canon of the Imperial Waka Anthologies", "proc_title": "Political license and the poetic canon of the imperial waka anthologies", "similarity": 1.0}, {"person": "Roger Thomas", "year": 1999, "pres_title": "In His Footsteps: Shokyū-ni and the Canonization of Bashō", "proc_title": "In his footsteps: Shokyū-ni and the canonization of Bashō", "similarity": 1.0}, {"person": "Leith Morton", "year": 1999, "pres_title": "The Canonicity of Yosano Akiko's Midaregami", "proc_title": "The canonicity of Yosano Akiko’s Midaregami", "similarity": 1.0}, {"person": "Ken Ito", "year": 1999, "pres_title": "From the Margins of the Canon: Kikuchi Yūhō and the Katei Shōsetsu", "proc_title": "From the margins of the canon: Kikuchi Yūhō and the katei shōsetsu", "similarity": 1.0}, {"person": "Rachel DiNitto", "year": 1999, "pres_title": "In Search of Insignificance?: Modern Literary Anthologies, Premodern Genres, and the Failed Canonization of Uchida Hyakken", "proc_title": "In search of insignificance? Modern literary anthologies, premodern genres, and the failed canonization of Uchida Hyakken", "similarity": 1.0}, {"person": "Stephen Forrest", "year": 1999, "pres_title": "Strangers Within: Nōin Shū and the Canonical Status of Private Poetry Collections", "proc_title": "Strangers within: Nōin shū and the canonical status of private poetry collections", "similarity": 1.0}, {"person": "Indra Levy", "year": 2000, "pres_title": "The Anxiety of Translation: Interlingual Seduction and Betrayal in Futabatei Shimei's Ukigumo", "proc_title": "The anxiety of translation: interlingual seduction and betrayal in Futabatei Shimei’s Ukigumo", "similarity": 1.0}, {"person": "Matthew Mizenko", "year": 2000, "pres_title": "In a 'Borrowed Tongue': The Representation of Japan in the English Language by Nitobe, Okakura, and Uchimura", "proc_title": "In a ‘borrowed tongue’: the representation of Japan in the English language by Nitobe, Okakura, and Uchimura", "similarity": 1.0}, {"person": "Daniel Gallimore", "year": 2000, "pres_title": "Dreams Come True': Fukuda Tsuneari and the Shakespearean Sub-Text", "proc_title": "Dreams come true’: Fukuda Tsuneari and the Shakespearean sub-text", "similarity": 1.0}, {"person": "William Gardner", "year": 2000, "pres_title": "Anzai Fuyue's Empire of Signs: Japanese Poetry in Manchuria", "proc_title": "Anzai Fuyue’s empire of signs: Japanese poetry in Manchuria", "similarity": 1.0}, {"person": "Sarah Frederick", "year": 2000, "pres_title": "'Novels You Can Watch/Movies You Can Read': Visual Narrative in 1930s Women's Magazines", "proc_title": "Novels you can watch / movies you can read’: visual narrative in 1930s women’s magazines", "similarity": 1.0}, {"person": "Giorgio Amitrano", "year": 2000, "pres_title": "The Gender of Solitude: Changing Sexual Identities in Recent Japanese Fiction", "proc_title": "The gender of solitude: changing sexual identities in recent Japanese fiction", "similarity": 1.0}, {"person": "Keiko Nakano", "year": 2001, "pres_title": "Where is My Home?: Language and Identity", "proc_title": "Where is my home: language and identity", "similarity": 1.0}, {"person": "Tom Looser", "year": 2001, "pres_title": "Japan, and Globality's Somewhere Else", "proc_title": "Globality, and Japan’s somewhere else", "similarity": 1.0}, {"person": "James Reichert", "year": 2001, "pres_title": "Godzilla: The Monster Made in Japan", "proc_title": "Godzilla, the monster made in Japan", "similarity": 1.0}, {"person": "Roger Thomas", "year": 2002, "pres_title": "Poetry Fit to Sing: Tachibana Moribe and the Chōka Revival", "proc_title": "Poetry fit to sing: Tachibana Moribe and the chōka revival", "similarity": 1.0}, {"person": "Keller Kimbrough", "year": 2002, "pres_title": "Nomori no kagami and the Perils of Poetic Heresy", "proc_title": "Nomori no kagami and the perils of poetic heresy", "similarity": 1.0}, {"person": "Irena Hayter", "year": 2002, "pres_title": "Wagahai wa neko dearu satsujin jiken as a Postmodern Sequel", "proc_title": "Wagahai wa neko dearu satsujin jiken as a postmodern sequel", "similarity": 1.0}, {"person": "Rein Raud", "year": 2002, "pres_title": "Narrative and Poetic Progression: The Logic of Associativity", "proc_title": "Narrative and poetic progression: the logic of associativity", "similarity": 1.0}, {"person": "Aiko Okamoto MacPhail", "year": 2002, "pres_title": "From the Pages of Classics to the Fantastic Tales: Kyokutei Bakin and Seven Rules of Fiction", "proc_title": "From the pages of classics to the fantastic tales: Kyokutei Bakin and seven rules of fiction", "similarity": 1.0}, {"person": "Catherine Ryu", "year": 2003, "pres_title": "Zainichi Literature Through a Lacanian Gaze: The Case of Yi Yang Ji's Yuhi", "proc_title": "Zainichi literature through a Lacanian gaze: the case of Yi Yang-Ji’s Yuhi", "similarity": 1.0}, {"person": "Hiromi Tsuchiya Dollase", "year": 2003, "pres_title": "Shōjo and Yamanba in Mori Mari's Literature", "proc_title": "Shōjo and Yamanba: Mori Mari’s literature", "similarity": 1.0}, {"person": "Gregory Golley", "year": 2003, "pres_title": "Miyazawa Kenji and the Ethics of Scientific Realism", "proc_title": "Miyazawa Kenji and the ethics of scientific realism", "similarity": 1.0}, {"person": "Matteo Cestari", "year": 2003, "pres_title": "The Problem of Aesthetics in Nishida Kitarō", "proc_title": "The problem of aesthetics in Nishida Kitarō", "similarity": 1.0}, {"person": "Timothy J. Van Compernolle", "year": 2003, "pres_title": "The Author, the Reader, and Japanese Literary Texts: Returning Poststructuralist Intertextuality to its Dialogic Roots", "proc_title": "The author, the reader, and Japanese literary texts: returning poststructuralist intertextuality to its dialogic roots", "similarity": 1.0}, {"person": "Sayumi Takahashi Harb", "year": 2003, "pres_title": "Beyond Our Grasp? Materiality, Meta-genre and Meaning in the Po(e)ttery of Rengetsu-ni", "proc_title": "Beyond our grasp? Materiality, meta-genre and meaning in the po(e)ttery of Rengetsu-ni", "similarity": 1.0}, {"person": "Akiko Takeuchi", "year": 2003, "pres_title": "Dramatizing Figures: the Revitalization and Expansion of Metaphors in Nō", "proc_title": "Dramatizing figures: the revitalization and expansion of metaphors in nō", "similarity": 1.0}, {"person": "Stefania Burk", "year": 2003, "pres_title": "Compilation as Commentary: The Two Imperial Anthologies of Nijō Tameyo", "proc_title": "Compilation as commentary: the two imperial anthologies of Nijō Tameyo", "similarity": 1.0}, {"person": "Linda Chance", "year": 2003, "pres_title": "Accessorizing the Text: The Role of Commentary in the Creation of Readers", "proc_title": "Accessorizing the text: the role of commentary in the creation of readers", "similarity": 1.0}, {"person": "William R. LaFleur", "year": 2003, "pres_title": "Good Karma, Bad Karma, Words, and Deeds", "proc_title": "Good karma, bad karma, words and deeds", "similarity": 1.0}, {"person": "Anne Sokolsky", "year": 2003, "pres_title": "Writing the Political not Just the Personal in Tamura's Shōwa Period Fiction", "proc_title": "Writing the political not just the personal in Tamura’s Shōwa period fiction", "similarity": 1.0}, {"person": "Atsuko Ueda", "year": 2004, "pres_title": "Ideological Landscape: Asianism (kōa) in 1880s Japan", "proc_title": "Ideological Landscape”: Asianism (kōa) in 1880s Japan", "similarity": 1.0}, {"person": "Michael Dylan Foster", "year": 2004, "pres_title": "Walking in the City with Natsume Sōseki: The Metaphorical Landscape in 'Koto no sorane", "proc_title": "Walking in the City with Natsume Sōseki: The Metaphorical Landscape in “Koto no sorane", "similarity": 1.0}, {"person": "Kyoko Ando", "year": 2004, "pres_title": "Folktales and Spiritualism in The Landscapes of Miyazawa Kenji", "proc_title": "Folktales and Spiritualism in the Landscapes of Miyazawa Kenji", "similarity": 1.0}, {"person": "Elizabeth Oyler", "year": 2004, "pres_title": "Journeys of Exile in the Heike monogatari: Shigehira and Munemori in Captivity", "proc_title": "Journeys of Exile in the Heike monogatari: Shigehira and Munemori in Captivity", "similarity": 1.0}, {"person": "Thomas Hackner", "year": 2004, "pres_title": "Shiga Shigetaka's Nihon fūkei-ron and Meiji Literature", "proc_title": "Shiga Shigetaka’s Nihon fūkei ron and Meiji Literature", "similarity": 1.0}, {"person": "Anne Commons", "year": 2004, "pres_title": "The Construction of Akashi as Sacred Space", "proc_title": "The Construction of Akashi as Sacred Space", "similarity": 1.0}, {"person": "Joseph Sorensen", "year": 2004, "pres_title": "Poetic Landscapes and Landscape Poetry in Heian Japan", "proc_title": "Poetic Landscapes and Landscape Poetry in Heian Japan", "similarity": 1.0}, {"person": "Sarah Frederick", "year": 2005, "pres_title": "Aposiopesis and Completion: Yoshiya Nobuko’s Typographic Melodrama", "proc_title": "Aposiopesis and completion: Yoshiya Nobuko’s typographic melodrama", "similarity": 1.0}, {"person": "Christian Ratcliff", "year": 2005, "pres_title": "Willful Copyists and the Transmission of Suspect Narratives of Literary Production", "proc_title": "Willful copyists and the transmission of suspect narratives of literary production", "similarity": 1.0}, {"person": "Anne Sherif", "year": 2005, "pres_title": "Surviving the Red Purge: Activist Literature and Publishers in the Cold War", "proc_title": "Surviving the Red Purge: activist literature and publishers in the Cold War", "similarity": 1.0}, {"person": "Helen Weetman", "year": 2006, "pres_title": "Tours of the Womb, Tours of Hell: Circular Journeys in Late Twentieth-century Literature", "proc_title": "Tours of the womb, tours of hell’: circular journeys in late twentieth-century literature", "similarity": 1.0}, {"person": "Julia Bullock", "year": 2006, "pres_title": "We'll Always Have Iowa: Gender and National Identity in Kurahashi Yumiko's \"Virginia", "proc_title": "We’ll always have Iowa: gender and national identity in Kurahashi Yumiko’s ‘Virginia", "similarity": 1.0}, {"person": "Timothy Iles", "year": 2006, "pres_title": "Are We There Yet? Traveling Toward the Self in Contemporary Japanese Cinema", "proc_title": "Are we there yet? Traveling toward the self in contemporary Japanese cinema", "similarity": 1.0}, {"person": "Carolina Negri", "year": 2006, "pres_title": "Travel in Memoirs by Heian Women's Writers: The Sarashina nikki", "proc_title": "Travel in memoirs by Heian women’s writers: the Sarashina nikki", "similarity": 1.0}, {"person": "Jennifer Scott", "year": 2006, "pres_title": "Furui Yoshikichi-Travel and Liminality", "proc_title": "Furui Yoshikichi: travel and liminality", "similarity": 1.0}, {"person": "Takashi Lep Ariga", "year": 2006, "pres_title": "Forcing a Feast: Cruel Hospitality and the Energy of Renewal", "proc_title": "オデシコ：強制の宴がトシを改める」 Forcing a Feast: Cruel Hospitality and the Energy of Renewal", "similarity": 1.0}, {"person": "Michael Dylan Foster", "year": 2006, "pres_title": "Observing Ritual: Namahage, Toshidon, and the Tourist Gaze", "proc_title": "Observing ritual: Namahage Toshidon, and the tourist gaze", "similarity": 1.0}, {"person": "Robert Tierney", "year": 2006, "pres_title": "Momotarō's Adventures in the South Seas: Folklore, Propaganda and Parody", "proc_title": "Folklore, propaganda, and parody: the adventures of Momotarō in the South Seas", "similarity": 1.0}, {"person": "Dennis Washburn", "year": 2007, "pres_title": "Performance Anxieties, or Hitting on Theory", "proc_title": "Performance anxieties, or hitting on theory", "similarity": 1.0}, {"person": "Teresa Ciapparoni La Rocca", "year": 2007, "pres_title": "The European Border of Japanese literature", "proc_title": "The European border of Japanese literature", "similarity": 1.0}, {"person": "Christopher D. Scott", "year": 2007, "pres_title": "Queer/Nation: From ‘Nihon bungaku’ to ‘Nihongo bungaku", "proc_title": "Queer / nation: from ‘Nihon bungaku’ to ‘Nihongo bungaku", "similarity": 1.0}, {"person": "Yukiko Shigeto", "year": 2007, "pres_title": "Politics of Writing: Nakano Shigeharu’s ‘Tenkō’ Literature", "proc_title": "Politics of writing: Nakano Shigeharu and Tenkō literature", "similarity": 1.0}, {"person": "Mizumura Minae", "year": 2007, "pres_title": "The Fate of the Japanese Language in the Age of English", "proc_title": "The fate of the Japanese language in the age of English", "similarity": 1.0}, {"person": "M. Cody Poulton", "year": 2007, "pres_title": "The Vicissitudes of Drama as a Literary Genre in Meiji/Taishō Debates", "proc_title": "The vicissitudes of drama as a literary genre in Meiji-Taishō debates", "similarity": 1.0}, {"person": "Michael Bourdaghs", "year": 2007, "pres_title": "Owning Up To Sōseki: The Theory of Literature vs. the Theory of Copyright", "proc_title": "Owning up to Sōseki: the theory of literature vs. the theory of copyright", "similarity": 1.0}, {"person": "Keith Vincent", "year": 2007, "pres_title": "The Novel and the End of Homosocial Literature", "proc_title": "The novel and the end of homosocial literature", "similarity": 1.0}, {"person": "Gavin Walker", "year": 2007, "pres_title": "On the ‘End’: Mishima Yukio and the Double Dislocation of Literature", "proc_title": "On the ‘end’: Mishima Yukio and the double dislocation of literature", "similarity": 1.0}, {"person": "Nina Cornyetz", "year": 2007, "pres_title": "Chasing The Tails of Tales: Nakagami Kenji and the End of Folklore", "proc_title": "Chasing the tails of tales: Nakagami Kenji and the end of folklore", "similarity": 1.0}, {"person": "Jeremy Robinson", "year": 2008, "pres_title": "Seeing As’—Mitate and Parody in haikai linked verse", "proc_title": "Seeing as’: mitate and parody in haikai linked verse", "similarity": 1.0}, {"person": "Keith Vincent", "year": 2008, "pres_title": "Playing and Parodying the Detective in Sōseki’s Higan-sugi made", "proc_title": "Playing and parodying the detective in Sōseki’s Higan-sugi made", "similarity": 1.0}, {"person": "Seth Jacobowitz", "year": 2008, "pres_title": "The Discourse of Noses in Natsume Sōseki’s I am a Cat", "proc_title": "The discourse of noses in Natsume Sōseki’s I am a Cat", "similarity": 1.0}, {"person": "Nosaka Akio", "year": 2008, "pres_title": "The Media of Occultism and Modern Poetry", "proc_title": "心霊学というメディアと近代詩 The Media of Occultism and Modern Poetry", "similarity": 1.0}, {"person": "Rachel DiNitto", "year": 2009, "pres_title": "Cultural Politics of the ‘Girl’ in Postbubble Japan.", "proc_title": "Cultural politics of the ‘Girl’ in postbubble Japan", "similarity": 1.0}, {"person": "Eileen Mikals-Adachi", "year": 2009, "pres_title": "Dial ‘L’ for Love—The Romantic Cell Phone Tones of Ren’ai Shōsetsu", "proc_title": "Dial ‘L’ for love: the romantic cell phone tones of Ren’ai Shōsetsu", "similarity": 1.0}, {"person": "Barbara Thornbury", "year": 2009, "pres_title": "Re-imagining Ozu: Hou Hsiao-Hsien’s Café Lumière and the Contemporary Tokyo Woman", "proc_title": "Re-imagining Ozu: Hou Hsiao-Hsien’s Café Lumière and the contemporary Tokyo woman", "similarity": 1.0}, {"person": "Michael Cronin", "year": 2009, "pres_title": "Treasonous Masculinity: The Osaka Man in Trans-war Fiction", "proc_title": "Treasonous masculinity: the Osaka man in trans-war fiction", "similarity": 1.0}, {"person": "Dylan McGee", "year": 2009, "pres_title": "Enjirō’s Revenge: Parodic Constructions of Masculinity in Early Modern Kibyōshi", "proc_title": "Enjirō’s revenge: parodic constructions of masculinity in early modern kibyōshi", "similarity": 1.0}, {"person": "Mary Knighton", "year": 2009, "pres_title": "Perversely Reading Manga", "proc_title": "Perversely reading manga", "similarity": 1.0}, {"person": "Nina Cornyetz", "year": 2009, "pres_title": "Between Men in Izumi Kyōka’s Yōken kibun", "proc_title": "Between men in Izumi Kyōka’s Yōken kibun", "similarity": 1.0}, {"person": "Mari Nagase", "year": 2009, "pres_title": "In Pursuit of Success: Kanshi Poet Hara Saihin’s Masquerade of Masculinity", "proc_title": "In pursuit of success: Kanshi poet Hara Saihin’s masquerade of masculinity", "similarity": 1.0}, {"person": "Scott Miller", "year": 2011, "pres_title": "Young Writers Anticipate Death: Shiga and Kajii in Convalescence", "proc_title": "Young writers anticipate death: Shiga and Kajii in convalescence", "similarity": 1.0}, {"person": "Saeko Kimura", "year": 2011, "pres_title": "Placating the Dead: Folk Rituals and Recurring Life", "proc_title": "Placating the dead: folk rituals and recurring life", "similarity": 1.0}, {"person": "Evelyn Huang", "year": 2011, "pres_title": "Obasuteyama, Care or Abandonment?", "proc_title": "Obasuteyama: care or abandonment", "similarity": 1.0}, {"person": "Maryellen Mori", "year": 2011, "pres_title": "New Whines in Old Skins: The Recluse in Contemporary Japanese Literature", "proc_title": "New whines in old skins: the recluse in contemporary Japanese literature", "similarity": 1.0}, {"person": "Jan Leuchtenberger", "year": 2013, "pres_title": "The Kirishitan expulsion as ritual performance in early-modern Japanese texts", "proc_title": "The Kirishitan expulsion as ritual performance in early-modern Japanese texts", "similarity": 1.0}, {"person": "Ken Ito", "year": 2013, "pres_title": "Performing a Reading of Konjiki yasha", "proc_title": "Performing a reading of Konjiki yasha", "similarity": 1.0}, {"person": "Cody Poulton", "year": 2013, "pres_title": "Performance as Text: The Legacy of Post-1960s Japanese Theatre", "proc_title": "Performance as text: the legacy of post-1960s Japanese theatre", "similarity": 1.0}, {"person": "Hannah Osborne", "year": 2016, "pres_title": "Structuring the Void: Kanai Mieko’s ‘Inflated Man’ and Pictorial Allusion", "proc_title": "Structuring the void: Kanai Mieko’s ‘inflated man’ and pictorial allusion", "similarity": 1.0}, {"person": "Doug Slaymaker", "year": 2016, "pres_title": "When Words Fail", "proc_title": "When words fail", "similarity": 1.0}, {"person": "Kathryn Hemmann", "year": 2016, "pres_title": "A Legend of Regret: Fallen Kingdoms and Postcolonial Ghosts in Twilight Princess", "proc_title": "A legend of regret: fallen kingdoms and postcolonial ghosts in Twilight Princess", "similarity": 1.0}, {"person": "Camila Gutierrez", "year": 2016, "pres_title": "Manga Visuals in Latin America: Gender Diversity beyond the Panel", "proc_title": "Manga visuals in Latin America: gender diversity beyond the panel", "similarity": 1.0}, {"person": "Robert Tierney", "year": 2017, "pres_title": "Bodies and Violence in the Musha Incident", "proc_title": "Bodies and Violence in the Musha Incident", "similarity": 1.0}, {"person": "Matthew Mewhinney", "year": 2018, "pres_title": "Evincing Experience: Lyric in Natsume Sōseki’s Recollecting and Such", "proc_title": "Evincing Experience: Lyric in Natsume Sōseki’s Recollecting and Such", "similarity": 1.0}, {"person": "Linda Chance", "year": 2018, "pres_title": "Trouble All Around: Ichijō Kaneyoshi and Women’s Authority", "proc_title": "Trouble All Around: Ichijō Kaneyoshi and Women’s Authority", "similarity": 1.0}, {"person": "Matthew Mewhinney", "year": 2019, "pres_title": "Crossing the Threshold: Genre, Gender and Reading in Ema Saikō’s Poetry", "proc_title": "Crossing the Threshold: Genre, Gender, and Reading in Ema Saikō’s Poetry", "similarity": 1.0}, {"person": "Danica Truscott", "year": 2019, "pres_title": "Banquet Poetry and the Gendering of Social and Textual Spaces in the Man’yōshū“", "proc_title": "Banquet Poetry and the Gendering of Social and Textual Spaces in the Man’yōshū", "similarity": 1.0}, {"person": "Bonnie McClure", "year": 2019, "pres_title": "Imagined Journeys: The daiei travel poetry of Senzaishū“", "proc_title": "Imagined Journeys: Daiei Travel Poetry in Senzaishū", "similarity": 1.0}, {"person": "Yauheniya Hudziyeva", "year": 2020, "pres_title": "By the People, for the People: People’s Art Debates and the Rise of the Proletariat, 1916-1918", "proc_title": "By the People, for the People: People’s Art Debates and the Rise of the Proletariat, 1916–1918", "similarity": 1.0}, {"person": "Sarah Sherweedy", "year": 2022, "pres_title": "Narration as a Performance: Between Dazai Osamu's Multilayered Narrator and Rakugo", "proc_title": "Narration as a Performance: Between Dazai Osamu’s Multilayered Narrator and Rakugo", "similarity": 1.0}, {"person": "John Bundschuh", "year": 2022, "pres_title": "The Loss of Narrative Flow: Codification of Tense in Japanese Translations of Sinitic and Sanskrit Renditions of a Buddhist Story", "proc_title": "The Loss of Narrative Flow: Codification of Tense in Japanese Translations of Sinitic and Sanskrit Renditions of a Buddhist Story", "similarity": 1.0}, {"person": "Seth Jacobowitz", "year": 2005, "pres_title": "Photography and Automatic Writing as Idée Fixe in Kōyō’s The Gold Demon", "proc_title": "Photography and automatic writing as idée fixe in Ozaki Kōyō’s The Gold Demon", "similarity": 0.889}, {"person": "Pana D. Barova-Ozcan", "year": 2015, "pres_title": "Contrasting Color Images in the Sarashina Nikki and their Function in the Narrative Discourse", "proc_title": "Color images in the Sarashina nikki and their function in the narrative discourse", "similarity": 0.889}, {"person": "Haruo Shirane", "year": 1999, "pres_title": "Construction of Poetic Essence (Hon'i) as Japanese Literary Canon", "proc_title": "Poetic essence (hon’i) as Japanese literary canon", "similarity": 0.857}, {"person": "Ivo Smits", "year": 2003, "pres_title": "Pictured Landscapes: Heian Gardens and Poetic Imagination", "proc_title": "Pictured landscapes: Kawara no in, Heian gardens and poetic imagination", "similarity": 0.857}, {"person": "Phyllis Lyons", "year": 2008, "pres_title": "Tanizaki Fights the Watakushi Shōsetsu: Kokubyaku as Parody", "proc_title": "Tanizaki fights the Watakushi shōsetsu: Kokubyaku as bundan parody", "similarity": 0.857}], "stats": {"total_with_titles": 222, "avg_similarity": 0.726, "high_match": 172, "low_match": 15}}, "themes": {"1999": "Issues of Canonicity and Canon Formation in Japanese Literary Studies", "2000": "Acts of Writing: Language and Identities in Japanese Literature", "2001": "Japan From Somewhere Else", "2002": "Japanese Poeticity and Narrativity Revisited", "2003": "Hermeneutical Strategies: Methods of Interpretation in the Study of Japanese Literature", "2004": "Landscapes Imagined and Remembered", "2005": "Reading Material: the Production of Narratives, Genres", "2006": "Travel in Japanese Representational Culture: its Past, Present, and Future", "2007": "Literature and Literary Theory", "2008": "Parody", "2009": "Rethinking Gender in the Postgender Era", "2010": "Technology and Japanese Literary, Film and Performance Studies", "2011": "The Poetics of Aging: Confronting, Resisting and Transcending Mortality in the Japanese Narrative Arts", "2012": "Rhetoric and Region: The Local Determinants of Literary Expression", "2013": "Performance and Japanese Literature", "2014": "Religion and Spirituality in Japanese Literature", "2015": "The Senses and Sensory Experience in Japanese Literature and Culture", "2016": "word/image/japan", "2017": "Violence, Justice, & Honor in Japan’s Literary Cultures", "2018": "Past, Present, and Future: Evidence, Transmission, and Inheritance in Japanese Literature and Media", "2019": "Inclusivity and Exclusivity in Japanese Literature", "2020": "Turning Points", "2022": "In step/out of step: performance/culture/location/dislocation", "2023": "Genres and Genre Theories in Japanese Literature", "2024": "Translating, Transfiguring, Transforming Japan", "2025": "Media Temporalities"}};
+
+// ============================================================
+// THEME & TABS
+// ============================================================
+let darkMode = true;
+function toggleTheme() {
+  darkMode = !darkMode;
+  document.body.classList.toggle('light-mode', !darkMode);
+  renderAll();
+}
+
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('panel-' + t.dataset.tab).classList.add('active');
+  });
+});
+
+const tooltip = document.getElementById('tooltip');
+function showTip(evt, html) {
+  tooltip.innerHTML = html;
+  tooltip.style.display = 'block';
+  const rect = document.body.getBoundingClientRect();
+  let x = evt.pageX + 12, y = evt.pageY - 10;
+  if (x + 320 > window.innerWidth) x = evt.pageX - 330;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
+}
+function hideTip() { tooltip.style.display = 'none'; }
+
+// ============================================================
+// COLORS
+// ============================================================
+const C_MATCHED = '#22c55e';
+const C_UNMATCHED = '#94a3b8';
+const C_NOVOLUME = '#475569';
+const C_RATE = '#e94560';
+const C_OVER = '#22c55e';
+const C_UNDER = '#e94560';
+const C_HIGH = '#22c55e';
+const C_MED = '#f59e0b';
+const C_LOW = '#e94560';
+
+function simColor(s) {
+  if (s >= 0.5) return C_HIGH;
+  if (s >= 0.2) return C_MED;
+  return C_LOW;
+}
+
+// ============================================================
+// TAB 1: OVERVIEW
+// ============================================================
+function renderOverview() {
+  const O = DATA.overall;
+  const Y = DATA.yearly;
+
+  // Stats cards
+  const statsHtml = `
+    <div class="stat-card green"><div class="value">${O.valid_rate > 0 ? (O.valid_rate * 100).toFixed(1) + '%' : 'N/A'}</div><div class="label">Conversion Rate (years with volume)</div></div>
+    <div class="stat-card"><div class="value">${O.valid_matched}</div><div class="label">Presentations Published</div></div>
+    <div class="stat-card"><div class="value">${O.valid_presentations - O.valid_matched}</div><div class="label">Not Published</div></div>
+    <div class="stat-card"><div class="value">${O.unique_published}</div><div class="label">Unique People Published</div></div>
+    <div class="stat-card highlight"><div class="value">${O.unique_never_published}</div><div class="label">Presenters Never Published</div></div>
+    <div class="stat-card"><div class="value">${O.years_with_volume}</div><div class="label">Years with PAJLS Volume</div></div>
+  `;
+  document.getElementById('overviewStats').innerHTML = statsHtml;
+
+  // Legend
+  document.getElementById('yearLegend').innerHTML = `
+    <div class="legend-item"><div class="legend-swatch" style="background:${C_MATCHED}"></div>Published in Proceedings</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:${C_UNMATCHED}"></div>Presented Only</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:${C_NOVOLUME};border:1px dashed var(--fg2)"></div>No PAJLS Volume</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:${C_RATE};border-radius:50%"></div>Conversion Rate %</div>
+  `;
+
+  // Chart
+  const margin = {top: 30, right: 60, bottom: 60, left: 50};
+  const width = Math.min(960, window.innerWidth - 100);
+  const height = 380;
+  const inner = {w: width - margin.left - margin.right, h: height - margin.top - margin.bottom};
+
+  const svg = d3.select('#yearChart').attr('width', width).attr('height', height);
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  const x = d3.scaleBand().domain(Y.map(d => d.year)).range([0, inner.w]).padding(0.25);
+  const yMax = d3.max(Y, d => d.presented) * 1.1;
+  const y = d3.scaleLinear().domain([0, yMax]).range([inner.h, 0]);
+  const yRate = d3.scaleLinear().domain([0, 1]).range([inner.h, 0]);
+
+  // Grid
+  g.append('g').attr('class', 'grid')
+    .selectAll('line').data(y.ticks(5)).enter().append('line')
+    .attr('x1', 0).attr('x2', inner.w).attr('y1', d => y(d)).attr('y2', d => y(d));
+
+  // Bars
+  Y.forEach(d => {
+    const bx = x(d.year);
+    const bw = x.bandwidth();
+    if (d.no_volume) {
+      // Dashed outline bar for years without volume
+      g.append('rect').attr('x', bx).attr('y', y(d.presented)).attr('width', bw)
+        .attr('height', inner.h - y(d.presented))
+        .attr('fill', C_NOVOLUME).attr('opacity', 0.4)
+        .attr('stroke', 'var(--fg2)').attr('stroke-dasharray', '3,3');
+    } else {
+      // Matched (bottom)
+      g.append('rect').attr('x', bx).attr('y', y(d.matched)).attr('width', bw)
+        .attr('height', inner.h - y(d.matched))
+        .attr('fill', C_MATCHED).attr('opacity', 0.85)
+        .attr('rx', 2);
+      // Unmatched (top)
+      if (d.unmatched > 0) {
+        g.append('rect').attr('x', bx).attr('y', y(d.presented)).attr('width', bw)
+          .attr('height', y(d.matched) - y(d.presented))
+          .attr('fill', C_UNMATCHED).attr('opacity', 0.6)
+          .attr('rx', 2);
+      }
+    }
+    // Invisible hover target
+    g.append('rect').attr('x', bx).attr('y', 0).attr('width', bw).attr('height', inner.h)
+      .attr('fill', 'transparent').attr('cursor', 'pointer')
+      .on('mousemove', evt => {
+        const theme = DATA.themes[d.year] || '';
+        showTip(evt, `
+          <div class="tt-label">${d.year}${theme ? ': ' + theme : ''}</div>
+          <div class="tt-row"><span>Presented:</span><strong>${d.presented}</strong></div>
+          ${d.no_volume
+            ? '<div style="color:var(--fg2)">No PAJLS volume available</div>'
+            : `<div class="tt-row"><span>Published:</span><strong style="color:${C_MATCHED}">${d.matched}</strong></div>
+               <div class="tt-row"><span>Not published:</span><strong>${d.unmatched}</strong></div>
+               <div class="tt-row"><span>Conversion:</span><strong style="color:${C_RATE}">${(d.rate*100).toFixed(1)}%</strong></div>
+               <div style="color:var(--fg2);font-size:11px;margin-top:4px">${d.volume}</div>`
+          }
+        `);
+      })
+      .on('mouseleave', hideTip);
+  });
+
+  // Rate line (only for years with volume)
+  const validY = Y.filter(d => !d.no_volume);
+  const line = d3.line().x(d => x(d.year) + x.bandwidth()/2).y(d => yRate(d.rate)).curve(d3.curveMonotoneX);
+  g.append('path').datum(validY).attr('d', line)
+    .attr('fill', 'none').attr('stroke', C_RATE).attr('stroke-width', 2.5);
+  validY.forEach(d => {
+    g.append('circle').attr('cx', x(d.year) + x.bandwidth()/2).attr('cy', yRate(d.rate))
+      .attr('r', 4).attr('fill', C_RATE);
+  });
+
+  // Axes
+  const xAxis = g.append('g').attr('class', 'axis').attr('transform', `translate(0,${inner.h})`)
+    .call(d3.axisBottom(x).tickValues(Y.map(d=>d.year)));
+  xAxis.selectAll('text').attr('transform', 'rotate(-45)').attr('text-anchor', 'end').attr('dx', '-0.5em');
+
+  g.append('g').attr('class', 'axis').call(d3.axisLeft(y).ticks(5));
+
+  // Right axis for rate
+  g.append('g').attr('class', 'axis').attr('transform', `translate(${inner.w},0)`)
+    .call(d3.axisRight(yRate).ticks(5).tickFormat(d => (d*100)+'%'));
+
+  // Labels
+  g.append('text').attr('x', -10).attr('y', -10).attr('font-size', 12)
+    .attr('fill', 'var(--fg2)').text('Presentations');
+  g.append('text').attr('x', inner.w + 10).attr('y', -10).attr('font-size', 12)
+    .attr('fill', C_RATE).text('Rate %');
+}
+
+// ============================================================
+// TAB 2: TOPICS
+// ============================================================
+let currentCat = null;
+
+function renderTopics() {
+  const T = DATA.topics;
+  const cats = Object.keys(T).sort();
+  if (!cats.length) return;
+  if (!currentCat || !T[currentCat]) currentCat = cats[0];
+
+  // Category tabs
+  const catHtml = cats.map(c => {
+    const labels = {
+      'literary_figure': 'Literary Figures', 'period': 'Periods',
+      'genre': 'Genres', 'theme': 'Themes'
+    };
+    const label = labels[c] || c;
+    return `<div class="cat-tab ${c===currentCat?'active':''}" onclick="currentCat='${c}';renderTopics()">${label}</div>`;
+  }).join('');
+  document.getElementById('catTabs').innerHTML = catHtml;
+
+  // Overall conversion rate for reference line
+  const O = DATA.overall;
+  const avgRate = O.valid_rate;
+
+  // Stats for current category
+  const items = T[currentCat];
+  const totalPres = items.reduce((s,d) => s + d.presented, 0);
+  const totalMatch = items.reduce((s,d) => s + d.matched, 0);
+  const highConv = items.filter(d => d.presented >= 5 && d.rate > avgRate);
+  const lowConv = items.filter(d => d.presented >= 5 && d.rate < avgRate);
+
+  document.getElementById('topicStats').innerHTML = `
+    <div class="stat-card"><div class="value">${items.length}</div><div class="label">Topics in Category</div></div>
+    <div class="stat-card green"><div class="value">${highConv.length}</div><div class="label">Above Average Conversion</div></div>
+    <div class="stat-card highlight"><div class="value">${lowConv.length}</div><div class="label">Below Average Conversion</div></div>
+    <div class="stat-card"><div class="value">${totalPres}</div><div class="label">Tagged Presentations</div></div>
+  `;
+
+  // Legend
+  document.getElementById('topicLegend').innerHTML = `
+    <div class="legend-item"><div class="legend-swatch" style="background:${C_MATCHED}"></div>Published</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:${C_UNMATCHED}"></div>Not Published</div>
+    <div class="legend-item" style="color:${C_RATE}">--- Avg conversion rate (${(avgRate*100).toFixed(1)}%)</div>
+  `;
+
+  // Conversion rate bar chart
+  const filtered = items.filter(d => d.presented >= 3).slice(0, 25);
+  const margin = {top: 20, right: 100, bottom: 10, left: 180};
+  const barH = 26;
+  const height = margin.top + margin.bottom + filtered.length * barH;
+  const width = Math.min(900, window.innerWidth - 100);
+  const inner = {w: width - margin.left - margin.right, h: filtered.length * barH};
+
+  const svg = d3.select('#topicChart').attr('width', width).attr('height', height);
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  const y = d3.scaleBand().domain(filtered.map(d=>d.term)).range([0, inner.h]).padding(0.2);
+  const xMax = d3.max(filtered, d => d.presented) * 1.15;
+  const x = d3.scaleLinear().domain([0, xMax]).range([0, inner.w]);
+
+  // Bars
+  filtered.forEach(d => {
+    const by = y(d.term);
+    const bh = y.bandwidth();
+    // Full bar (presented)
+    g.append('rect').attr('x', 0).attr('y', by).attr('width', x(d.presented))
+      .attr('height', bh).attr('fill', C_UNMATCHED).attr('opacity', 0.4).attr('rx', 3);
+    // Matched portion
+    g.append('rect').attr('x', 0).attr('y', by).attr('width', x(d.matched))
+      .attr('height', bh).attr('fill', C_MATCHED).attr('opacity', 0.8).attr('rx', 3);
+    // Rate label
+    g.append('text').attr('x', x(d.presented) + 6).attr('y', by + bh/2 + 4)
+      .attr('font-size', 11).attr('fill', d.rate >= avgRate ? C_MATCHED : C_RATE)
+      .attr('font-weight', d.rate >= avgRate ? 600 : 400)
+      .text(`${(d.rate*100).toFixed(0)}% (${d.matched}/${d.presented})`);
+    // Hover
+    g.append('rect').attr('x', -margin.left).attr('y', by).attr('width', width).attr('height', bh)
+      .attr('fill', 'transparent').attr('cursor', 'pointer')
+      .on('mousemove', evt => showTip(evt, `
+        <div class="tt-label">${d.term}</div>
+        <div class="tt-row"><span>Presented:</span><strong>${d.presented}</strong></div>
+        <div class="tt-row"><span>Published:</span><strong style="color:${C_MATCHED}">${d.matched}</strong></div>
+        <div class="tt-row"><span>Conversion:</span><strong style="color:${d.rate >= avgRate ? C_MATCHED : C_RATE}">${(d.rate*100).toFixed(1)}%</strong></div>
+      `))
+      .on('mouseleave', hideTip);
+  });
+
+  // Average rate line
+  // (Not applicable on count axis — skip)
+
+  // Y axis labels
+  filtered.forEach(d => {
+    g.append('text').attr('x', -8).attr('y', y(d.term) + y.bandwidth()/2 + 4)
+      .attr('text-anchor', 'end').attr('font-size', 12).text(d.term);
+  });
+
+  // ---- Gap Chart ----
+  renderGapChart(items, avgRate);
+}
+
+function renderGapChart(items, avgRate) {
+  const filtered = items.filter(d => d.presented >= 3);
+  if (!filtered.length) return;
+
+  // Compute share difference: (share in published) - (share in all presented)
+  const totalPres = filtered.reduce((s,d) => s + d.presented, 0);
+  const totalMatch = filtered.reduce((s,d) => s + d.matched, 0);
+
+  const gaps = filtered.map(d => {
+    const presShare = d.presented / totalPres;
+    const matchShare = totalMatch > 0 ? d.matched / totalMatch : 0;
+    return { term: d.term, gap: matchShare - presShare, presented: d.presented, matched: d.matched,
+              presShare, matchShare };
+  }).filter(d => Math.abs(d.gap) > 0.001)
+    .sort((a,b) => b.gap - a.gap);
+
+  if (!gaps.length) {
+    d3.select('#gapChart').selectAll('*').remove();
+    return;
+  }
+
+  const margin = {top: 20, right: 80, bottom: 10, left: 180};
+  const barH = 24;
+  const height = margin.top + margin.bottom + gaps.length * barH;
+  const width = Math.min(900, window.innerWidth - 100);
+  const inner = {w: width - margin.left - margin.right, h: gaps.length * barH};
+
+  const svg = d3.select('#gapChart').attr('width', width).attr('height', height);
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  const xExt = d3.max(gaps, d => Math.abs(d.gap));
+  const x = d3.scaleLinear().domain([-xExt * 1.2, xExt * 1.2]).range([0, inner.w]);
+  const y = d3.scaleBand().domain(gaps.map(d=>d.term)).range([0, inner.h]).padding(0.25);
+
+  // Center line
+  g.append('line').attr('x1', x(0)).attr('x2', x(0)).attr('y1', 0).attr('y2', inner.h)
+    .attr('stroke', 'var(--fg2)').attr('stroke-dasharray', '3,3');
+
+  gaps.forEach(d => {
+    const by = y(d.term);
+    const bh = y.bandwidth();
+    const bx = d.gap >= 0 ? x(0) : x(d.gap);
+    const bw = Math.abs(x(d.gap) - x(0));
+    g.append('rect').attr('x', bx).attr('y', by).attr('width', bw).attr('height', bh)
+      .attr('fill', d.gap >= 0 ? C_OVER : C_UNDER).attr('opacity', 0.75).attr('rx', 3);
+    // Label
+    const lx = d.gap >= 0 ? x(d.gap) + 4 : x(d.gap) - 4;
+    const anchor = d.gap >= 0 ? 'start' : 'end';
+    g.append('text').attr('x', lx).attr('y', by + bh/2 + 4)
+      .attr('text-anchor', anchor).attr('font-size', 10).attr('fill', 'var(--fg2)')
+      .text(`${(d.gap*100).toFixed(1)}pp`);
+    // Y label
+    g.append('text').attr('x', -8).attr('y', by + bh/2 + 4)
+      .attr('text-anchor', 'end').attr('font-size', 12).text(d.term);
+  });
+
+  // Axis labels
+  g.append('text').attr('x', x(-xExt*0.6)).attr('y', -6).attr('text-anchor', 'middle')
+    .attr('font-size', 10).attr('fill', C_UNDER).text('← Under-represented in proceedings');
+  g.append('text').attr('x', x(xExt*0.6)).attr('y', -6).attr('text-anchor', 'middle')
+    .attr('font-size', 10).attr('fill', C_OVER).text('Over-represented in proceedings →');
+}
+
+// ============================================================
+// TAB 3: SIMILARITY
+// ============================================================
+function renderSimilarity() {
+  const S = DATA.similarity;
+  const stats = S.stats;
+
+  document.getElementById('simStats').innerHTML = `
+    <div class="stat-card"><div class="value">${stats.total_with_titles}</div><div class="label">Matched Pairs with Titles</div></div>
+    <div class="stat-card"><div class="value">${(stats.avg_similarity*100).toFixed(0)}%</div><div class="label">Average Title Similarity</div></div>
+    <div class="stat-card green"><div class="value">${stats.high_match}</div><div class="label">High Match (≥50%)</div></div>
+    <div class="stat-card highlight"><div class="value">${stats.low_match}</div><div class="label">Low Match (<20%)</div></div>
+  `;
+
+  // Histogram
+  const hist = S.histogram;
+  const margin = {top: 20, right: 30, bottom: 40, left: 50};
+  const width = Math.min(700, window.innerWidth - 100);
+  const height = 260;
+  const inner = {w: width - margin.left - margin.right, h: height - margin.top - margin.bottom};
+
+  const svg = d3.select('#simChart').attr('width', width).attr('height', height);
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  const x = d3.scaleBand().domain(hist.map(d=>d.bin)).range([0, inner.w]).padding(0.15);
+  const yMax = d3.max(hist, d => d.count) * 1.15;
+  const y = d3.scaleLinear().domain([0, yMax]).range([inner.h, 0]);
+
+  hist.forEach((d, i) => {
+    const midVal = i * 0.1 + 0.05;
+    g.append('rect').attr('x', x(d.bin)).attr('y', y(d.count))
+      .attr('width', x.bandwidth()).attr('height', inner.h - y(d.count))
+      .attr('fill', simColor(midVal)).attr('opacity', 0.8).attr('rx', 3);
+    if (d.count > 0) {
+      g.append('text').attr('x', x(d.bin) + x.bandwidth()/2).attr('y', y(d.count) - 5)
+        .attr('text-anchor', 'middle').attr('font-size', 11).attr('font-weight', 600)
+        .attr('fill', simColor(midVal)).text(d.count);
+    }
+  });
+
+  g.append('g').attr('class', 'axis').attr('transform', `translate(0,${inner.h})`)
+    .call(d3.axisBottom(x));
+  g.append('g').attr('class', 'axis').call(d3.axisLeft(y).ticks(5));
+  g.append('text').attr('x', inner.w/2).attr('y', inner.h + 35).attr('text-anchor', 'middle')
+    .attr('font-size', 12).attr('fill', 'var(--fg2)').text('Jaccard Word Similarity');
+
+  // Example table
+  const table = document.getElementById('exampleTable');
+  let html = '<thead><tr><th>Year</th><th>Person</th><th>Presentation Title</th><th>Proceedings Title</th><th>Similarity</th></tr></thead><tbody>';
+  S.examples.forEach(e => {
+    const c = simColor(e.similarity);
+    html += `<tr>
+      <td>${e.year}</td>
+      <td style="white-space:nowrap">${e.person}</td>
+      <td>${e.pres_title}</td>
+      <td>${e.proc_title}</td>
+      <td style="white-space:nowrap"><span class="sim-bar" style="width:${Math.max(4,e.similarity*60)}px;background:${c}"></span>${(e.similarity*100).toFixed(0)}%</td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+// ============================================================
+// RENDER ALL
+// ============================================================
+function renderAll() {
+  renderOverview();
+  renderTopics();
+  renderSimilarity();
+}
+
+// PNG export
+function exportPNG() {
+  const activePanel = document.querySelector('.panel.active');
+  const svgs = activePanel.querySelectorAll('svg');
+  if (!svgs.length) return;
+  const svg = svgs[0];
+  const serializer = new XMLSerializer();
+  const svgStr = serializer.serializeToString(svg);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = svg.getAttribute('width') * 2;
+  canvas.height = svg.getAttribute('height') * 2;
+  ctx.scale(2, 2);
+  const img = new Image();
+  img.onload = () => {
+    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--bg');
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    const a = document.createElement('a');
+    a.download = 'ajls_conversion.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
+}
+
+renderAll();
+</script>
+</body>
+</html>

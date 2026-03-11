@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Which Universities Show Up — Institutional Presence at AJLS</title>
+<style>
+:root {
+    --bg: #ffffff; --bg2: #f5f5f5; --bg3: #e8e8e8;
+    --fg: #1a1a2e; --fg2: #555; --fg3: #888;
+    --accent: #2563eb; --accent2: #dc2626; --accent-light: #dbeafe;
+    --grid: rgba(0,0,0,0.08); --border: #ddd;
+}
+.dark-mode {
+    --bg: #0a0a1a; --bg2: #141428; --bg3: #1e1e3a;
+    --fg: #e0e0e0; --fg2: #aaa; --fg3: #777;
+    --accent: #4a9eff; --accent2: #ff6b6b; --accent-light: #1a2a4a;
+    --grid: rgba(255,255,255,0.05); --border: #333;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--fg); overflow-y: auto;
+}
+
+/* ── Toolbar ── */
+#toolbar {
+    display:flex; flex-wrap:wrap; align-items:center; gap:8px;
+    padding:8px 16px; background:var(--bg2); border-bottom:1px solid var(--border);
+    position:sticky; top:0; z-index:100;
+}
+#toolbar h1 {
+    font-size:16px; font-weight:700; margin-right:auto; white-space:nowrap;
+}
+.pill-group {
+    display:flex; gap:0; border:1px solid var(--border); border-radius:6px; overflow:hidden;
+}
+.pill {
+    padding:5px 14px; font-size:13px; cursor:pointer;
+    background:var(--bg); color:var(--fg2); border:none; border-right:1px solid var(--border);
+    transition:background 0.15s, color 0.15s;
+}
+.pill:last-child { border-right:none; }
+.pill.active { background:var(--accent); color:#fff; }
+.pill:hover:not(.active) { background:var(--bg3); }
+.tb-btn {
+    font-size:13px; padding:5px 12px; border-radius:5px;
+    border:1px solid var(--border); background:var(--bg); color:var(--fg); cursor:pointer;
+}
+.tb-btn:hover { background:var(--bg3); }
+
+/* ── Layout ── */
+#main {
+    display:flex; min-height:calc(100vh - 48px);
+}
+#viz-area {
+    flex:1; min-width:0; padding:16px; overflow-x:auto;
+}
+#sidebar {
+    width:280px; min-width:280px; padding:16px; border-left:1px solid var(--border);
+    background:var(--bg2); overflow-y:auto; font-size:12px;
+}
+.sidebar-section {
+    margin-bottom:18px;
+}
+.sidebar-section h3 {
+    font-size:13px; font-weight:700; margin-bottom:8px; color:var(--fg);
+    border-bottom:1px solid var(--border); padding-bottom:4px;
+}
+.sidebar-section .era-label {
+    font-size:11px; color:var(--fg2); margin-top:6px; margin-bottom:2px;
+}
+
+/* ── Tooltip ── */
+#tooltip {
+    display:none; position:fixed; z-index:200; pointer-events:none;
+    background:var(--bg2); border:1px solid var(--border); border-radius:6px;
+    padding:8px 12px; font-size:12px; max-width:320px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.15); line-height:1.4;
+}
+#tooltip b { color:var(--accent); }
+
+/* ── Bar chart race controls ── */
+.race-controls {
+    display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;
+}
+.race-controls button {
+    font-size:13px; padding:4px 12px; border-radius:4px;
+    border:1px solid var(--border); background:var(--bg2); color:var(--fg); cursor:pointer;
+}
+.race-controls button:hover { background:var(--bg3); }
+.race-controls input[type=range] { flex:1; min-width:120px; max-width:300px; }
+.race-controls .year-display {
+    font-size:22px; font-weight:700; color:var(--accent); min-width:50px; text-align:center;
+}
+.race-controls select {
+    font-size:12px; padding:3px 6px; border:1px solid var(--border);
+    border-radius:4px; background:var(--bg); color:var(--fg);
+}
+
+/* ── Heatmap controls ── */
+.btn-group {
+    display:flex; border:1px solid var(--border); border-radius:4px; overflow:hidden;
+}
+.btn-group button {
+    padding:4px 10px; border:none; border-right:1px solid var(--border);
+    background:var(--bg); color:var(--fg2); cursor:pointer; font-size:12px;
+}
+.btn-group button:last-child { border-right:none; }
+.btn-group button:hover { background:var(--bg3); }
+.btn-group button.active { background:var(--accent); color:#fff; }
+
+/* ── Responsive ── */
+@media (max-width:900px) {
+    #main { flex-direction:column; }
+    #sidebar { width:100%; min-width:0; border-left:none; border-top:1px solid var(--border); }
+}
+</style>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
+</head>
+<body>
+<div id="toolbar">
+    <h1>Which Universities Show Up: Institutional Presence at AJLS</h1>
+    <div class="pill-group">
+        <button class="pill active" data-view="heatmap">Heatmap</button>
+        <button class="pill" data-view="race">Bar Chart Race</button>
+        <button class="pill" data-view="bump">Bump Chart</button>
+    </div>
+    <button class="tb-btn info-btn" onclick="toggleInfoModal()" title="About this visualization">&#x2139;</button>
+    <button class="tb-btn" id="themeBtn">Dark</button>
+    <button class="tb-btn" id="pngBtn">PNG</button>
+    <button class="tb-btn" id="csvBtn">CSV</button>
+</div>
+<div id="main">
+    <div id="viz-area">
+        <div class="heatmap-controls" id="heatmapControls" style="padding:8px 16px;border-bottom:1px solid var(--border);display:none;">
+            <div class="btn-group" id="heatmap-mode-toggle">
+                <button class="active" data-mode="count">Count</button>
+                <button data-mode="pct">%</button>
+            </div>
+        </div>
+        <svg id="chart"></svg>
+    </div>
+    <div id="sidebar"></div>
+</div>
+<div id="tooltip"></div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+// ── Data ──
+const DATA = {"years": [1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2022, 2023, 2024, 2025], "yearTotals": {"1999": 32, "2000": 25, "2001": 27, "2002": 31, "2003": 54, "2004": 27, "2005": 28, "2006": 43, "2007": 47, "2008": 34, "2009": 39, "2010": 57, "2011": 25, "2012": 57, "2013": 38, "2014": 23, "2015": 47, "2016": 54, "2017": 32, "2018": 47, "2019": 52, "2020": 68, "2022": 35, "2023": 62, "2024": 65, "2025": 66}, "heatmap": [{"institution": "University of Chicago", "total": 36, "geo": "US", "years": {"1999": {"count": 1, "presenters": ["Melissa Wender"]}, "2002": {"count": 1, "presenters": ["Annika Culver"]}, "2003": {"count": 1, "presenters": ["Gregory Golley"]}, "2007": {"count": 1, "presenters": ["Michael Bourdaghs"]}, "2010": {"count": 3, "presenters": ["Reginald Jackson", "Shunsuke Nozawa"]}, "2012": {"count": 3, "presenters": ["Hoyt Long", "Michael Bourdaghs", "Tomoko Seto"]}, "2015": {"count": 6, "presenters": ["Alex Murphy", "Joshua Solomon", "Junko Yamazaki", "Kyle Peters", "Michael Bourdaghs", "Nobuko Toyosawa"]}, "2016": {"count": 1, "presenters": ["Philomena Mazza-Hilway"]}, "2017": {"count": 1, "presenters": ["Norma Field"]}, "2018": {"count": 2, "presenters": ["Hoyt Long", "Marjorie Burge"]}, "2019": {"count": 1, "presenters": ["Brian White"]}, "2020": {"count": 2, "presenters": ["Alex Murphy", "Jue Hou"]}, "2023": {"count": 2, "presenters": ["Anthony Stott", "Nick Ogonek"]}, "2024": {"count": 1, "presenters": ["Anthony Stott"]}, "2025": {"count": 10, "presenters": ["Hang Wu", "Hoyt Long", "Melissa Van Wyk", "Michael Bourdaghs", "Norma Field", "Patrick Gwillim-Thomas", "Serena Forest", "Simon Lenoe", "Thomas Lamarre", "Ziyi Lin"]}}}, {"institution": "University of California, Los Angeles", "total": 31, "geo": "US", "years": {"2001": {"count": 1, "presenters": ["Michael Bourdaghs"]}, "2003": {"count": 3, "presenters": ["Linda Flores", "Michael Bourdaghs", "Miriam Silverberg"]}, "2004": {"count": 1, "presenters": ["Theresa Orth"]}, "2006": {"count": 2, "presenters": ["Michael Bourdaghs", "Michael Marra"]}, "2007": {"count": 1, "presenters": ["Michael Marra"]}, "2008": {"count": 1, "presenters": ["Michael Emmerich"]}, "2010": {"count": 1, "presenters": ["Franz Prichard"]}, "2012": {"count": 1, "presenters": ["Seiji Lippit"]}, "2013": {"count": 2, "presenters": ["Anne McKnight", "Torquil Duthie"]}, "2015": {"count": 1, "presenters": ["Justin Wilson"]}, "2016": {"count": 1, "presenters": ["Wakako Suzuki"]}, "2019": {"count": 1, "presenters": ["Danica Truscott"]}, "2020": {"count": 8, "presenters": ["Chiara Pavone", "Julia Clark", "Kim McNelly", "Michael Emmerich", "Satoko Shimazaki", "Seiji Lippit", "Torquil Duthie", "Victoria Davis"]}, "2023": {"count": 2, "presenters": ["Torquil Duthie", "Yuki Nagamine"]}, "2024": {"count": 3, "presenters": ["David Yang", "Michael Emmerich", "Paula Curtis"]}, "2025": {"count": 2, "presenters": ["David Yang", "Jiayu Gui"]}}}, {"institution": "Columbia University", "total": 28, "geo": "US", "years": {"1999": {"count": 2, "presenters": ["Haruo Shirane", "Peter Flueckiger"]}, "2000": {"count": 1, "presenters": ["Tomi Suzuki"]}, "2002": {"count": 1, "presenters": ["Mikiko Iwana"]}, "2003": {"count": 3, "presenters": ["Akiko Takeuchi", "Gian Piero Persiani", "Haruo Shirane"]}, "2004": {"count": 3, "presenters": ["Akiko Takeuchi", "Gian Piero Persiani", "Haruo Shirane"]}, "2007": {"count": 1, "presenters": ["Gian Piero Persiani"]}, "2010": {"count": 5, "presenters": ["Adam Bronson", "David Lurie", "Hitomi Yoshio", "Jun Mizukawa", "Nate Shockey"]}, "2013": {"count": 3, "presenters": ["Ariel Stillerman", "Hikari Hori", "Pau Pitarch Fernandez"]}, "2016": {"count": 1, "presenters": ["Xin I Zhao"]}, "2020": {"count": 2, "presenters": ["David Lurie", "Yuki Ishida"]}, "2022": {"count": 1, "presenters": ["Yuki Ishida"]}, "2023": {"count": 2, "presenters": ["Daniel Penner", "Hana Lethen"]}, "2024": {"count": 2, "presenters": ["Hana Lethen", "Melissa Li"]}, "2025": {"count": 1, "presenters": ["Hana Lethen"]}}}, {"institution": "Harvard University", "total": 27, "geo": "US", "years": {"2002": {"count": 1, "presenters": ["Adam L. Kern"]}, "2003": {"count": 1, "presenters": ["Wiebke Denecke"]}, "2005": {"count": 2, "presenters": ["Karen Thornber", "Matthew Fraleigh"]}, "2006": {"count": 1, "presenters": ["Karen Thornber"]}, "2007": {"count": 1, "presenters": ["Karen Thornber"]}, "2009": {"count": 1, "presenters": ["Karen Thornber"]}, "2010": {"count": 2, "presenters": ["Hansun Hsiung", "Karen Thornber"]}, "2013": {"count": 3, "presenters": ["Andrew Campana", "Ethan Bushelle", "Wei Yu Wayne Tan"]}, "2014": {"count": 1, "presenters": ["Peter Bernard"]}, "2015": {"count": 4, "presenters": ["Daniel F.O. Joseph", "Edwin Cranston", "Sijia Gao", "Steven Hanna"]}, "2016": {"count": 2, "presenters": ["Joelle Tapas", "Kim Icreverzi"]}, "2022": {"count": 1, "presenters": ["Jiayu Gui"]}, "2023": {"count": 4, "presenters": ["Danica Truscott", "David Atherton", "Jiayu Gui", "Mei Fujie"]}, "2024": {"count": 1, "presenters": ["Emily Wan"]}, "2025": {"count": 2, "presenters": ["David Atherton", "Wendy Wan-ting Wang"]}}}, {"institution": "Princeton University", "total": 24, "geo": "US", "years": {"1999": {"count": 1, "presenters": ["Charo D’Etcheverry"]}, "2003": {"count": 3, "presenters": ["H. Richard Okada", "Jason Webb", "Jonathan Abel"]}, "2004": {"count": 1, "presenters": ["Atsuko Ueda"]}, "2005": {"count": 2, "presenters": ["Dylan McGee", "Jonathan Abel"]}, "2006": {"count": 2, "presenters": ["Atsuko Ueda", "Richard H. Okada"]}, "2007": {"count": 2, "presenters": ["Patrick Caddeau", "Young-ah Chung"]}, "2008": {"count": 1, "presenters": ["Young-ah Chung"]}, "2011": {"count": 1, "presenters": ["William Bridges"]}, "2013": {"count": 1, "presenters": ["Steven Chung"]}, "2015": {"count": 1, "presenters": ["Nicholas Risteen"]}, "2016": {"count": 1, "presenters": ["Brian Steininger"]}, "2020": {"count": 3, "presenters": ["Franz Prichard", "Junnan Chen", "Kimberly Hassel"]}, "2023": {"count": 3, "presenters": ["Junko Yamazaki", "Lauren Gatewood"]}, "2024": {"count": 1, "presenters": ["Lauren Gatewood"]}, "2025": {"count": 1, "presenters": ["Antonin Ferré"]}}}, {"institution": "University of British Columbia", "total": 22, "geo": "Other", "years": {"1999": {"count": 1, "presenters": ["Joshua Mostow"]}, "2003": {"count": 1, "presenters": ["Kazumi Nagaike"]}, "2005": {"count": 2, "presenters": ["Joshua Mostow", "Sharalyn Orbaugh"]}, "2006": {"count": 2, "presenters": ["Christina Laffin", "Monika Dix"]}, "2009": {"count": 1, "presenters": ["Sharalyn Orbaugh"]}, "2010": {"count": 2, "presenters": ["Sharalyn Orbaugh", "Shiho Maeshima"]}, "2012": {"count": 2, "presenters": ["Nathen Clerici", "Sharalyn Orbaugh"]}, "2013": {"count": 1, "presenters": ["Stefania Burk"]}, "2014": {"count": 1, "presenters": ["Ben Whaley"]}, "2015": {"count": 2, "presenters": ["Christina Yi", "Otilia Clara Milutin"]}, "2017": {"count": 1, "presenters": ["Christina Yi"]}, "2018": {"count": 1, "presenters": ["Christina Laffin"]}, "2019": {"count": 2, "presenters": ["Christina Laffin", "Frank W. Clements"]}, "2020": {"count": 2, "presenters": ["Kurtis Hanlon", "Sharalyn Orbaugh"]}, "2025": {"count": 1, "presenters": ["Ai Yamamoto"]}}}, {"institution": "Pennsylvania State University", "total": 22, "geo": "US", "years": {"2000": {"count": 1, "presenters": ["Reiko Tachibana"]}, "2001": {"count": 1, "presenters": ["Reiko Tachibana"]}, "2002": {"count": 1, "presenters": ["Kumiko Saito"]}, "2005": {"count": 1, "presenters": ["Shu Kuge"]}, "2008": {"count": 1, "presenters": ["Bruce Suttmeier"]}, "2013": {"count": 1, "presenters": ["Charlotte Eubanks"]}, "2016": {"count": 3, "presenters": ["Camila Gutierrez", "Irenae Aigbedion", "Victoria Oana Lupascu"]}, "2017": {"count": 2, "presenters": ["Jonathan Abel", "Victoria Oana Lupascu"]}, "2018": {"count": 1, "presenters": ["Jonathan Abel"]}, "2020": {"count": 1, "presenters": ["Jonathan Abel"]}, "2022": {"count": 3, "presenters": ["Jessamyn Abel", "Jiaxin Yan", "Jonathan Abel"]}, "2024": {"count": 2, "presenters": ["Abby Ryder-Huth", "Yanqing Shen"]}, "2025": {"count": 4, "presenters": ["Abby Ryder-Huth", "Adam Decaulp", "Fawzi Rami Ghandour", "Noa Ortiz"]}}}, {"institution": "University of California, Berkeley", "total": 22, "geo": "US", "years": {"1999": {"count": 4, "presenters": ["Kim Kono", "Kirsten Cather", "Sayuri Oyama", "Stefania Burk"]}, "2003": {"count": 1, "presenters": ["Alan Tansman"]}, "2005": {"count": 1, "presenters": ["Deborah Shamoon"]}, "2010": {"count": 2, "presenters": ["Miryam Sas", "Regan Murphy"]}, "2011": {"count": 1, "presenters": ["Mack Horton"]}, "2013": {"count": 1, "presenters": ["Marianne Tarcov"]}, "2018": {"count": 2, "presenters": ["Bonnie McClure", "Starr East Asian Library Mark Blum"]}, "2019": {"count": 2, "presenters": ["Bonnie McClure", "Jonathan Zwicker"]}, "2020": {"count": 4, "presenters": ["Bonnie McClure", "Dan O’Neill", "Daryl Maude", "Kevin Michael Smith"]}, "2022": {"count": 1, "presenters": ["Dan O’Neill"]}, "2024": {"count": 3, "presenters": ["Andrew Way Leong", "Dan O’Neill", "Kevin Shadel"]}}}, {"institution": "Yale University", "total": 22, "geo": "US", "years": {"2000": {"count": 1, "presenters": ["Daniel O'Neill"]}, "2004": {"count": 2, "presenters": ["Christian Ratcliff", "John Whittier Treat"]}, "2005": {"count": 1, "presenters": ["Christian Ratcliff"]}, "2007": {"count": 1, "presenters": ["Christopher Hill"]}, "2009": {"count": 1, "presenters": ["Brian Steininger"]}, "2010": {"count": 1, "presenters": ["Naoki Yamamoto"]}, "2011": {"count": 1, "presenters": ["Ellen Tilton-Cantrell"]}, "2012": {"count": 3, "presenters": ["Joshua Frydman", "Naoki Yamamoto", "Rea Amit"]}, "2013": {"count": 2, "presenters": ["Ashton Lazarus", "Justine Wiesinger"]}, "2015": {"count": 1, "presenters": ["Aaron Gerow"]}, "2019": {"count": 1, "presenters": ["Nina Farizova"]}, "2020": {"count": 2, "presenters": ["Timothy Unverzagt Goddard", "Young Yi"]}, "2022": {"count": 3, "presenters": ["Eric Esteban", "Mary Gilstad", "Nina Farizova"]}, "2023": {"count": 1, "presenters": ["Mary Gilstad"]}, "2024": {"count": 1, "presenters": ["Lillian McIntyre"]}}}, {"institution": "The Ohio State University", "total": 20, "geo": "US", "years": {"1999": {"count": 1, "presenters": ["Jeffrey Angles"]}, "2000": {"count": 1, "presenters": ["Naomi Fukumori"]}, "2001": {"count": 2, "presenters": ["Kyoko Omori", "Naomi Fukumori"]}, "2002": {"count": 1, "presenters": ["Jeffrey Angles"]}, "2011": {"count": 1, "presenters": ["Evelyn Huang"]}, "2012": {"count": 4, "presenters": ["Artem Vorobiev", "Naomi Fukumori", "Richard Torrance", "Robert Del Greco"]}, "2013": {"count": 1, "presenters": ["Kerim Yasar"]}, "2014": {"count": 1, "presenters": ["Yongfei Yi"]}, "2016": {"count": 3, "presenters": ["Kerim Yasar", "Lindsey Stirek", "Yongfei Yi"]}, "2017": {"count": 2, "presenters": ["Naomi Fukumori", "Shelley Fenno Quinn"]}, "2018": {"count": 2, "presenters": ["Charles J. Quinn", "Frederick C. Bowman"]}, "2019": {"count": 1, "presenters": ["Lindsey Stirek"]}}}, {"institution": "University of Pennsylvania", "total": 18, "geo": "US", "years": {"2000": {"count": 1, "presenters": ["Linda Chance"]}, "2003": {"count": 5, "presenters": ["Bruce Baird", "Linda Chance", "Sari Kawana", "Sayumi Takahashi Harb", "William R. LaFleur"]}, "2008": {"count": 1, "presenters": ["Linda Chance"]}, "2012": {"count": 1, "presenters": ["Kathryn Hemmann"]}, "2018": {"count": 2, "presenters": ["Linda Chance", "Molly Des Jardin"]}, "2019": {"count": 1, "presenters": ["Patrick Carland"]}, "2020": {"count": 2, "presenters": ["Linda Chance", "Patrick Carland-Echavarria"]}, "2023": {"count": 2, "presenters": ["Linda Chance", "Patrick Carland-Echavarria"]}, "2024": {"count": 2, "presenters": ["Julia Alekseyeva", "Patrick Carland-Echavarria"]}, "2025": {"count": 1, "presenters": ["Marina Nascimento"]}}}, {"institution": "University of Massachusetts Amherst", "total": 16, "geo": "US", "years": {"1999": {"count": 1, "presenters": ["Stephen Forrest"]}, "2007": {"count": 2, "presenters": ["Stephen D. Miller", "Stephen Forrest"]}, "2010": {"count": 2, "presenters": ["Bruce Baird", "Stephen Forrest"]}, "2011": {"count": 1, "presenters": ["Amanda Seaman"]}, "2014": {"count": 2, "presenters": ["Stephen Miller"]}, "2015": {"count": 1, "presenters": ["Stephen Miller"]}, "2016": {"count": 2, "presenters": ["Sari Kawana", "Stephen Forrest"]}, "2017": {"count": 1, "presenters": ["Stephen Forrest"]}, "2019": {"count": 1, "presenters": ["Stephen Forrest"]}, "2020": {"count": 1, "presenters": ["Bruce Baird"]}, "2023": {"count": 1, "presenters": ["Stephen Forrest"]}, "2025": {"count": 1, "presenters": ["Stephen Forrest"]}}}, {"institution": "University of Texas at Austin", "total": 16, "geo": "US", "years": {"1999": {"count": 1, "presenters": ["Robert Khan"]}, "2005": {"count": 1, "presenters": ["Kirsten Cather"]}, "2010": {"count": 1, "presenters": ["Kirsten Cather"]}, "2011": {"count": 1, "presenters": ["Kirsten Cather"]}, "2017": {"count": 1, "presenters": ["Kirsten Cather"]}, "2020": {"count": 2, "presenters": ["Brian Hurley", "Shelby Oxenford"]}, "2022": {"count": 2, "presenters": ["Brian Hurley", "Shelby Oxenford"]}, "2023": {"count": 3, "presenters": ["Brian Hurley", "Michael Kuehl", "Shelby Oxenford"]}, "2024": {"count": 2, "presenters": ["Brian Hurley"]}, "2025": {"count": 2, "presenters": ["Brian Hurley", "Shelby Oxenford"]}}}, {"institution": "Boston University", "total": 16, "geo": "US", "years": {"2000": {"count": 1, "presenters": ["Sarah Frederick"]}, "2005": {"count": 1, "presenters": ["Sarah Frederick"]}, "2007": {"count": 1, "presenters": ["J. Keith Vincent"]}, "2008": {"count": 1, "presenters": ["J. Keith Vincent"]}, "2009": {"count": 1, "presenters": ["J. Keith Vincent"]}, "2010": {"count": 1, "presenters": ["Sarah Frederick"]}, "2012": {"count": 1, "presenters": ["Marie Abe"]}, "2016": {"count": 1, "presenters": ["J. Keith Vincent"]}, "2017": {"count": 1, "presenters": ["J. Keith Vincent"]}, "2018": {"count": 1, "presenters": ["Matthew Mewhinney"]}, "2020": {"count": 2, "presenters": ["J. Keith Vincent", "Sarah Frederick"]}, "2024": {"count": 4, "presenters": ["Anna Zielinska-Elliott", "J. Keith Vincent", "Sarah Frederick"]}}}, {"institution": "University of Toronto", "total": 16, "geo": "Other", "years": {"2000": {"count": 2, "presenters": ["Atsuko Sakaki", "Sonja Arntzen"]}, "2001": {"count": 1, "presenters": ["Atsuko Sakaki"]}, "2002": {"count": 1, "presenters": ["Atsuko Sakaki"]}, "2003": {"count": 1, "presenters": ["Atsuko Sakaki"]}, "2004": {"count": 1, "presenters": ["Atsuko Sakaki"]}, "2005": {"count": 1, "presenters": ["Atsuko Sakaki"]}, "2006": {"count": 1, "presenters": ["Atsuko Sakaki"]}, "2007": {"count": 1, "presenters": ["Atsuko Sakaki"]}, "2008": {"count": 1, "presenters": ["Atsuko Sakaki"]}, "2009": {"count": 1, "presenters": ["Atsuko Sakaki"]}, "2010": {"count": 1, "presenters": ["Atsuko Sakaki"]}, "2019": {"count": 2, "presenters": ["Edwin Michielsen", "Kristin Sivak"]}, "2020": {"count": 1, "presenters": ["Edwin Michielsen"]}, "2024": {"count": 1, "presenters": ["Atsuko Sakaki"]}}}, {"institution": "Stanford University", "total": 15, "geo": "US", "years": {"1999": {"count": 2, "presenters": ["Atsuko Ueda", "James Reichert"]}, "2000": {"count": 1, "presenters": ["Elizabeth Herman"]}, "2001": {"count": 1, "presenters": ["James Reichert"]}, "2003": {"count": 1, "presenters": ["Julia Bullock"]}, "2004": {"count": 1, "presenters": ["James Reichert"]}, "2009": {"count": 2, "presenters": ["James Reichert", "Joanna Sturiano"]}, "2010": {"count": 1, "presenters": ["Hisaaki Wake"]}, "2012": {"count": 2, "presenters": ["Takushi Odagiri", "Yumi Soeshima"]}, "2018": {"count": 1, "presenters": ["Luciana Sanga"]}, "2023": {"count": 2, "presenters": ["Coco Kejia Ruan", "Jason Beckman"]}, "2025": {"count": 1, "presenters": ["Jason Beckman"]}}}, {"institution": "University of Washington", "total": 15, "geo": "US", "years": {"1999": {"count": 1, "presenters": ["Rachel DiNitto"]}, "2002": {"count": 2, "presenters": ["Davinder Bhowmik", "Ted Mack"]}, "2005": {"count": 1, "presenters": ["Ted Mack"]}, "2007": {"count": 3, "presenters": ["Davinder Bhowmik", "Edward Mack", "Yukiko Shigeto"]}, "2013": {"count": 1, "presenters": ["Davinder Bhowmik"]}, "2014": {"count": 1, "presenters": ["Davinder Bhowmik"]}, "2017": {"count": 2, "presenters": ["Christopher Lowy", "Davinder Bhowmik"]}, "2018": {"count": 1, "presenters": ["Christopher Lowy"]}, "2019": {"count": 1, "presenters": ["Davinder Bhowmik"]}, "2022": {"count": 1, "presenters": ["Davinder Bhowmik"]}, "2024": {"count": 1, "presenters": ["Edward Mack"]}}}, {"institution": "Bard College", "total": 15, "geo": "US", "years": {"2000": {"count": 1, "presenters": ["Gus Heldt"]}, "2007": {"count": 1, "presenters": ["Hoyt Long"]}, "2010": {"count": 1, "presenters": ["Kendall Heitzman"]}, "2012": {"count": 1, "presenters": ["Mika Endo"]}, "2013": {"count": 2, "presenters": ["Mika Endo", "Nathan Shockey"]}, "2017": {"count": 2, "presenters": ["Mika Endo", "Nathan Shockey"]}, "2019": {"count": 1, "presenters": ["Wakako Suzuki"]}, "2020": {"count": 2, "presenters": ["Nate Shockey", "Wakako Suzuki"]}, "2022": {"count": 1, "presenters": ["Nathan Shockey"]}, "2023": {"count": 1, "presenters": ["Chiara Pavone"]}, "2024": {"count": 2, "presenters": ["Nathan Shockey"]}}}, {"institution": "Indiana University", "total": 15, "geo": "US", "years": {"1999": {"count": 1, "presenters": ["Edith Sarra"]}, "2002": {"count": 1, "presenters": ["Aiko Okamoto MacPhail"]}, "2003": {"count": 2, "presenters": ["Aiko Okamoto MacPhail", "Andra Alvis"]}, "2005": {"count": 1, "presenters": ["Michiko Suzuki"]}, "2006": {"count": 3, "presenters": ["Harue Tsutsumi", "Lewis Dibble", "Sumie Jones"]}, "2008": {"count": 1, "presenters": ["Joanne Quimby"]}, "2009": {"count": 2, "presenters": ["Edith Sarra", "Michiko Suzuki"]}, "2010": {"count": 1, "presenters": ["Heather Blair"]}, "2011": {"count": 1, "presenters": ["Sumie Jones"]}, "2015": {"count": 2, "presenters": ["Joannah Peterson", "Michiko Suzuki"]}}}, {"institution": "University of Tokyo", "total": 14, "geo": "Japan", "years": {"1999": {"count": 1, "presenters": ["Kubota Jun"]}, "2004": {"count": 1, "presenters": ["Matsuoka Shinpei"]}, "2006": {"count": 4, "presenters": ["Erez Golani Solomon", "Mary Knighton", "Naito Mariko", "Sakaguchi Shu"]}, "2007": {"count": 2, "presenters": ["Jason Webb", "Mariko Naito"]}, "2008": {"count": 1, "presenters": ["Mary Knighton"]}, "2015": {"count": 2, "presenters": ["Ayako Horiuchi", "Lingling Ma"]}, "2017": {"count": 1, "presenters": ["Higuchi Yoshizumi"]}, "2023": {"count": 1, "presenters": ["Yoshiaki Otta"]}, "2024": {"count": 1, "presenters": ["Motoyuki Shibata"]}}}, {"institution": "University of California, Irvine", "total": 13, "geo": "US", "years": {"2002": {"count": 1, "presenters": ["Susan Blakeley Klein"]}, "2005": {"count": 1, "presenters": ["Jonathan Hall"]}, "2009": {"count": 1, "presenters": ["Michael Cronin"]}, "2013": {"count": 2, "presenters": ["Jim Fujii", "Susan Blakeley Klein"]}, "2020": {"count": 4, "presenters": ["Jon L. Pitt", "Margherita Long", "Mimi Long", "Vanessa Baker"]}, "2023": {"count": 2, "presenters": ["Adam Reynolds", "Jon L. Pitt"]}, "2025": {"count": 2, "presenters": ["Jon L. Pitt", "Margherita Long"]}}}, {"institution": "Cornell University", "total": 13, "geo": "US", "years": {"2000": {"count": 1, "presenters": ["Joshua Young"]}, "2004": {"count": 1, "presenters": ["Vyjayanthi Selinger"]}, "2005": {"count": 1, "presenters": ["Seth Jacobowitz"]}, "2007": {"count": 2, "presenters": ["Brett de Bary", "Gavin Walker"]}, "2015": {"count": 1, "presenters": ["Andrea Mendoza"]}, "2016": {"count": 3, "presenters": ["Brett de Bary", "Keiji Kunigami", "Yoon Jeong Oh"]}, "2017": {"count": 1, "presenters": ["Andrew Harding"]}, "2020": {"count": 1, "presenters": ["Andrew Campana"]}, "2025": {"count": 2, "presenters": ["Amy Wei", "Andrew Campana"]}}}, {"institution": "Dartmouth College", "total": 13, "geo": "US", "years": {"2002": {"count": 1, "presenters": ["James Dorsey"]}, "2007": {"count": 1, "presenters": ["Dennis Washburn"]}, "2011": {"count": 1, "presenters": ["Dennis Washburn"]}, "2013": {"count": 2, "presenters": ["James Dorsey", "Shunsuke Nozawa"]}, "2015": {"count": 1, "presenters": ["Sachi Schmidt-Hori"]}, "2016": {"count": 1, "presenters": ["Sachi Schmidt-Hori"]}, "2020": {"count": 1, "presenters": ["James Dorsey"]}, "2023": {"count": 1, "presenters": ["Sachi Schmidt-Hori"]}, "2024": {"count": 4, "presenters": ["Dennis Washburn", "James Dorsey", "Sachi Schmidt-Hori"]}}}, {"institution": "University of Colorado Boulder", "total": 12, "geo": "US", "years": {"1999": {"count": 2, "presenters": ["Faye Yuan Kleeman", "Laurel Rasplica Rodd"]}, "2000": {"count": 1, "presenters": ["Faye Yuan Kleeman"]}, "2001": {"count": 2, "presenters": ["Faye Yuan Kleeman", "Stephen Snyder"]}, "2002": {"count": 1, "presenters": ["Stephen D. Miller"]}, "2004": {"count": 1, "presenters": ["Joseph Sorensen"]}, "2006": {"count": 1, "presenters": ["Helen Weetman"]}, "2009": {"count": 1, "presenters": ["Monika Dix"]}, "2012": {"count": 1, "presenters": ["Raechel Dumas"]}, "2016": {"count": 1, "presenters": ["David Atherton"]}, "2025": {"count": 1, "presenters": ["Daryl Maude"]}}}, {"institution": "Purdue University", "total": 11, "geo": "US", "years": {"2000": {"count": 2, "presenters": ["Eiji Sekine", "Yoshiko Matsuura"]}, "2001": {"count": 1, "presenters": ["Eiji Sekine"]}, "2003": {"count": 1, "presenters": ["Yoshiko Matsuura"]}, "2011": {"count": 1, "presenters": ["Eiji Sekine"]}, "2012": {"count": 1, "presenters": ["Eiji Sekine"]}, "2014": {"count": 1, "presenters": ["Eiji Sekine"]}, "2017": {"count": 1, "presenters": ["Eiji Sekine"]}, "2019": {"count": 1, "presenters": ["Thomas Daniel"]}, "2020": {"count": 1, "presenters": ["Pedro Bassoe"]}, "2025": {"count": 1, "presenters": ["Pedro Bassoe"]}}}], "top15": ["University of Chicago", "University of California, Los Angeles", "Columbia University", "Harvard University", "Princeton University", "University of British Columbia", "Pennsylvania State University", "University of California, Berkeley", "Yale University", "The Ohio State University", "University of Pennsylvania", "University of Massachusetts Amherst", "University of Texas at Austin", "Boston University", "University of Toronto"], "raceData": {"University of Chicago": {"1999": 1, "2000": 1, "2001": 1, "2002": 2, "2003": 3, "2004": 3, "2005": 3, "2006": 3, "2007": 4, "2008": 4, "2009": 4, "2010": 7, "2011": 7, "2012": 10, "2013": 10, "2014": 10, "2015": 16, "2016": 17, "2017": 18, "2018": 20, "2019": 21, "2020": 23, "2022": 23, "2023": 25, "2024": 26, "2025": 36}, "University of California, Los Angeles": {"1999": 0, "2000": 0, "2001": 1, "2002": 1, "2003": 4, "2004": 5, "2005": 5, "2006": 7, "2007": 8, "2008": 9, "2009": 9, "2010": 10, "2011": 10, "2012": 11, "2013": 13, "2014": 13, "2015": 14, "2016": 15, "2017": 15, "2018": 15, "2019": 16, "2020": 24, "2022": 24, "2023": 26, "2024": 29, "2025": 31}, "Columbia University": {"1999": 2, "2000": 3, "2001": 3, "2002": 4, "2003": 7, "2004": 10, "2005": 10, "2006": 10, "2007": 11, "2008": 11, "2009": 11, "2010": 16, "2011": 16, "2012": 16, "2013": 19, "2014": 19, "2015": 19, "2016": 20, "2017": 20, "2018": 20, "2019": 20, "2020": 22, "2022": 23, "2023": 25, "2024": 27, "2025": 28}, "Harvard University": {"1999": 0, "2000": 0, "2001": 0, "2002": 1, "2003": 2, "2004": 2, "2005": 4, "2006": 5, "2007": 6, "2008": 6, "2009": 7, "2010": 9, "2011": 9, "2012": 9, "2013": 12, "2014": 13, "2015": 17, "2016": 19, "2017": 19, "2018": 19, "2019": 19, "2020": 19, "2022": 20, "2023": 24, "2024": 25, "2025": 27}, "Princeton University": {"1999": 1, "2000": 1, "2001": 1, "2002": 1, "2003": 4, "2004": 5, "2005": 7, "2006": 9, "2007": 11, "2008": 12, "2009": 12, "2010": 12, "2011": 13, "2012": 13, "2013": 14, "2014": 14, "2015": 15, "2016": 16, "2017": 16, "2018": 16, "2019": 16, "2020": 19, "2022": 19, "2023": 22, "2024": 23, "2025": 24}, "University of British Columbia": {"1999": 1, "2000": 1, "2001": 1, "2002": 1, "2003": 2, "2004": 2, "2005": 4, "2006": 6, "2007": 6, "2008": 6, "2009": 7, "2010": 9, "2011": 9, "2012": 11, "2013": 12, "2014": 13, "2015": 15, "2016": 15, "2017": 16, "2018": 17, "2019": 19, "2020": 21, "2022": 21, "2023": 21, "2024": 21, "2025": 22}, "Pennsylvania State University": {"1999": 0, "2000": 1, "2001": 2, "2002": 3, "2003": 3, "2004": 3, "2005": 4, "2006": 4, "2007": 4, "2008": 5, "2009": 5, "2010": 5, "2011": 5, "2012": 5, "2013": 6, "2014": 6, "2015": 6, "2016": 9, "2017": 11, "2018": 12, "2019": 12, "2020": 13, "2022": 16, "2023": 16, "2024": 18, "2025": 22}, "University of California, Berkeley": {"1999": 4, "2000": 4, "2001": 4, "2002": 4, "2003": 5, "2004": 5, "2005": 6, "2006": 6, "2007": 6, "2008": 6, "2009": 6, "2010": 8, "2011": 9, "2012": 9, "2013": 10, "2014": 10, "2015": 10, "2016": 10, "2017": 10, "2018": 12, "2019": 14, "2020": 18, "2022": 19, "2023": 19, "2024": 22, "2025": 22}, "Yale University": {"1999": 0, "2000": 1, "2001": 1, "2002": 1, "2003": 1, "2004": 3, "2005": 4, "2006": 4, "2007": 5, "2008": 5, "2009": 6, "2010": 7, "2011": 8, "2012": 11, "2013": 13, "2014": 13, "2015": 14, "2016": 14, "2017": 14, "2018": 14, "2019": 15, "2020": 17, "2022": 20, "2023": 21, "2024": 22, "2025": 22}, "The Ohio State University": {"1999": 1, "2000": 2, "2001": 4, "2002": 5, "2003": 5, "2004": 5, "2005": 5, "2006": 5, "2007": 5, "2008": 5, "2009": 5, "2010": 5, "2011": 6, "2012": 10, "2013": 11, "2014": 12, "2015": 12, "2016": 15, "2017": 17, "2018": 19, "2019": 20, "2020": 20, "2022": 20, "2023": 20, "2024": 20, "2025": 20}, "University of Pennsylvania": {"1999": 0, "2000": 1, "2001": 1, "2002": 1, "2003": 6, "2004": 6, "2005": 6, "2006": 6, "2007": 6, "2008": 7, "2009": 7, "2010": 7, "2011": 7, "2012": 8, "2013": 8, "2014": 8, "2015": 8, "2016": 8, "2017": 8, "2018": 10, "2019": 11, "2020": 13, "2022": 13, "2023": 15, "2024": 17, "2025": 18}, "University of Massachusetts Amherst": {"1999": 1, "2000": 1, "2001": 1, "2002": 1, "2003": 1, "2004": 1, "2005": 1, "2006": 1, "2007": 3, "2008": 3, "2009": 3, "2010": 5, "2011": 6, "2012": 6, "2013": 6, "2014": 8, "2015": 9, "2016": 11, "2017": 12, "2018": 12, "2019": 13, "2020": 14, "2022": 14, "2023": 15, "2024": 15, "2025": 16}, "University of Texas at Austin": {"1999": 1, "2000": 1, "2001": 1, "2002": 1, "2003": 1, "2004": 1, "2005": 2, "2006": 2, "2007": 2, "2008": 2, "2009": 2, "2010": 3, "2011": 4, "2012": 4, "2013": 4, "2014": 4, "2015": 4, "2016": 4, "2017": 5, "2018": 5, "2019": 5, "2020": 7, "2022": 9, "2023": 12, "2024": 14, "2025": 16}, "Boston University": {"1999": 0, "2000": 1, "2001": 1, "2002": 1, "2003": 1, "2004": 1, "2005": 2, "2006": 2, "2007": 3, "2008": 4, "2009": 5, "2010": 6, "2011": 6, "2012": 7, "2013": 7, "2014": 7, "2015": 7, "2016": 8, "2017": 9, "2018": 10, "2019": 10, "2020": 12, "2022": 12, "2023": 12, "2024": 16, "2025": 16}, "University of Toronto": {"1999": 0, "2000": 2, "2001": 3, "2002": 4, "2003": 5, "2004": 6, "2005": 7, "2006": 8, "2007": 9, "2008": 10, "2009": 11, "2010": 12, "2011": 12, "2012": 12, "2013": 12, "2014": 12, "2015": 12, "2016": 12, "2017": 12, "2018": 12, "2019": 14, "2020": 15, "2022": 15, "2023": 15, "2024": 16, "2025": 16}}, "bumpData": {"University of Chicago": {"1999": 3, "2000": 5, "2001": 6, "2002": 6, "2003": 8, "2004": 8, "2005": 12, "2006": 12, "2007": 11, "2008": 12, "2009": 13, "2010": 8, "2011": 9, "2012": 7, "2013": 9, "2014": 9, "2015": 3, "2016": 3, "2017": 3, "2018": 1, "2019": 1, "2020": 2, "2022": 2, "2023": 2, "2024": 3, "2025": 1}, "University of California, Los Angeles": {"2001": 7, "2002": 7, "2003": 6, "2004": 4, "2005": 6, "2006": 4, "2007": 4, "2008": 4, "2009": 4, "2010": 4, "2011": 4, "2012": 4, "2013": 3, "2014": 3, "2015": 6, "2016": 5, "2017": 7, "2018": 7, "2019": 6, "2020": 1, "2022": 1, "2023": 1, "2024": 1, "2025": 2}, "Columbia University": {"1999": 2, "2000": 2, "2001": 3, "2002": 2, "2003": 1, "2004": 1, "2005": 1, "2006": 1, "2007": 1, "2008": 2, "2009": 2, "2010": 1, "2011": 1, "2012": 1, "2013": 1, "2014": 1, "2015": 1, "2016": 1, "2017": 1, "2018": 2, "2019": 2, "2020": 3, "2022": 3, "2023": 3, "2024": 2, "2025": 3}, "Harvard University": {"2002": 8, "2003": 10, "2004": 11, "2005": 8, "2006": 8, "2007": 5, "2008": 6, "2009": 5, "2010": 5, "2011": 5, "2012": 9, "2013": 5, "2014": 4, "2015": 2, "2016": 2, "2017": 2, "2018": 3, "2019": 4, "2020": 6, "2022": 5, "2023": 4, "2024": 4, "2025": 4}, "Princeton University": {"1999": 4, "2000": 6, "2001": 8, "2002": 9, "2003": 7, "2004": 5, "2005": 2, "2006": 2, "2007": 2, "2008": 1, "2009": 1, "2010": 2, "2011": 2, "2012": 2, "2013": 2, "2014": 2, "2015": 4, "2016": 4, "2017": 5, "2018": 6, "2019": 7, "2020": 7, "2022": 8, "2023": 5, "2024": 5, "2025": 5}, "University of British Columbia": {"1999": 5, "2000": 7, "2001": 9, "2002": 10, "2003": 11, "2004": 12, "2005": 9, "2006": 5, "2007": 6, "2008": 7, "2009": 6, "2010": 6, "2011": 6, "2012": 5, "2013": 6, "2014": 5, "2015": 5, "2016": 6, "2017": 6, "2018": 5, "2019": 5, "2020": 4, "2022": 4, "2023": 6, "2024": 8, "2025": 6}, "Pennsylvania State University": {"2000": 8, "2001": 5, "2002": 5, "2003": 9, "2004": 9, "2005": 10, "2006": 10, "2007": 12, "2008": 9, "2009": 10, "2010": 12, "2011": 14, "2012": 14, "2013": 13, "2014": 14, "2015": 14, "2016": 12, "2017": 11, "2018": 9, "2019": 12, "2020": 12, "2022": 10, "2023": 10, "2024": 10, "2025": 7}, "University of California, Berkeley": {"1999": 1, "2000": 1, "2001": 1, "2002": 3, "2003": 3, "2004": 6, "2005": 4, "2006": 6, "2007": 7, "2008": 8, "2009": 8, "2010": 7, "2011": 7, "2012": 10, "2013": 10, "2014": 10, "2015": 10, "2016": 11, "2017": 12, "2018": 10, "2019": 9, "2020": 8, "2022": 9, "2023": 9, "2024": 6, "2025": 8}, "Yale University": {"2000": 9, "2001": 10, "2002": 11, "2003": 12, "2004": 10, "2005": 11, "2006": 11, "2007": 9, "2008": 10, "2009": 9, "2010": 9, "2011": 8, "2012": 6, "2013": 4, "2014": 6, "2015": 7, "2016": 8, "2017": 8, "2018": 8, "2019": 8, "2020": 9, "2022": 6, "2023": 7, "2024": 7, "2025": 9}, "The Ohio State University": {"1999": 6, "2000": 3, "2001": 2, "2002": 1, "2003": 4, "2004": 7, "2005": 7, "2006": 9, "2007": 10, "2008": 11, "2009": 11, "2010": 13, "2011": 11, "2012": 8, "2013": 8, "2014": 7, "2015": 8, "2016": 7, "2017": 4, "2018": 4, "2019": 3, "2020": 5, "2022": 7, "2023": 8, "2024": 9, "2025": 10}, "University of Pennsylvania": {"2000": 10, "2001": 11, "2002": 12, "2003": 2, "2004": 2, "2005": 5, "2006": 7, "2007": 8, "2008": 5, "2009": 7, "2010": 10, "2011": 10, "2012": 11, "2013": 11, "2014": 11, "2015": 12, "2016": 13, "2017": 14, "2018": 13, "2019": 13, "2020": 13, "2022": 13, "2023": 11, "2024": 11, "2025": 11}, "University of Massachusetts Amherst": {"1999": 7, "2000": 11, "2001": 12, "2002": 13, "2003": 13, "2004": 13, "2005": 15, "2006": 15, "2007": 13, "2008": 14, "2009": 14, "2010": 14, "2011": 12, "2012": 13, "2013": 14, "2014": 12, "2015": 11, "2016": 10, "2017": 9, "2018": 11, "2019": 11, "2020": 11, "2022": 12, "2023": 12, "2024": 14, "2025": 12}, "University of Texas at Austin": {"1999": 8, "2000": 12, "2001": 13, "2002": 14, "2003": 14, "2004": 14, "2005": 13, "2006": 13, "2007": 15, "2008": 15, "2009": 15, "2010": 15, "2011": 15, "2012": 15, "2013": 15, "2014": 15, "2015": 15, "2016": 15, "2017": 15, "2018": 15, "2019": 15, "2020": 15, "2022": 15, "2023": 14, "2024": 15, "2025": 13}, "Boston University": {"2000": 13, "2001": 14, "2002": 15, "2003": 15, "2004": 15, "2005": 14, "2006": 14, "2007": 14, "2008": 13, "2009": 12, "2010": 11, "2011": 13, "2012": 12, "2013": 12, "2014": 13, "2015": 13, "2016": 14, "2017": 13, "2018": 14, "2019": 14, "2020": 14, "2022": 14, "2023": 15, "2024": 12, "2025": 14}, "University of Toronto": {"2000": 4, "2001": 4, "2002": 4, "2003": 5, "2004": 3, "2005": 3, "2006": 3, "2007": 3, "2008": 3, "2009": 3, "2010": 3, "2011": 3, "2012": 3, "2013": 7, "2014": 8, "2015": 9, "2016": 9, "2017": 10, "2018": 12, "2019": 10, "2020": 10, "2022": 11, "2023": 13, "2024": 13, "2025": 15}}, "concentration": [{"era": "1999-2005", "pct": 17.0, "total": 224, "top5": [{"inst": "Columbia University", "count": 10}, {"inst": "Princeton University", "count": 7}, {"inst": "University of Toronto", "count": 7}, {"inst": "University of Colorado Boulder", "count": 7}, {"inst": "University of Michigan", "count": 7}]}, {"era": "2006-2012", "pct": 11.9, "total": 302, "top5": [{"inst": "Indiana University", "count": 8}, {"inst": "University of Chicago", "count": 7}, {"inst": "University of British Columbia", "count": 7}, {"inst": "Yale University", "count": 7}, {"inst": "University of Tokyo", "count": 7}]}, {"era": "2013-2019", "pct": 15.7, "total": 293, "top5": [{"inst": "University of Chicago", "count": 11}, {"inst": "Harvard University", "count": 10}, {"inst": "The Ohio State University", "count": 10}, {"inst": "University of British Columbia", "count": 8}, {"inst": "Pennsylvania State University", "count": 7}]}, {"era": "2020-2025", "pct": 19.9, "total": 296, "top5": [{"inst": "University of Chicago", "count": 15}, {"inst": "University of California, Los Angeles", "count": 15}, {"inst": "University of Texas at Austin", "count": 11}, {"inst": "Pennsylvania State University", "count": 10}, {"inst": "Columbia University", "count": 8}]}], "geoBreakdown": [{"era": "1999-2005", "US": 171, "Japan": 19, "Other": 27}, {"era": "2006-2012", "US": 204, "Japan": 39, "Other": 44}, {"era": "2013-2019", "US": 213, "Japan": 40, "Other": 28}, {"era": "2020-2025", "US": 246, "Japan": 25, "Other": 20}], "firstTimers": [{"year": 1999, "count": 23}, {"year": 2000, "count": 19}, {"year": 2001, "count": 8}, {"year": 2002, "count": 16}, {"year": 2003, "count": 18}, {"year": 2004, "count": 8}, {"year": 2005, "count": 8}, {"year": 2006, "count": 12}, {"year": 2007, "count": 11}, {"year": 2008, "count": 16}, {"year": 2009, "count": 9}, {"year": 2010, "count": 6}, {"year": 2011, "count": 7}, {"year": 2012, "count": 13}, {"year": 2013, "count": 2}, {"year": 2014, "count": 8}, {"year": 2015, "count": 10}, {"year": 2016, "count": 11}, {"year": 2017, "count": 8}, {"year": 2018, "count": 11}, {"year": 2019, "count": 14}, {"year": 2020, "count": 5}, {"year": 2022, "count": 4}, {"year": 2023, "count": 6}, {"year": 2024, "count": 8}, {"year": 2025, "count": 4}]};
+
+const SCHOOL_COLORS = {"Columbia University": "#B9D9EB", "Yale University": "#00356B", "Duke University": "#003087", "Harvard University": "#A51C30", "Cornell University": "#B31B1B", "Stanford University": "#8C1515", "Dartmouth College": "#00693E", "Northwestern University": "#4E2A84", "New York University": "#57068C", "Princeton University": "#E77500", "University of Michigan": "#FFCB05", "University of Chicago": "#800000", "University of California, Los Angeles": "#2774AE", "University of California, Berkeley": "#003262", "University of Pennsylvania": "#011F5B", "University of Minnesota": "#7A0019", "University of Washington": "#4B2E83", "University of Hawai'i": "#024731", "Pennsylvania State University": "#041E42", "University of Illinois at Urbana-Champaign": "#E84A27", "Emory University": "#012169", "University of Pittsburgh": "#003594", "Oberlin College": "#A6192E", "The Ohio State University": "#BB0000", "Rutgers University": "#CC0033", "Indiana University": "#990000", "Purdue University": "#CEB888", "University of British Columbia": "#002145", "Tufts University": "#3E8EDE", "University of Oregon": "#154733", "University of Colorado Boulder": "#CFB87C", "Boston University": "#CC0000", "University of Toronto": "#002A5C", "University of Massachusetts Amherst": "#881C1C", "Washington University in St. Louis": "#A51417", "University of Tokyo": "#2A5CAA", "Kyoto University": "#1B3A5C", "Waseda University": "#8B0000", "Keio University": "#C8102E", "Osaka University": "#00567B"};
+const SCHOOL_COLORS_DARK = {"Columbia University": "#B9D9EB", "Yale University": "#3377AA", "Duke University": "#3366BB", "Harvard University": "#A51C30", "Cornell University": "#B31B1B", "Stanford University": "#8C1515", "Dartmouth College": "#00693E", "Northwestern University": "#4E2A84", "New York University": "#57068C", "Princeton University": "#E77500", "University of Michigan": "#FFCB05", "University of Chicago": "#800000", "University of California, Los Angeles": "#2774AE", "University of California, Berkeley": "#3366AA", "University of Pennsylvania": "#3355AA", "University of Minnesota": "#7A0019", "University of Washington": "#4B2E83", "University of Hawai'i": "#024731", "Pennsylvania State University": "#334488", "University of Illinois at Urbana-Champaign": "#E84A27", "Emory University": "#3355AA", "University of Pittsburgh": "#003594", "Oberlin College": "#A6192E", "The Ohio State University": "#BB0000", "Rutgers University": "#CC0033", "Indiana University": "#990000", "Purdue University": "#CEB888", "University of British Columbia": "#3366AA", "Tufts University": "#3E8EDE", "University of Oregon": "#154733", "University of Colorado Boulder": "#CFB87C", "Boston University": "#CC0000", "University of Toronto": "#3366AA", "University of Massachusetts Amherst": "#881C1C", "Washington University in St. Louis": "#A51417", "University of Tokyo": "#2A5CAA", "Kyoto University": "#4477AA", "Waseda University": "#8B0000", "Keio University": "#C8102E", "Osaka University": "#00567B"};
+
+const years = DATA.years;
+const heatmap = DATA.heatmap;
+const top15 = DATA.top15;
+const raceData = DATA.raceData;
+const bumpData = DATA.bumpData;
+
+let activeView = 'heatmap';
+let darkMode = false;
+let highlightInst = null;
+let heatmapMode = 'count';
+
+// ── Bar chart race state ──
+let raceYearIdx = 0;
+let raceInterval = null;
+let raceSpeed = 500;
+
+// ── Color helpers ──
+function instColor(inst) {
+    const colors = darkMode ? SCHOOL_COLORS_DARK : SCHOOL_COLORS;
+    return colors[inst] || (darkMode ? '#666' : '#999');
+}
+
+function getCSS(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+// ── Sidebar ──
+function buildSidebar() {
+    const sb = d3.select('#sidebar');
+    sb.html('');
+
+    // Concentration
+    const sec1 = sb.append('div').attr('class','sidebar-section');
+    sec1.append('h3').text('Top-5 Concentration');
+    const conc = DATA.concentration;
+    const cw = 248, ch = conc.length * 28 + 10;
+    const csvg = sec1.append('svg').attr('width', cw).attr('height', ch);
+    const cScale = d3.scaleLinear().domain([0, 100]).range([0, 160]);
+    conc.forEach((d, i) => {
+        const g = csvg.append('g').attr('transform', `translate(0,${i*28+5})`);
+        g.append('text').attr('x', 0).attr('y', 12).attr('font-size', 11)
+            .attr('fill', getCSS('--fg2')).text(d.era);
+        g.append('rect').attr('x', 70).attr('y', 0).attr('width', cScale(d.pct))
+            .attr('height', 18).attr('rx', 3).attr('fill', getCSS('--accent'));
+        g.append('text').attr('x', 72 + cScale(d.pct)).attr('y', 13)
+            .attr('font-size', 11).attr('fill', getCSS('--fg')).text(d.pct + '%');
+    });
+
+    // Geographic breakdown
+    const sec2 = sb.append('div').attr('class','sidebar-section');
+    sec2.append('h3').text('Geographic Breakdown');
+    const geo = DATA.geoBreakdown;
+    const gw = 248, gh = geo.length * 32 + 10;
+    const gsvg = sec2.append('svg').attr('width', gw).attr('height', gh);
+    geo.forEach((d, i) => {
+        const total = d.US + d.Japan + d.Other;
+        if (total === 0) return;
+        const g = gsvg.append('g').attr('transform', `translate(0,${i*32+5})`);
+        g.append('text').attr('x', 0).attr('y', 13).attr('font-size', 11)
+            .attr('fill', getCSS('--fg2')).text(d.era);
+        const barX = 70, barW = 160;
+        const usW = d.US / total * barW;
+        const jpW = d.Japan / total * barW;
+        const otW = d.Other / total * barW;
+        g.append('rect').attr('x', barX).attr('y', 0).attr('width', usW).attr('height', 18)
+            .attr('rx', 0).attr('fill', '#4363d8');
+        g.append('rect').attr('x', barX + usW).attr('y', 0).attr('width', jpW).attr('height', 18)
+            .attr('fill', '#e6194b');
+        g.append('rect').attr('x', barX + usW + jpW).attr('y', 0).attr('width', otW).attr('height', 18)
+            .attr('fill', '#3cb44b');
+        // Legend
+        if (i === 0) {
+            const leg = gsvg.append('g').attr('transform', `translate(70,${geo.length*32+2})`);
+            [['US','#4363d8'],['Japan','#e6194b'],['Other','#3cb44b']].forEach(([label,col], li) => {
+                leg.append('rect').attr('x', li*65).attr('y', 0).attr('width', 10).attr('height', 10).attr('fill', col);
+                leg.append('text').attr('x', li*65+14).attr('y', 9).attr('font-size', 10).attr('fill', getCSS('--fg2')).text(label);
+            });
+        }
+    });
+
+    // First-timers
+    const sec3 = sb.append('div').attr('class','sidebar-section');
+    sec3.append('h3').text('New Institutions per Year');
+    const ft = DATA.firstTimers;
+    const fw = 248, fh = 80;
+    const fsvg = sec3.append('svg').attr('width', fw).attr('height', fh);
+    const fxScale = d3.scaleBand().domain(ft.map(d => d.year)).range([30, fw - 5]).padding(0.2);
+    const maxFt = d3.max(ft, d => d.count) || 1;
+    const fyScale = d3.scaleLinear().domain([0, maxFt]).range([fh - 16, 4]);
+    const fLine = d3.line().x(d => fxScale(d.year) + fxScale.bandwidth()/2).y(d => fyScale(d.count));
+    fsvg.append('path').attr('d', fLine(ft)).attr('fill', 'none')
+        .attr('stroke', getCSS('--accent')).attr('stroke-width', 1.5);
+    ft.forEach(d => {
+        fsvg.append('circle')
+            .attr('cx', fxScale(d.year) + fxScale.bandwidth()/2)
+            .attr('cy', fyScale(d.count))
+            .attr('r', 2.5).attr('fill', getCSS('--accent'));
+    });
+    // X labels (every 5th year)
+    ft.forEach(d => {
+        if (d.year % 5 === 0 || d.year === years[0] || d.year === years[years.length-1]) {
+            fsvg.append('text')
+                .attr('x', fxScale(d.year) + fxScale.bandwidth()/2)
+                .attr('y', fh - 2).attr('text-anchor', 'middle')
+                .attr('font-size', 9).attr('fill', getCSS('--fg3'))
+                .text(d.year);
+        }
+    });
+    // Y label
+    fsvg.append('text').attr('x', 2).attr('y', 10).attr('font-size', 9)
+        .attr('fill', getCSS('--fg3')).text(maxFt);
+    fsvg.append('text').attr('x', 2).attr('y', fh - 16).attr('font-size', 9)
+        .attr('fill', getCSS('--fg3')).text('0');
+}
+
+// ── Heatmap ──
+function drawHeatmap() {
+    const svg = d3.select('#chart');
+    svg.selectAll('*').remove();
+
+    const margin = {top: 80, right: 20, bottom: 20, left: 230};
+    const cellW = 28, cellH = 22;
+    const w = margin.left + years.length * cellW + margin.right;
+    const h = margin.top + heatmap.length * cellH + margin.bottom;
+    svg.attr('width', w).attr('height', h).attr('viewBox', `0 0 ${w} ${h}`);
+
+    // Calculate year totals for percentage mode
+    const yearTotals = {};
+    years.forEach(y => {
+        let total = 0;
+        heatmap.forEach(row => {
+            total += (row.years[y] || {}).count || 0;
+        });
+        yearTotals[y] = total || 1; // avoid division by zero
+    });
+
+    const maxCount = d3.max(heatmap, d => d3.max(years, y => (d.years[y] || {}).count || 0)) || 1;
+    const maxPct = heatmapMode === 'pct' ? 100 : maxCount;
+    const colorScale = d3.scaleSequential(d3.interpolateBlues).domain([0, maxPct]);
+
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+    // Year labels
+    years.forEach((y, i) => {
+        g.append('text')
+            .attr('x', i * cellW + cellW/2).attr('y', -8)
+            .attr('text-anchor', 'end')
+            .attr('font-size', 10)
+            .attr('fill', getCSS('--fg2'))
+            .attr('transform', `rotate(-45,${i*cellW+cellW/2},-8)`)
+            .text(y);
+    });
+
+    // Rows
+    heatmap.forEach((row, ri) => {
+        const rg = g.append('g').attr('transform', `translate(0,${ri * cellH})`);
+
+        // Institution label
+        const isTop15 = top15.indexOf(row.institution) >= 0;
+        rg.append('text')
+            .attr('x', -8).attr('y', cellH/2 + 4)
+            .attr('text-anchor', 'end').attr('font-size', 11)
+            .attr('fill', highlightInst === row.institution ? getCSS('--accent') :
+                          (isTop15 ? getCSS('--fg') : getCSS('--fg2')))
+            .attr('font-weight', highlightInst === row.institution ? 700 : (isTop15 ? 600 : 400))
+            .attr('cursor', 'pointer')
+            .text(row.institution.length > 30 ? row.institution.substring(0,28) + '...' : row.institution)
+            .on('click', () => {
+                highlightInst = highlightInst === row.institution ? null : row.institution;
+                drawCurrent();
+            });
+
+        // Total count badge
+        rg.append('text')
+            .attr('x', -232 + margin.left).attr('y', cellH/2 + 4)
+            .attr('text-anchor', 'start').attr('font-size', 9)
+            .attr('fill', getCSS('--fg3'))
+            .text(`(${row.total})`);
+
+        // Cells
+        years.forEach((y, ci) => {
+            const cell = (row.years[y] || {});
+            const cnt = cell.count || 0;
+            const pct = (yearTotals[y] > 0) ? (cnt / yearTotals[y] * 100) : 0;
+            const displayVal = heatmapMode === 'pct' ? pct : cnt;
+            const colorVal = heatmapMode === 'pct' ? pct : cnt;
+
+            rg.append('rect')
+                .attr('x', ci * cellW).attr('y', 0)
+                .attr('width', cellW - 1).attr('height', cellH - 1)
+                .attr('rx', 2)
+                .attr('fill', cnt > 0 ? colorScale(colorVal) : (darkMode ? '#1a1a2e' : '#f9f9f9'))
+                .attr('stroke', getCSS('--grid'))
+                .attr('stroke-width', 0.5)
+                .attr('data-inst', row.institution)
+                .attr('data-year', y)
+                .attr('data-count', cnt)
+                .attr('data-pct', pct.toFixed(1))
+                .attr('data-presenters', (cell.presenters || []).join(', '));
+
+            if (cnt > 0) {
+                const label = heatmapMode === 'pct' ? pct.toFixed(0) : cnt;
+                rg.append('text')
+                    .attr('x', ci * cellW + cellW/2 - 0.5)
+                    .attr('y', cellH/2 + 3.5)
+                    .attr('text-anchor', 'middle').attr('font-size', 9)
+                    .attr('fill', colorVal >= maxPct * 0.6 ? '#fff' : getCSS('--fg'))
+                    .attr('pointer-events', 'none')
+                    .text(label);
+            }
+        });
+    });
+
+    // Tooltip
+    svg.on('mousemove', function(e) {
+        const target = e.target;
+        if (target.tagName === 'rect' && target.getAttribute('data-inst')) {
+            const inst = target.getAttribute('data-inst');
+            const yr = target.getAttribute('data-year');
+            const cnt = target.getAttribute('data-count');
+            const pct = target.getAttribute('data-pct');
+            const presenters = target.getAttribute('data-presenters');
+            const tip = d3.select('#tooltip');
+            tip.style('display', 'block')
+                .style('left', (e.clientX + 15) + 'px')
+                .style('top', (e.clientY + 15) + 'px')
+                .html(`<b>${inst}</b><br>Year: ${yr}<br>Presentations: ${cnt} (${pct}%)${
+                    presenters ? '<br><span style="color:' + getCSS('--fg2') + '">' + presenters + '</span>' : ''
+                }`);
+        } else {
+            d3.select('#tooltip').style('display', 'none');
+        }
+    });
+    svg.on('mouseleave', () => d3.select('#tooltip').style('display', 'none'));
+}
+
+// ── Bar Chart Race ──
+function drawRace() {
+    const svg = d3.select('#chart');
+    svg.selectAll('*').remove();
+
+    const margin = {top: 60, right: 60, bottom: 30, left: 230};
+    const barH = 28, barGap = 6;
+    const numBars = 15;
+    const w = Math.max(700, document.getElementById('viz-area').clientWidth - 32);
+    const h = margin.top + numBars * (barH + barGap) + margin.bottom;
+    svg.attr('width', w).attr('height', h);
+
+    // Controls
+    const controls = d3.select('#viz-area').insert('div', 'svg').attr('class', 'race-controls').attr('id', 'raceControls');
+    controls.append('button').attr('id', 'racePlayBtn').text('Play').on('click', togglePlay);
+    controls.append('button').text('Step Back').on('click', () => stepRace(-1));
+    controls.append('button').text('Step Fwd').on('click', () => stepRace(1));
+    controls.append('div').attr('class', 'year-display').attr('id', 'raceYearLabel').text(years[raceYearIdx]);
+    const slider = controls.append('input').attr('type', 'range')
+        .attr('min', 0).attr('max', years.length - 1).attr('value', raceYearIdx)
+        .attr('id', 'raceSlider')
+        .on('input', function() { raceYearIdx = +this.value; renderRaceFrame(false); });
+    controls.append('label').text('Speed:');
+    const speedSel = controls.append('select').attr('id', 'raceSpeedSel')
+        .on('change', function() { raceSpeed = +this.value; if (raceInterval) { stopPlay(); togglePlay(); } });
+    [['Slow', 1000], ['Normal', 500], ['Fast', 200]].forEach(([label, val]) => {
+        speedSel.append('option').attr('value', val).text(label)
+            .property('selected', val === raceSpeed);
+    });
+
+    renderRaceFrame(false);
+}
+
+function renderRaceFrame(animate) {
+    const svg = d3.select('#chart');
+    const margin = {top: 10, right: 60, bottom: 20, left: 230};
+    const barH = 28, barGap = 6;
+    const numBars = 15;
+    const w = +svg.attr('width');
+    const y = years[raceYearIdx];
+
+    d3.select('#raceYearLabel').text(y);
+    d3.select('#raceSlider').property('value', raceYearIdx);
+
+    // Get cumulative values for this year
+    const vals = top15.map(inst => ({
+        inst,
+        value: raceData[inst] ? (raceData[inst][String(y)] || 0) : 0
+    }));
+    vals.sort((a, b) => b.value - a.value);
+
+    const maxVal = d3.max(vals, d => d.value) || 1;
+    const xScale = d3.scaleLinear().domain([0, maxVal]).range([0, w - margin.left - margin.right]);
+
+    // Remove old content from chart group
+    let g = svg.select('.race-g');
+    if (g.empty()) {
+        g = svg.append('g').attr('class', 'race-g').attr('transform', `translate(${margin.left},${margin.top})`);
+    }
+
+    const dur = animate ? Math.min(raceSpeed * 0.8, 400) : 0;
+
+    // Bars
+    const bars = g.selectAll('.race-bar').data(vals, d => d.inst);
+    const barsEnter = bars.enter().append('g').attr('class', 'race-bar')
+        .attr('transform', (d, i) => `translate(0,${i * (barH + barGap)})`);
+    barsEnter.append('rect').attr('class', 'bar-rect').attr('height', barH).attr('rx', 4);
+    barsEnter.append('text').attr('class', 'bar-label').attr('y', barH/2 + 4).attr('x', -8)
+        .attr('text-anchor', 'end').attr('font-size', 11);
+    barsEnter.append('text').attr('class', 'bar-value').attr('y', barH/2 + 4)
+        .attr('font-size', 11).attr('font-weight', 600);
+
+    const merged = barsEnter.merge(bars);
+    merged.transition().duration(dur)
+        .attr('transform', (d, i) => `translate(0,${i * (barH + barGap)})`);
+    merged.select('.bar-rect')
+        .attr('fill', d => instColor(d.inst))
+        .transition().duration(dur)
+        .attr('width', d => Math.max(0, xScale(d.value)));
+    merged.select('.bar-label')
+        .attr('fill', d => highlightInst === d.inst ? getCSS('--accent') : getCSS('--fg'))
+        .attr('font-weight', d => highlightInst === d.inst ? 700 : 400)
+        .text(d => d.inst.length > 28 ? d.inst.substring(0,26) + '...' : d.inst);
+    merged.select('.bar-value')
+        .attr('fill', getCSS('--fg'))
+        .transition().duration(dur)
+        .attr('x', d => xScale(d.value) + 6)
+        .tween('text', function(d) {
+            const self = d3.select(this);
+            const prev = +self.text() || 0;
+            const interp = d3.interpolateRound(prev, d.value);
+            return t => self.text(interp(t));
+        });
+
+    bars.exit().remove();
+}
+
+function togglePlay() {
+    if (raceInterval) {
+        stopPlay();
+    } else {
+        d3.select('#racePlayBtn').text('Pause');
+        raceInterval = setInterval(() => {
+            if (raceYearIdx < years.length - 1) {
+                raceYearIdx++;
+                renderRaceFrame(true);
+            } else {
+                stopPlay();
+            }
+        }, raceSpeed);
+    }
+}
+
+function stopPlay() {
+    clearInterval(raceInterval);
+    raceInterval = null;
+    d3.select('#racePlayBtn').text('Play');
+}
+
+function stepRace(dir) {
+    stopPlay();
+    raceYearIdx = Math.max(0, Math.min(years.length - 1, raceYearIdx + dir));
+    renderRaceFrame(true);
+}
+
+// ── Bump Chart ──
+function drawBump() {
+    const svg = d3.select('#chart');
+    svg.selectAll('*').remove();
+
+    const margin = {top: 40, right: 180, bottom: 40, left: 40};
+    const w = Math.max(800, document.getElementById('viz-area').clientWidth - 32);
+    const h = 520;
+    svg.attr('width', w).attr('height', h);
+
+    const xScale = d3.scalePoint().domain(years).range([margin.left, w - margin.right]).padding(0.5);
+    const yScale = d3.scaleLinear().domain([1, 15]).range([margin.top, h - margin.bottom]);
+
+    const g = svg.append('g');
+
+    // Grid lines
+    for (let r = 1; r <= 15; r++) {
+        g.append('line')
+            .attr('x1', margin.left).attr('x2', w - margin.right)
+            .attr('y1', yScale(r)).attr('y2', yScale(r))
+            .attr('stroke', getCSS('--grid')).attr('stroke-width', 0.5);
+        g.append('text').attr('x', margin.left - 8).attr('y', yScale(r) + 4)
+            .attr('text-anchor', 'end').attr('font-size', 10).attr('fill', getCSS('--fg3'))
+            .text('#' + r);
+    }
+
+    // X axis
+    years.forEach(y => {
+        g.append('text').attr('x', xScale(y)).attr('y', h - margin.bottom + 18)
+            .attr('text-anchor', 'middle').attr('font-size', 10).attr('fill', getCSS('--fg2'))
+            .attr('transform', `rotate(-45,${xScale(y)},${h - margin.bottom + 18})`)
+            .text(y);
+    });
+
+    // Lines and dots for each institution
+    top15.forEach((inst, idx) => {
+        const bd = bumpData[inst];
+        const points = years.filter(y => bd[String(y)] !== undefined).map(y => ({
+            year: y, rank: bd[String(y)]
+        }));
+
+        if (points.length < 2) return;
+
+        const isHighlighted = highlightInst === inst;
+        const opacity = highlightInst ? (isHighlighted ? 1 : 0.15) : 0.8;
+        const lineWidth = isHighlighted ? 3 : 1.5;
+
+        // Line
+        const line = d3.line()
+            .x(d => xScale(d.year))
+            .y(d => yScale(d.rank))
+            .curve(d3.curveMonotoneX);
+        // Invisible wider overlay for easier clicking
+        g.append('path')
+            .attr('d', line(points))
+            .attr('fill', 'none')
+            .attr('stroke', 'transparent')
+            .attr('stroke-width', 14)
+            .attr('cursor', 'pointer')
+            .attr('data-inst', inst);
+        g.append('path')
+            .attr('d', line(points))
+            .attr('fill', 'none')
+            .attr('stroke', instColor(inst))
+            .attr('stroke-width', lineWidth)
+            .attr('opacity', opacity)
+            .attr('pointer-events', 'none');
+
+        // Dots
+        points.forEach(pt => {
+            g.append('circle')
+                .attr('cx', xScale(pt.year)).attr('cy', yScale(pt.rank))
+                .attr('r', isHighlighted ? 5 : 3.5)
+                .attr('fill', instColor(inst))
+                .attr('opacity', opacity)
+                .attr('stroke', darkMode ? '#000' : '#fff')
+                .attr('stroke-width', 1)
+                .attr('data-inst', inst)
+                .attr('data-year', pt.year)
+                .attr('data-rank', pt.rank);
+        });
+
+        // End label
+        const lastPt = points[points.length - 1];
+        g.append('text')
+            .attr('x', xScale(lastPt.year) + 10)
+            .attr('y', yScale(lastPt.rank) + 4)
+            .attr('font-size', 10)
+            .attr('fill', instColor(inst))
+            .attr('opacity', opacity)
+            .attr('font-weight', isHighlighted ? 700 : 400)
+            .text(inst.length > 24 ? inst.substring(0,22) + '...' : inst);
+    });
+
+    // Tooltip for dots
+    svg.on('mousemove', function(e) {
+        const target = e.target;
+        if (target.tagName === 'circle' && target.getAttribute('data-inst')) {
+            const inst = target.getAttribute('data-inst');
+            const yr = target.getAttribute('data-year');
+            const rank = target.getAttribute('data-rank');
+            const cum = raceData[inst] ? (raceData[inst][yr] || 0) : 0;
+            const tip = d3.select('#tooltip');
+            tip.style('display', 'block')
+                .style('left', (e.clientX + 15) + 'px')
+                .style('top', (e.clientY + 15) + 'px')
+                .html(`<b>${inst}</b><br>Year: ${yr}<br>Rank: #${rank}<br>Cumulative: ${cum}`);
+        } else {
+            d3.select('#tooltip').style('display', 'none');
+        }
+    });
+    svg.on('mouseleave', () => d3.select('#tooltip').style('display', 'none'));
+
+    // Click to highlight (dots or lines)
+    svg.on('click', function(e) {
+        const target = e.target;
+        const inst = target.getAttribute('data-inst');
+        if (inst && (target.tagName === 'circle' || target.tagName === 'path')) {
+            highlightInst = highlightInst === inst ? null : inst;
+            drawCurrent();
+        }
+    });
+}
+
+// ── View switching ──
+function drawCurrent() {
+    // Remove race controls if they exist and we are not in race view
+    if (activeView !== 'race') {
+        const rc = document.getElementById('raceControls');
+        if (rc) rc.remove();
+        stopPlay();
+    }
+    // Show/hide heatmap controls
+    const hc = document.getElementById('heatmapControls');
+    if (hc) hc.style.display = (activeView === 'heatmap') ? 'block' : 'none';
+
+    if (activeView === 'heatmap') drawHeatmap();
+    else if (activeView === 'race') drawRace();
+    else if (activeView === 'bump') drawBump();
+    buildSidebar();
+}
+
+document.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        activeView = this.getAttribute('data-view');
+        raceYearIdx = 0;
+        stopPlay();
+        drawCurrent();
+    });
+});
+
+// ── Heatmap mode toggle ──
+document.querySelectorAll('#heatmap-mode-toggle button').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('#heatmap-mode-toggle button').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        heatmapMode = this.getAttribute('data-mode');
+        if (activeView === 'heatmap') drawHeatmap();
+    });
+});
+
+// ── Theme toggle ──
+document.getElementById('themeBtn').addEventListener('click', () => {
+    darkMode = !darkMode;
+    document.body.classList.toggle('dark-mode', darkMode);
+    document.getElementById('themeBtn').textContent = darkMode ? 'Light' : 'Dark';
+    drawCurrent();
+});
+
+// ── PNG export ──
+document.getElementById('pngBtn').addEventListener('click', () => {
+    const svgEl = document.getElementById('chart');
+    const serializer = new XMLSerializer();
+    let source = serializer.serializeToString(svgEl);
+    // Add namespaces
+    if (!source.match(/^<svg[^>]+xmlns="http:\/\/www.w3.org\/2000\/svg"/))
+        source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+    const canvas = document.createElement('canvas');
+    const svgW = +svgEl.getAttribute('width') || 800;
+    const svgH = +svgEl.getAttribute('height') || 600;
+    canvas.width = svgW * 2;
+    canvas.height = svgH * 2;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(2, 2);
+    // Fill background
+    ctx.fillStyle = darkMode ? '#0a0a1a' : '#ffffff';
+    ctx.fillRect(0, 0, svgW, svgH);
+    const img = new Image();
+    const blob = new Blob([source], {type: 'image/svg+xml;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+        const link = document.createElement('a');
+        link.download = 'ajls_institutional_presence_' + activeView + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    };
+    img.src = url;
+});
+
+// ── CSV export ──
+document.getElementById('csvBtn').addEventListener('click', () => {
+    let csv = 'Institution,' + years.join(',') + ',Total\n';
+    heatmap.forEach(row => {
+        const vals = years.map(y => (row.years[y] || {}).count || 0);
+        csv += '"' + row.institution.replace(/"/g, '""') + '",' + vals.join(',') + ',' + row.total + '\n';
+    });
+    const blob = new Blob([csv], {type: 'text/csv;charset=utf-8'});
+    const link = document.createElement('a');
+    link.download = 'ajls_institutional_presence.csv';
+    link.href = URL.createObjectURL(blob);
+    link.click();
+});
+
+// ── Responsive ──
+window.addEventListener('resize', () => {
+    if (activeView !== 'race') drawCurrent();
+});
+
+// ── Initialize ──
+drawCurrent();
+</script>
+
+<style>
+.info-btn { font-size:16px; font-weight:bold; min-width:32px; cursor:pointer; }
+#info-overlay {
+  display:none; position:fixed; inset:0; z-index:9999;
+  background:rgba(0,0,0,.55); justify-content:center; align-items:center;
+}
+#info-overlay.show { display:flex; }
+#info-box {
+  background:var(--bg,#fff); color:var(--fg,#222); border:1px solid var(--border,#ccc);
+  border-radius:10px; max-width:720px; width:92vw; max-height:85vh;
+  display:flex; flex-direction:column; box-shadow:0 8px 32px rgba(0,0,0,.3);
+}
+#info-header {
+  display:flex; align-items:center; padding:14px 20px 0; gap:12px;
+}
+#info-header .info-tab {
+  padding:8px 18px; cursor:pointer; border-radius:6px 6px 0 0;
+  border:1px solid var(--border,#ccc); border-bottom:none;
+  background:var(--bg2,#f5f5f5); font-size:13px; font-weight:600;
+}
+#info-header .info-tab.active {
+  background:var(--bg,#fff); border-bottom:1px solid var(--bg,#fff);
+  margin-bottom:-1px; position:relative; z-index:1;
+}
+#info-close {
+  margin-left:auto; background:none; border:none; font-size:22px;
+  cursor:pointer; color:var(--fg,#222); padding:4px 8px; line-height:1;
+}
+#info-body {
+  padding:20px 24px; overflow-y:auto; border-top:1px solid var(--border,#ccc);
+  font-size:14px; line-height:1.65;
+}
+#info-body h3 { margin:16px 0 8px; font-size:15px; }
+#info-body p { margin:0 0 10px; }
+#info-body ul { margin:4px 0 10px 20px; }
+#info-body li { margin:0 0 4px; }
+.info-pane { display:none; }
+.info-pane.active { display:block; }
+</style>
+<div id="info-overlay" onclick="if(event.target===this)toggleInfoModal()">
+  <div id="info-box">
+    <div id="info-header">
+      <div class="info-tab active" data-pane="about" onclick="switchInfoTab(this)">About This Visualization</div>
+      <div class="info-tab" data-pane="method" onclick="switchInfoTab(this)">Methodology</div>
+      <button id="info-close" onclick="toggleInfoModal()">&times;</button>
+    </div>
+    <div id="info-body">
+      <div class="info-pane active" id="info-about"><p>This visualization examines which academic departments and institutions have been
+represented at AJLS conferences over 26 years (1999&ndash;2025). Three complementary views reveal different
+aspects of institutional participation.</p>
+<p>The <strong>heatmap</strong> shows the top 25 institutions across all conference years, with cell
+intensity reflecting presentation count. The <strong>bar chart race</strong> animates cumulative
+institutional contributions over time. The <strong>bump chart</strong> tracks rank trajectories for the
+top 15 institutions, showing which departments have risen or fallen in relative participation.</p>
+<p>The sidebar provides concentration metrics (HHI index, top-5 share), geographic breakdowns, and
+information about first-time institutional appearances each year. Institutions are colored with their
+official university brand colors for easy identification.</p></div>
+      <div class="info-pane" id="info-method"><h3>Data Source</h3>
+<p>Institution data comes from presenter affiliations listed in AJLS conference programs (1999&ndash;2025),
+scraped from the association's Google Sites archive and parsed with a custom regex-based pipeline.</p>
+<h3>Normalization</h3>
+<p>Raw institution strings are processed through a multi-stage pipeline: concatenated text (e.g.,
+&ldquo;Ball State UniversityDazai Osamu&rsquo;s...&rdquo;) is separated, then mapped through 191
+canonical aliases to standardize variants (e.g., &ldquo;UC Berkeley&rdquo;, &ldquo;UCB&rdquo;,
+&ldquo;University of California at Berkeley&rdquo; all become &ldquo;University of California,
+Berkeley&rdquo;). This reduces ~530 raw institution strings to ~275 canonical forms.</p>
+<h3>School Colors</h3>
+<p>The top institutions receive colors matching their official brand palettes (e.g., Harvard crimson
+#A51C30, Princeton orange #E77500, Columbia blue #B9D9EB). Colors adjust for dark mode to ensure
+visibility. Institutions without defined brand colors appear in grey.</p>
+<h3>Metrics</h3>
+<p>The HHI (Herfindahl-Hirschman Index) measures concentration: HHI = &Sigma;(share&sup2;), where
+0 indicates perfect dispersion and 1 indicates monopoly. Values above 0.25 indicate high concentration.</p>
+<h3>Limitations</h3>
+<ul>
+<li>Institution names are self-reported by presenters and may vary across years.</li>
+<li>Institutions appearing under multiple names may not be fully consolidated despite normalization.</li>
+<li>Some presenters list department rather than university.</li>
+<li>Independent scholars and those between positions may be undercounted.</li>
+</ul></div>
+    </div>
+  </div>
+</div>
+<script>
+function toggleInfoModal(){
+  document.getElementById('info-overlay').classList.toggle('show');
+}
+function switchInfoTab(el){
+  document.querySelectorAll('#info-header .info-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#info-body .info-pane').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('info-'+el.dataset.pane).classList.add('active');
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.getElementById('info-overlay').classList.remove('show'); });
+</script>
+</body>
+</html>

@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What AJLS Talks About: 26 Years of Conference Topics</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+:root {
+    --bg: #ffffff; --bg2: #f5f5f5; --bg3: #e8e8e8;
+    --fg: #1a1a2e; --fg2: #555; --fg3: #888;
+    --accent: #2563eb; --accent2: #dc2626; --accent-light: #dbeafe;
+    --grid: rgba(0,0,0,0.08); --border: #ddd;
+}
+.dark-mode {
+    --bg: #0a0a1a; --bg2: #141428; --bg3: #1e1e3a;
+    --fg: #e0e0e0; --fg2: #aaa; --fg3: #777;
+    --accent: #4a9eff; --accent2: #ff6b6b; --accent-light: #1a2a4a;
+    --grid: rgba(255,255,255,0.05); --border: #333;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--fg); overflow-y: auto;
+}
+
+/* Toolbar */
+#toolbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    padding: 10px 16px; background: var(--bg2); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 20;
+}
+#toolbar h1 { font-size: 16px; font-weight: 700; white-space: nowrap; }
+.spacer { flex-grow: 1; }
+#toolbar button {
+    font-size: 12px; padding: 5px 12px; border-radius: 4px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--fg);
+    cursor: pointer; white-space: nowrap;
+}
+#toolbar button:hover { background: var(--bg3); }
+
+/* Tabs */
+.tabs {
+    display: flex; gap: 0; background: var(--bg2); border-bottom: 2px solid var(--border);
+    padding: 0 16px;
+}
+.tab-btn {
+    padding: 10px 22px; font-size: 14px; cursor: pointer;
+    border: none; background: none; color: var(--fg3);
+    border-bottom: 3px solid transparent; transition: all 0.2s;
+    font-family: inherit; font-weight: 500;
+}
+.tab-btn:hover { color: var(--fg); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+
+/* Controls row */
+.controls {
+    display: flex; gap: 8px; padding: 10px 16px; align-items: center;
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+.controls label { font-size: 13px; color: var(--fg2); cursor: pointer; }
+.controls .btn-group { display: flex; gap: 0; }
+.controls .btn-group button {
+    font-size: 12px; padding: 4px 12px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--fg);
+    cursor: pointer; font-family: inherit;
+}
+.controls .btn-group button:first-child { border-radius: 4px 0 0 4px; }
+.controls .btn-group button:last-child { border-radius: 0 4px 4px 0; }
+.controls .btn-group button + button { border-left: none; }
+.controls .btn-group button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.controls .btn-group button:hover:not(.active) { background: var(--bg3); }
+
+/* Main chart layout */
+.chart-container {
+    display: flex; padding: 12px 16px; gap: 16px; min-height: 500px;
+}
+.chart-area { flex: 1; min-width: 0; position: relative; }
+.chart-area svg { width: 100%; display: block; }
+
+/* Legend panel */
+.legend-panel {
+    width: 240px; min-width: 240px; max-height: calc(100vh - 160px);
+    overflow-y: auto; background: var(--bg2); border-radius: 6px;
+    border: 1px solid var(--border); padding: 8px 0;
+}
+.legend-panel::-webkit-scrollbar { width: 5px; }
+.legend-panel::-webkit-scrollbar-thumb { background: var(--fg3); border-radius: 3px; }
+.legend-header {
+    font-size: 11px; font-weight: 700; color: var(--fg3);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 6px 12px 4px; border-bottom: 1px solid var(--border);
+    margin-bottom: 2px;
+}
+.legend-all-btn {
+    display: flex; align-items: center; gap: 6px; padding: 5px 12px;
+    cursor: pointer; font-size: 12px; font-weight: 600; color: var(--fg);
+    border-bottom: 1px solid var(--border); margin-bottom: 4px;
+}
+.legend-all-btn:hover { background: var(--bg3); }
+.legend-divider {
+    font-size: 10px; font-weight: 700; color: var(--fg3);
+    padding: 8px 12px 3px; text-transform: uppercase; letter-spacing: 0.5px;
+    border-top: 1px solid var(--border); margin-top: 4px;
+}
+.legend-item {
+    display: flex; align-items: center; gap: 6px; padding: 4px 12px;
+    cursor: pointer; font-size: 12px; transition: opacity 0.15s;
+}
+.legend-item:hover { background: var(--bg3); }
+.legend-item.dimmed { opacity: 0.25; }
+.legend-swatch {
+    width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0;
+}
+.legend-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.legend-count { font-size: 11px; color: var(--fg3); flex-shrink: 0; }
+
+/* Tooltip */
+#tooltip {
+    position: fixed; display: none; background: var(--bg2);
+    border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px;
+    font-size: 12px; pointer-events: none; z-index: 100;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2); max-width: 280px;
+    line-height: 1.5;
+}
+#tooltip b { color: var(--fg); }
+#tooltip .tt-val { font-weight: 700; color: var(--accent); }
+#tooltip .tt-pct { color: var(--fg2); }
+
+/* Hidden tab contents */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Responsive */
+@media (max-width: 800px) {
+    .chart-container { flex-direction: column; }
+    .legend-panel { width: 100%; min-width: 0; max-height: 200px; }
+}
+</style>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
+</head>
+<body>
+
+<div id="toolbar">
+    <h1>What AJLS Talks About: 26 Years of Conference Topics</h1>
+    <div class="spacer"></div>
+    <button class="info-btn" onclick="toggleInfoModal()" title="About this visualization">&#x2139;</button>
+    <button id="exportPngBtn">Export PNG</button>
+    <button id="exportCsvBtn">Export CSV</button>
+    <button id="themeBtn">&#9789; Dark</button>
+</div>
+
+<div class="tabs" id="tabBar">
+    <button class="tab-btn active" data-tab="themes">Themes</button>
+    <button class="tab-btn" data-tab="figures">Literary Figures</button>
+    <button class="tab-btn" data-tab="genres">Genres/Media</button>
+    <button class="tab-btn" data-tab="periods">Periods</button>
+</div>
+
+<div id="tab-themes" class="tab-content active">
+    <div class="controls">
+        <div class="btn-group" data-tab="themes" data-field="chart">
+            <button class="active" data-val="stacked">Stacked Bar</button>
+            <button data-val="bump">Bump Chart</button>
+        </div>
+        <div class="btn-group" data-tab="themes" data-field="mode">
+            <button class="active" data-val="count">Count</button>
+            <button data-val="pct">% of Presentations</button>
+        </div>
+    </div>
+    <div class="chart-container">
+        <div class="chart-area" id="chartArea-themes"></div>
+        <div class="legend-panel" id="legend-themes"></div>
+    </div>
+</div>
+
+<div id="tab-figures" class="tab-content">
+    <div class="controls">
+        <div class="btn-group" data-tab="figures" data-field="chart">
+            <button class="active" data-val="stacked">Stacked Bar</button>
+            <button data-val="bump">Bump Chart</button>
+        </div>
+        <div class="btn-group" data-tab="figures" data-field="mode">
+            <button class="active" data-val="count">Count</button>
+            <button data-val="pct">% of Presentations</button>
+        </div>
+    </div>
+    <div class="chart-container">
+        <div class="chart-area" id="chartArea-figures"></div>
+        <div class="legend-panel" id="legend-figures"></div>
+    </div>
+</div>
+
+<div id="tab-genres" class="tab-content">
+    <div class="controls">
+        <div class="btn-group" data-tab="genres" data-field="chart">
+            <button class="active" data-val="stacked">Stacked Bar</button>
+            <button data-val="bump">Bump Chart</button>
+        </div>
+        <div class="btn-group" data-tab="genres" data-field="mode">
+            <button class="active" data-val="count">Count</button>
+            <button data-val="pct">% of Presentations</button>
+        </div>
+    </div>
+    <div class="chart-container">
+        <div class="chart-area" id="chartArea-genres"></div>
+        <div class="legend-panel" id="legend-genres"></div>
+    </div>
+</div>
+
+<div id="tab-periods" class="tab-content">
+    <div class="controls">
+        <div class="btn-group" data-tab="periods" data-field="chart">
+            <button class="active" data-val="stacked">Stacked Bar</button>
+            <button data-val="bump">Bump Chart</button>
+        </div>
+        <div class="btn-group" data-tab="periods" data-field="mode">
+            <button class="active" data-val="count">Count</button>
+            <button data-val="pct">% of Presentations</button>
+        </div>
+    </div>
+    <div class="chart-container">
+        <div class="chart-area" id="chartArea-periods"></div>
+        <div class="legend-panel" id="legend-periods"></div>
+    </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const ALL_DATA = {"themes": {"items": [{"id": "Gender & Sexuality", "label": "Gender & Sexuality", "total": 275}, {"id": "Technology & Media", "label": "Technology & Media", "total": 260}, {"id": "Space & Place", "label": "Space & Place", "total": 236}, {"id": "Modernity & Modernism", "label": "Modernity & Modernism", "total": 228}, {"id": "Translation & World Lit", "label": "Translation & World Lit", "total": 160}, {"id": "Identity & Subjectivity", "label": "Identity & Subjectivity", "total": 141}, {"id": "Body & Embodiment", "label": "Body & Embodiment", "total": 116}, {"id": "Empire & Colonialism", "label": "Empire & Colonialism", "total": 115}, {"id": "War & Memory", "label": "War & Memory", "total": 105}, {"id": "Religion & Spirituality", "label": "Religion & Spirituality", "total": 101}, {"id": "Popular Culture", "label": "Popular Culture", "total": 90}, {"id": "Nature & Environment", "label": "Nature & Environment", "total": 87}, {"id": "Pedagogy & Methodology", "label": "Pedagogy & Methodology", "total": 85}, {"id": "Race & Ethnicity", "label": "Race & Ethnicity", "total": 62}, {"id": "Trauma & Violence", "label": "Trauma & Violence", "total": 62}], "years": [1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2022, 2023, 2024, 2025], "counts": {"Gender & Sexuality": [4, 16, 1, 11, 17, 2, 4, 15, 6, 3, 48, 1, 25, 5, 5, 4, 9, 14, 4, 9, 20, 3, 13, 16, 7, 13], "Technology & Media": [1, 5, 3, 4, 6, 2, 27, 2, 7, 6, 5, 52, 2, 6, 10, 1, 5, 20, 4, 10, 11, 12, 15, 10, 2, 32], "Space & Place": [1, 5, 1, 1, 4, 32, 5, 36, 4, 2, 6, 11, 0, 38, 3, 1, 8, 10, 1, 4, 11, 14, 8, 2, 3, 25], "Modernity & Modernism": [11, 6, 4, 14, 11, 9, 7, 6, 11, 10, 6, 13, 2, 12, 4, 2, 11, 13, 1, 9, 8, 12, 13, 17, 9, 7], "Translation & World Lit": [5, 10, 9, 8, 5, 0, 5, 2, 6, 2, 1, 0, 0, 4, 3, 1, 1, 10, 0, 5, 6, 6, 6, 7, 55, 3], "Identity & Subjectivity": [7, 6, 3, 2, 8, 3, 2, 6, 6, 6, 8, 4, 2, 8, 8, 2, 4, 9, 1, 3, 11, 4, 8, 6, 4, 10], "Body & Embodiment": [0, 1, 0, 0, 4, 1, 2, 5, 0, 1, 1, 4, 18, 0, 4, 0, 24, 5, 5, 2, 5, 10, 5, 7, 9, 3], "Empire & Colonialism": [5, 5, 2, 0, 4, 6, 4, 4, 9, 3, 1, 2, 0, 7, 2, 2, 8, 7, 6, 0, 7, 9, 4, 10, 3, 5], "War & Memory": [3, 1, 1, 4, 4, 2, 2, 6, 2, 2, 4, 1, 1, 8, 3, 1, 1, 3, 35, 2, 2, 4, 0, 3, 3, 7], "Religion & Spirituality": [0, 0, 0, 6, 6, 6, 0, 9, 0, 3, 0, 3, 6, 2, 5, 18, 4, 5, 1, 4, 6, 2, 3, 6, 2, 4], "Popular Culture": [0, 3, 3, 0, 5, 1, 2, 5, 1, 7, 4, 7, 2, 3, 2, 0, 0, 14, 1, 3, 5, 2, 8, 6, 1, 5], "Nature & Environment": [0, 0, 0, 1, 2, 20, 0, 1, 3, 0, 2, 3, 0, 2, 2, 0, 0, 8, 7, 0, 3, 14, 5, 8, 2, 4], "Pedagogy & Methodology": [16, 3, 0, 4, 13, 1, 1, 0, 3, 0, 1, 5, 0, 2, 3, 0, 0, 0, 0, 13, 4, 4, 3, 4, 4, 1], "Race & Ethnicity": [4, 3, 2, 2, 4, 2, 0, 0, 1, 0, 0, 0, 1, 2, 2, 0, 1, 4, 3, 2, 6, 5, 0, 3, 10, 5], "Trauma & Violence": [0, 0, 1, 1, 1, 2, 0, 0, 1, 0, 0, 2, 4, 1, 3, 2, 2, 1, 21, 0, 2, 6, 1, 5, 2, 4]}, "percentages": {"Gender & Sexuality": [12.5, 64.0, 3.7, 35.48, 31.48, 7.41, 14.29, 34.88, 12.77, 8.82, 123.08, 1.75, 100.0, 8.77, 13.16, 17.39, 19.15, 25.93, 12.5, 19.15, 38.46, 4.41, 37.14, 25.81, 10.77, 19.7], "Technology & Media": [3.12, 20.0, 11.11, 12.9, 11.11, 7.41, 96.43, 4.65, 14.89, 17.65, 12.82, 91.23, 8.0, 10.53, 26.32, 4.35, 10.64, 37.04, 12.5, 21.28, 21.15, 17.65, 42.86, 16.13, 3.08, 48.48], "Space & Place": [3.12, 20.0, 3.7, 3.23, 7.41, 118.52, 17.86, 83.72, 8.51, 5.88, 15.38, 19.3, 0.0, 66.67, 7.89, 4.35, 17.02, 18.52, 3.12, 8.51, 21.15, 20.59, 22.86, 3.23, 4.62, 37.88], "Modernity & Modernism": [34.38, 24.0, 14.81, 45.16, 20.37, 33.33, 25.0, 13.95, 23.4, 29.41, 15.38, 22.81, 8.0, 21.05, 10.53, 8.7, 23.4, 24.07, 3.12, 19.15, 15.38, 17.65, 37.14, 27.42, 13.85, 10.61], "Translation & World Lit": [15.62, 40.0, 33.33, 25.81, 9.26, 0.0, 17.86, 4.65, 12.77, 5.88, 2.56, 0.0, 0.0, 7.02, 7.89, 4.35, 2.13, 18.52, 0.0, 10.64, 11.54, 8.82, 17.14, 11.29, 84.62, 4.55], "Identity & Subjectivity": [21.88, 24.0, 11.11, 6.45, 14.81, 11.11, 7.14, 13.95, 12.77, 17.65, 20.51, 7.02, 8.0, 14.04, 21.05, 8.7, 8.51, 16.67, 3.12, 6.38, 21.15, 5.88, 22.86, 9.68, 6.15, 15.15], "Body & Embodiment": [0.0, 4.0, 0.0, 0.0, 7.41, 3.7, 7.14, 11.63, 0.0, 2.94, 2.56, 7.02, 72.0, 0.0, 10.53, 0.0, 51.06, 9.26, 15.62, 4.26, 9.62, 14.71, 14.29, 11.29, 13.85, 4.55], "Empire & Colonialism": [15.62, 20.0, 7.41, 0.0, 7.41, 22.22, 14.29, 9.3, 19.15, 8.82, 2.56, 3.51, 0.0, 12.28, 5.26, 8.7, 17.02, 12.96, 18.75, 0.0, 13.46, 13.24, 11.43, 16.13, 4.62, 7.58], "War & Memory": [9.38, 4.0, 3.7, 12.9, 7.41, 7.41, 7.14, 13.95, 4.26, 5.88, 10.26, 1.75, 4.0, 14.04, 7.89, 4.35, 2.13, 5.56, 109.38, 4.26, 3.85, 5.88, 0.0, 4.84, 4.62, 10.61], "Religion & Spirituality": [0.0, 0.0, 0.0, 19.35, 11.11, 22.22, 0.0, 20.93, 0.0, 8.82, 0.0, 5.26, 24.0, 3.51, 13.16, 78.26, 8.51, 9.26, 3.12, 8.51, 11.54, 2.94, 8.57, 9.68, 3.08, 6.06], "Popular Culture": [0.0, 12.0, 11.11, 0.0, 9.26, 3.7, 7.14, 11.63, 2.13, 20.59, 10.26, 12.28, 8.0, 5.26, 5.26, 0.0, 0.0, 25.93, 3.12, 6.38, 9.62, 2.94, 22.86, 9.68, 1.54, 7.58], "Nature & Environment": [0.0, 0.0, 0.0, 3.23, 3.7, 74.07, 0.0, 2.33, 6.38, 0.0, 5.13, 5.26, 0.0, 3.51, 5.26, 0.0, 0.0, 14.81, 21.88, 0.0, 5.77, 20.59, 14.29, 12.9, 3.08, 6.06], "Pedagogy & Methodology": [50.0, 12.0, 0.0, 12.9, 24.07, 3.7, 3.57, 0.0, 6.38, 0.0, 2.56, 8.77, 0.0, 3.51, 7.89, 0.0, 0.0, 0.0, 0.0, 27.66, 7.69, 5.88, 8.57, 6.45, 6.15, 1.52], "Race & Ethnicity": [12.5, 12.0, 7.41, 6.45, 7.41, 7.41, 0.0, 0.0, 2.13, 0.0, 0.0, 0.0, 4.0, 3.51, 5.26, 0.0, 2.13, 7.41, 9.38, 4.26, 11.54, 7.35, 0.0, 4.84, 15.38, 7.58], "Trauma & Violence": [0.0, 0.0, 3.7, 3.23, 1.85, 7.41, 0.0, 0.0, 2.13, 0.0, 0.0, 3.51, 16.0, 1.75, 7.89, 8.7, 4.26, 1.85, 65.62, 0.0, 3.85, 8.82, 2.86, 8.06, 3.08, 6.06]}, "ranks": {"Pedagogy & Methodology": [0, 8, 14, 6, 1, 13, 10, 12, 8, 12, 11, 4, 14, 11, 9, 13, 14, 14, 14, 0, 11, 11, 11, 11, 6, 14], "Modernity & Modernism": [1, 2, 1, 0, 2, 2, 1, 3, 0, 0, 3, 1, 5, 1, 4, 2, 1, 3, 9, 3, 4, 3, 2, 0, 2, 4], "Identity & Subjectivity": [2, 3, 3, 7, 3, 5, 6, 4, 5, 3, 1, 5, 6, 2, 1, 3, 6, 6, 10, 7, 3, 9, 4, 7, 5, 3], "Translation & World Lit": [3, 1, 0, 2, 6, 14, 3, 10, 4, 8, 8, 13, 11, 7, 7, 8, 9, 5, 13, 4, 6, 6, 6, 5, 0, 12], "Empire & Colonialism": [4, 6, 5, 13, 10, 3, 5, 8, 1, 5, 10, 9, 12, 4, 11, 4, 4, 8, 3, 12, 5, 5, 9, 3, 8, 6], "Gender & Sexuality": [5, 0, 7, 1, 0, 6, 4, 1, 3, 4, 0, 11, 0, 6, 2, 1, 2, 1, 5, 2, 0, 12, 1, 1, 4, 2], "Race & Ethnicity": [6, 9, 6, 8, 12, 9, 13, 13, 11, 13, 13, 14, 9, 12, 14, 14, 11, 11, 7, 11, 8, 8, 14, 13, 1, 8], "War & Memory": [7, 11, 9, 5, 11, 8, 8, 5, 9, 9, 5, 12, 8, 3, 8, 9, 10, 12, 0, 10, 13, 10, 13, 12, 9, 5], "Technology & Media": [8, 4, 2, 4, 4, 7, 0, 9, 2, 2, 4, 0, 4, 5, 0, 6, 5, 0, 6, 1, 1, 2, 0, 2, 10, 0], "Space & Place": [9, 5, 8, 9, 8, 0, 2, 0, 6, 7, 2, 2, 10, 0, 6, 7, 3, 4, 8, 5, 2, 0, 3, 14, 7, 1], "Body & Embodiment": [10, 10, 11, 12, 9, 11, 7, 6, 13, 10, 9, 6, 1, 14, 5, 10, 0, 9, 4, 9, 9, 4, 7, 6, 3, 13], "Religion & Spirituality": [11, 12, 12, 3, 5, 4, 11, 2, 14, 6, 12, 7, 2, 9, 3, 0, 7, 10, 11, 6, 7, 13, 10, 8, 11, 9], "Popular Culture": [12, 7, 4, 14, 7, 12, 9, 7, 10, 1, 6, 3, 7, 8, 12, 11, 12, 2, 12, 8, 10, 14, 5, 9, 14, 7], "Nature & Environment": [13, 13, 13, 10, 13, 1, 12, 11, 7, 11, 7, 8, 13, 10, 13, 12, 13, 7, 2, 13, 12, 1, 8, 4, 12, 10], "Trauma & Violence": [14, 14, 10, 11, 14, 10, 14, 14, 12, 14, 14, 10, 3, 13, 10, 5, 8, 13, 1, 14, 14, 7, 12, 10, 13, 11]}, "totals": [32, 25, 27, 31, 54, 27, 28, 43, 47, 34, 39, 57, 25, 57, 38, 23, 47, 54, 32, 47, 52, 68, 35, 62, 65, 66], "yearsPresent": {"Gender & Sexuality": 26, "Technology & Media": 26, "Space & Place": 25, "Modernity & Modernism": 26, "Translation & World Lit": 22, "Identity & Subjectivity": 26, "Body & Embodiment": 20, "Empire & Colonialism": 23, "War & Memory": 25, "Religion & Spirituality": 20, "Popular Culture": 22, "Nature & Environment": 17, "Pedagogy & Methodology": 18, "Race & Ethnicity": 19, "Trauma & Violence": 19}}, "figures": {"items": [{"id": "Natsume Sōseki", "label": "Natsume Sōseki", "total": 32}, {"id": "Tanizaki Jun'ichirō", "label": "Tanizaki Jun'ichirō", "total": 31}, {"id": "Murasaki Shikibu", "label": "Murasaki Shikibu", "total": 21}, {"id": "Genji monogatari", "label": "Genji monogatari", "total": 18}, {"id": "Nakagami Kenji", "label": "Nakagami Kenji", "total": 16}, {"id": "Dazai Osamu", "label": "Dazai Osamu", "total": 14}, {"id": "Tawada Yōko", "label": "Tawada Yōko", "total": 13}, {"id": "Mishima Yukio", "label": "Mishima Yukio", "total": 12}, {"id": "Ōba Minako", "label": "Ōba Minako", "total": 12}, {"id": "Kawabata Yasunari", "label": "Kawabata Yasunari", "total": 9}, {"id": "Ōe Kenzaburō", "label": "Ōe Kenzaburō", "total": 9}, {"id": "Murakami Haruki", "label": "Murakami Haruki", "total": 9}, {"id": "Izumi Kyōka", "label": "Izumi Kyōka", "total": 8}, {"id": "Medoruma Shun", "label": "Medoruma Shun", "total": 8}, {"id": "Enchi Fumiko", "label": "Enchi Fumiko", "total": 8}], "years": [1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2022, 2023, 2024, 2025], "counts": {"Natsume Sōseki": [0, 0, 0, 1, 2, 2, 0, 0, 9, 6, 2, 2, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 2], "Tanizaki Jun'ichirō": [0, 4, 0, 2, 0, 0, 1, 0, 0, 2, 2, 2, 0, 2, 2, 0, 2, 0, 0, 0, 2, 2, 2, 0, 6, 0], "Murasaki Shikibu": [0, 2, 2, 2, 2, 0, 0, 1, 0, 0, 0, 2, 1, 0, 0, 0, 2, 2, 0, 0, 1, 1, 0, 0, 3, 0], "Genji monogatari": [1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 2, 1, 0, 0, 0, 2, 2, 0, 0, 1, 2, 0, 1, 3, 1], "Nakagami Kenji": [2, 2, 2, 2, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2], "Dazai Osamu": [0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 2, 0, 0, 0, 2, 0, 2, 2, 0, 0], "Tawada Yōko": [0, 0, 2, 0, 2, 0, 2, 2, 0, 0, 1, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0], "Mishima Yukio": [0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 2, 0, 0, 2, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "Ōba Minako": [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "Kawabata Yasunari": [0, 0, 0, 0, 2, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 1], "Ōe Kenzaburō": [0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 4], "Murakami Haruki": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 4, 1, 1, 0, 0, 0], "Izumi Kyōka": [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0], "Medoruma Shun": [0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0], "Enchi Fumiko": [0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 2, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, "percentages": {"Natsume Sōseki": [0.0, 0.0, 0.0, 3.23, 3.7, 7.41, 0.0, 0.0, 19.15, 17.65, 5.13, 3.51, 0.0, 0.0, 5.26, 0.0, 0.0, 0.0, 0.0, 4.26, 0.0, 0.0, 0.0, 0.0, 3.08, 3.03], "Tanizaki Jun'ichirō": [0.0, 16.0, 0.0, 6.45, 0.0, 0.0, 3.57, 0.0, 0.0, 5.88, 5.13, 3.51, 0.0, 3.51, 5.26, 0.0, 4.26, 0.0, 0.0, 0.0, 3.85, 2.94, 5.71, 0.0, 9.23, 0.0], "Murasaki Shikibu": [0.0, 8.0, 7.41, 6.45, 3.7, 0.0, 0.0, 2.33, 0.0, 0.0, 0.0, 3.51, 4.0, 0.0, 0.0, 0.0, 4.26, 3.7, 0.0, 0.0, 1.92, 1.47, 0.0, 0.0, 4.62, 0.0], "Genji monogatari": [3.12, 0.0, 0.0, 0.0, 1.85, 0.0, 0.0, 2.33, 0.0, 0.0, 0.0, 3.51, 4.0, 0.0, 0.0, 0.0, 4.26, 3.7, 0.0, 0.0, 1.92, 2.94, 0.0, 1.61, 4.62, 1.52], "Nakagami Kenji": [6.25, 8.0, 7.41, 6.45, 0.0, 0.0, 0.0, 0.0, 4.26, 0.0, 0.0, 3.51, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.08, 3.03], "Dazai Osamu": [0.0, 8.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.51, 0.0, 3.51, 0.0, 0.0, 4.26, 0.0, 0.0, 0.0, 3.85, 0.0, 5.71, 3.23, 0.0, 0.0], "Tawada Yōko": [0.0, 0.0, 7.41, 0.0, 3.7, 0.0, 7.14, 4.65, 0.0, 0.0, 2.56, 0.0, 0.0, 3.51, 0.0, 0.0, 0.0, 3.7, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Mishima Yukio": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 7.14, 0.0, 4.26, 0.0, 0.0, 3.51, 0.0, 0.0, 5.26, 17.39, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Ōba Minako": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.33, 0.0, 0.0, 28.21, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Kawabata Yasunari": [0.0, 0.0, 0.0, 0.0, 3.7, 0.0, 0.0, 0.0, 8.51, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.71, 0.0, 0.0, 1.52], "Ōe Kenzaburō": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 7.14, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.26, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.61, 0.0, 6.06], "Murakami Haruki": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.75, 0.0, 0.0, 0.0, 8.7, 0.0, 0.0, 0.0, 0.0, 7.69, 1.47, 2.86, 0.0, 0.0, 0.0], "Izumi Kyōka": [6.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.13, 0.0, 0.0, 0.0, 0.0, 8.7, 0.0, 0.0, 0.0, 0.0, 0.0, 2.94, 0.0, 0.0, 0.0, 0.0], "Medoruma Shun": [0.0, 0.0, 0.0, 6.45, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.51, 5.26, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.08, 0.0], "Enchi Fumiko": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.65, 0.0, 0.0, 5.13, 0.0, 16.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}, "ranks": {"Nakagami Kenji": [0, 2, 1, 2, 6, 4, 7, 7, 2, 4, 8, 4, 5, 7, 7, 7, 5, 5, 4, 4, 6, 6, 7, 6, 4, 2], "Izumi Kyōka": [1, 12, 12, 13, 12, 12, 12, 13, 12, 12, 3, 12, 13, 13, 13, 2, 12, 12, 12, 12, 12, 2, 12, 12, 13, 12], "Genji monogatari": [2, 5, 5, 5, 4, 3, 6, 3, 6, 3, 7, 3, 2, 6, 6, 6, 2, 1, 3, 3, 4, 1, 6, 1, 2, 3], "Natsume Sōseki": [3, 4, 3, 4, 0, 0, 4, 5, 0, 0, 1, 0, 3, 4, 0, 3, 4, 3, 0, 0, 5, 5, 4, 3, 3, 1], "Tanizaki Jun'ichirō": [4, 0, 4, 0, 5, 1, 3, 6, 4, 1, 2, 1, 4, 0, 1, 4, 0, 4, 1, 1, 1, 0, 0, 4, 0, 5], "Murasaki Shikibu": [5, 1, 0, 1, 1, 2, 5, 2, 5, 2, 6, 2, 1, 5, 5, 5, 1, 0, 2, 2, 3, 3, 5, 5, 1, 6], "Dazai Osamu": [6, 3, 6, 6, 7, 5, 8, 8, 7, 5, 9, 5, 6, 1, 8, 8, 3, 6, 5, 5, 2, 7, 1, 0, 6, 7], "Tawada Yōko": [7, 6, 2, 7, 2, 6, 0, 0, 8, 6, 5, 8, 7, 2, 9, 9, 6, 2, 6, 6, 7, 8, 8, 7, 7, 8], "Mishima Yukio": [8, 7, 7, 8, 8, 7, 1, 9, 3, 7, 10, 6, 8, 8, 2, 0, 7, 7, 7, 7, 8, 9, 9, 8, 8, 9], "Ōba Minako": [9, 8, 8, 9, 9, 8, 9, 4, 9, 8, 0, 9, 9, 9, 10, 10, 8, 8, 8, 8, 9, 10, 10, 9, 9, 10], "Kawabata Yasunari": [10, 9, 9, 10, 3, 9, 10, 10, 1, 9, 11, 10, 10, 10, 11, 11, 9, 9, 9, 9, 10, 11, 2, 10, 10, 4], "Ōe Kenzaburō": [11, 10, 10, 11, 10, 10, 2, 11, 10, 10, 12, 11, 11, 11, 3, 12, 10, 10, 10, 10, 11, 12, 11, 2, 11, 0], "Murakami Haruki": [12, 11, 11, 12, 11, 11, 11, 12, 11, 11, 13, 7, 12, 12, 12, 1, 11, 11, 11, 11, 0, 4, 3, 11, 12, 11], "Medoruma Shun": [13, 13, 13, 3, 13, 13, 13, 14, 13, 13, 14, 13, 14, 3, 4, 13, 13, 13, 13, 13, 13, 13, 13, 13, 5, 13], "Enchi Fumiko": [14, 14, 14, 14, 14, 14, 14, 1, 14, 14, 4, 14, 0, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14]}, "totals": [32, 25, 27, 31, 54, 27, 28, 43, 47, 34, 39, 57, 25, 57, 38, 23, 47, 54, 32, 47, 52, 68, 35, 62, 65, 66], "yearsPresent": {"Natsume Sōseki": 11, "Tanizaki Jun'ichirō": 13, "Murasaki Shikibu": 12, "Genji monogatari": 12, "Nakagami Kenji": 8, "Dazai Osamu": 7, "Tawada Yōko": 7, "Mishima Yukio": 5, "Ōba Minako": 2, "Kawabata Yasunari": 4, "Ōe Kenzaburō": 4, "Murakami Haruki": 5, "Izumi Kyōka": 4, "Medoruma Shun": 4, "Enchi Fumiko": 3}}, "genres": {"items": [{"id": "Novel/Fiction", "label": "Novel/Fiction", "total": 333}, {"id": "Poetry", "label": "Poetry", "total": 224}, {"id": "Drama/Theater", "label": "Drama/Theater", "total": 161}, {"id": "Translation", "label": "Translation", "total": 84}, {"id": "Film/Cinema", "label": "Film/Cinema", "total": 80}, {"id": "Anime/Manga", "label": "Anime/Manga", "total": 57}, {"id": "Visual Arts", "label": "Visual Arts", "total": 46}, {"id": "Essay", "label": "Essay", "total": 36}, {"id": "Digital/New Media", "label": "Digital/New Media", "total": 31}], "years": [1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2022, 2023, 2024, 2025], "counts": {"Novel/Fiction": [11, 11, 2, 9, 25, 12, 11, 9, 11, 19, 21, 9, 15, 14, 9, 8, 9, 14, 12, 3, 21, 12, 6, 26, 16, 18], "Poetry": [17, 6, 2, 28, 13, 7, 1, 5, 5, 8, 6, 2, 3, 9, 8, 2, 6, 4, 2, 9, 19, 16, 10, 18, 9, 9], "Drama/Theater": [1, 3, 0, 3, 8, 6, 2, 8, 3, 4, 7, 0, 1, 5, 32, 1, 8, 6, 6, 8, 6, 3, 9, 18, 6, 7], "Translation": [3, 3, 2, 3, 0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 5, 0, 0, 2, 6, 4, 5, 46, 0], "Film/Cinema": [0, 0, 2, 0, 2, 0, 1, 3, 2, 2, 4, 5, 1, 8, 1, 0, 7, 18, 3, 1, 0, 0, 3, 2, 7, 8], "Anime/Manga": [0, 0, 0, 0, 2, 0, 0, 2, 0, 3, 3, 8, 4, 1, 0, 2, 0, 15, 4, 0, 2, 2, 3, 6, 0, 0], "Visual Arts": [1, 0, 0, 1, 2, 0, 3, 0, 0, 2, 2, 6, 0, 0, 5, 0, 1, 11, 1, 1, 1, 3, 2, 1, 0, 3], "Essay": [0, 6, 2, 0, 1, 1, 0, 4, 0, 1, 0, 0, 2, 5, 2, 0, 1, 0, 1, 2, 2, 3, 1, 1, 0, 1], "Digital/New Media": [0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 6, 0, 1, 1, 0, 0, 0, 1, 1, 2, 8, 1, 2, 1, 4]}, "percentages": {"Novel/Fiction": [34.38, 44.0, 7.41, 29.03, 46.3, 44.44, 39.29, 20.93, 23.4, 55.88, 53.85, 15.79, 60.0, 24.56, 23.68, 34.78, 19.15, 25.93, 37.5, 6.38, 40.38, 17.65, 17.14, 41.94, 24.62, 27.27], "Poetry": [53.12, 24.0, 7.41, 90.32, 24.07, 25.93, 3.57, 11.63, 10.64, 23.53, 15.38, 3.51, 12.0, 15.79, 21.05, 8.7, 12.77, 7.41, 6.25, 19.15, 36.54, 23.53, 28.57, 29.03, 13.85, 13.64], "Drama/Theater": [3.12, 12.0, 0.0, 9.68, 14.81, 22.22, 7.14, 18.6, 6.38, 11.76, 17.95, 0.0, 4.0, 8.77, 84.21, 4.35, 17.02, 11.11, 18.75, 17.02, 11.54, 4.41, 25.71, 29.03, 9.23, 10.61], "Translation": [9.38, 12.0, 7.41, 9.68, 0.0, 0.0, 3.57, 0.0, 4.26, 0.0, 0.0, 0.0, 0.0, 0.0, 5.26, 0.0, 0.0, 9.26, 0.0, 0.0, 3.85, 8.82, 11.43, 8.06, 70.77, 0.0], "Film/Cinema": [0.0, 0.0, 7.41, 0.0, 3.7, 0.0, 3.57, 6.98, 4.26, 5.88, 10.26, 8.77, 4.0, 14.04, 2.63, 0.0, 14.89, 33.33, 9.38, 2.13, 0.0, 0.0, 8.57, 3.23, 10.77, 12.12], "Anime/Manga": [0.0, 0.0, 0.0, 0.0, 3.7, 0.0, 0.0, 4.65, 0.0, 8.82, 7.69, 14.04, 16.0, 1.75, 0.0, 8.7, 0.0, 27.78, 12.5, 0.0, 3.85, 2.94, 8.57, 9.68, 0.0, 0.0], "Visual Arts": [3.12, 0.0, 0.0, 3.23, 3.7, 0.0, 10.71, 0.0, 0.0, 5.88, 5.13, 10.53, 0.0, 0.0, 13.16, 0.0, 2.13, 20.37, 3.12, 2.13, 1.92, 4.41, 5.71, 1.61, 0.0, 4.55], "Essay": [0.0, 24.0, 7.41, 0.0, 1.85, 3.7, 0.0, 9.3, 0.0, 2.94, 0.0, 0.0, 8.0, 8.77, 5.26, 0.0, 2.13, 0.0, 3.12, 4.26, 3.85, 4.41, 2.86, 1.61, 0.0, 1.52], "Digital/New Media": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.57, 0.0, 0.0, 5.88, 0.0, 10.53, 0.0, 1.75, 2.63, 0.0, 0.0, 0.0, 3.12, 2.13, 3.85, 11.76, 2.86, 3.23, 1.54, 6.06]}, "ranks": {"Poetry": [0, 1, 1, 0, 1, 1, 3, 2, 1, 1, 2, 5, 2, 1, 2, 1, 3, 6, 4, 0, 1, 0, 0, 1, 2, 1], "Novel/Fiction": [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 2, 0, 1, 2, 0, 1, 0], "Translation": [2, 4, 2, 3, 7, 4, 4, 6, 3, 8, 6, 7, 6, 7, 4, 4, 6, 5, 8, 7, 3, 3, 3, 4, 0, 7], "Drama/Theater": [3, 3, 5, 2, 2, 2, 2, 1, 2, 2, 1, 6, 4, 3, 0, 3, 1, 4, 1, 1, 2, 4, 1, 2, 4, 3], "Visual Arts": [4, 7, 7, 4, 5, 7, 1, 7, 6, 5, 5, 2, 7, 8, 3, 6, 4, 3, 5, 5, 7, 5, 6, 7, 7, 5], "Film/Cinema": [5, 5, 3, 5, 3, 5, 5, 4, 4, 4, 3, 4, 5, 2, 6, 5, 2, 0, 3, 4, 8, 8, 4, 5, 3, 2], "Anime/Manga": [6, 6, 6, 6, 4, 6, 7, 5, 5, 3, 4, 1, 1, 5, 8, 2, 7, 1, 2, 8, 4, 7, 5, 3, 6, 8], "Essay": [7, 2, 4, 7, 6, 3, 8, 3, 7, 7, 7, 8, 3, 4, 5, 7, 5, 7, 6, 3, 5, 6, 7, 8, 8, 6], "Digital/New Media": [8, 8, 8, 8, 8, 8, 6, 8, 8, 6, 8, 3, 8, 6, 7, 8, 8, 8, 7, 6, 6, 2, 8, 6, 5, 4]}, "totals": [32, 25, 27, 31, 54, 27, 28, 43, 47, 34, 39, 57, 25, 57, 38, 23, 47, 54, 32, 47, 52, 68, 35, 62, 65, 66], "yearsPresent": {"Novel/Fiction": 26, "Poetry": 26, "Drama/Theater": 24, "Translation": 13, "Film/Cinema": 19, "Anime/Manga": 14, "Visual Arts": 17, "Essay": 17, "Digital/New Media": 13}}, "periods": {"items": [{"id": "Contemporary", "label": "Contemporary", "total": 308}, {"id": "Meiji/Taishō", "label": "Meiji/Taishō", "total": 142}, {"id": "Prewar/Shōwa", "label": "Prewar/Shōwa", "total": 142}, {"id": "Classical/Heian", "label": "Classical/Heian", "total": 121}, {"id": "Postwar", "label": "Postwar", "total": 109}, {"id": "Medieval", "label": "Medieval", "total": 96}, {"id": "Edo", "label": "Edo", "total": 81}], "years": [1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2022, 2023, 2024, 2025], "counts": {"Contemporary": [6, 6, 6, 13, 13, 3, 2, 16, 7, 11, 20, 17, 13, 13, 8, 5, 4, 20, 9, 7, 21, 16, 18, 16, 14, 24], "Meiji/Taishō": [7, 7, 1, 9, 6, 6, 4, 3, 14, 12, 5, 5, 0, 7, 6, 1, 2, 1, 0, 8, 4, 10, 2, 7, 10, 5], "Prewar/Shōwa": [3, 5, 1, 5, 12, 2, 9, 4, 6, 1, 3, 11, 2, 6, 6, 3, 6, 8, 7, 0, 4, 6, 9, 10, 7, 6], "Classical/Heian": [10, 5, 4, 1, 5, 7, 0, 5, 1, 1, 6, 5, 1, 3, 4, 2, 9, 5, 0, 8, 8, 4, 5, 10, 8, 4], "Postwar": [1, 4, 1, 1, 4, 2, 2, 8, 5, 2, 3, 6, 5, 10, 5, 3, 4, 2, 6, 3, 3, 7, 10, 4, 2, 6], "Medieval": [5, 0, 0, 8, 8, 10, 0, 5, 2, 1, 0, 0, 0, 1, 7, 3, 1, 5, 4, 4, 7, 10, 3, 6, 3, 3], "Edo": [3, 2, 0, 3, 4, 3, 3, 2, 2, 4, 4, 4, 2, 1, 2, 0, 3, 8, 1, 8, 7, 1, 0, 10, 1, 3]}, "percentages": {"Contemporary": [18.75, 24.0, 22.22, 41.94, 24.07, 11.11, 7.14, 37.21, 14.89, 32.35, 51.28, 29.82, 52.0, 22.81, 21.05, 21.74, 8.51, 37.04, 28.12, 14.89, 40.38, 23.53, 51.43, 25.81, 21.54, 36.36], "Meiji/Taishō": [21.88, 28.0, 3.7, 29.03, 11.11, 22.22, 14.29, 6.98, 29.79, 35.29, 12.82, 8.77, 0.0, 12.28, 15.79, 4.35, 4.26, 1.85, 0.0, 17.02, 7.69, 14.71, 5.71, 11.29, 15.38, 7.58], "Prewar/Shōwa": [9.38, 20.0, 3.7, 16.13, 22.22, 7.41, 32.14, 9.3, 12.77, 2.94, 7.69, 19.3, 8.0, 10.53, 15.79, 13.04, 12.77, 14.81, 21.88, 0.0, 7.69, 8.82, 25.71, 16.13, 10.77, 9.09], "Classical/Heian": [31.25, 20.0, 14.81, 3.23, 9.26, 25.93, 0.0, 11.63, 2.13, 2.94, 15.38, 8.77, 4.0, 5.26, 10.53, 8.7, 19.15, 9.26, 0.0, 17.02, 15.38, 5.88, 14.29, 16.13, 12.31, 6.06], "Postwar": [3.12, 16.0, 3.7, 3.23, 7.41, 7.41, 7.14, 18.6, 10.64, 5.88, 7.69, 10.53, 20.0, 17.54, 13.16, 13.04, 8.51, 3.7, 18.75, 6.38, 5.77, 10.29, 28.57, 6.45, 3.08, 9.09], "Medieval": [15.62, 0.0, 0.0, 25.81, 14.81, 37.04, 0.0, 11.63, 4.26, 2.94, 0.0, 0.0, 0.0, 1.75, 18.42, 13.04, 2.13, 9.26, 12.5, 8.51, 13.46, 14.71, 8.57, 9.68, 4.62, 4.55], "Edo": [9.38, 8.0, 0.0, 9.68, 7.41, 11.11, 10.71, 4.65, 4.26, 11.76, 10.26, 7.02, 8.0, 1.75, 5.26, 0.0, 6.38, 14.81, 3.12, 17.02, 13.46, 1.47, 0.0, 16.13, 1.54, 4.55]}, "ranks": {"Classical/Heian": [0, 3, 1, 5, 4, 1, 5, 2, 6, 5, 1, 4, 4, 4, 5, 4, 0, 3, 6, 1, 1, 5, 3, 2, 2, 4], "Meiji/Taishō": [1, 0, 2, 1, 3, 2, 1, 5, 0, 0, 2, 3, 5, 2, 2, 5, 5, 6, 5, 0, 4, 1, 5, 4, 1, 3], "Contemporary": [2, 1, 0, 0, 0, 3, 3, 0, 1, 1, 0, 0, 0, 0, 0, 0, 2, 0, 0, 3, 0, 0, 0, 0, 0, 0], "Medieval": [3, 6, 5, 2, 2, 0, 6, 3, 4, 6, 6, 6, 6, 5, 1, 3, 6, 4, 3, 4, 2, 2, 4, 5, 4, 5], "Prewar/Shōwa": [4, 2, 3, 3, 1, 5, 0, 4, 2, 4, 4, 1, 2, 3, 3, 1, 1, 1, 1, 6, 5, 4, 2, 1, 3, 1], "Edo": [5, 5, 6, 4, 6, 4, 2, 6, 5, 2, 3, 5, 3, 6, 6, 6, 4, 2, 4, 2, 3, 6, 6, 3, 6, 6], "Postwar": [6, 4, 4, 6, 5, 6, 4, 1, 3, 3, 5, 2, 1, 1, 4, 2, 3, 5, 2, 5, 6, 3, 1, 6, 5, 2]}, "totals": [32, 25, 27, 31, 54, 27, 28, 43, 47, 34, 39, 57, 25, 57, 38, 23, 47, 54, 32, 47, 52, 68, 35, 62, 65, 66], "yearsPresent": {"Contemporary": 26, "Meiji/Taishō": 24, "Prewar/Shōwa": 25, "Classical/Heian": 24, "Postwar": 26, "Medieval": 20, "Edo": 23}}};
+
+// ============================================================
+// COLOR PALETTES
+// ============================================================
+const THEME_COLORS = {
+    "Gender & Sexuality": "#e6194b",
+    "Empire & Colonialism": "#3cb44b",
+    "War & Memory": "#4363d8",
+    "Modernity & Modernism": "#f58231",
+    "Nation & Identity": "#911eb4",
+    "Translation & World Lit": "#42d4f4",
+    "Nature & Environment": "#469990",
+    "Body & Affect": "#f032e6",
+    "Space & Place": "#9A6324",
+    "Technology & Media": "#aaffc3",
+    "Race & Ethnicity": "#800000",
+    "Religion & Spirituality": "#000075",
+    "Food & Material Culture": "#fabed4",
+    "Sound & Music": "#dcbeff",
+    "Childhood & Education": "#fffac8"
+};
+
+const PERIOD_COLORS = {
+    "Classical/Heian": "#8B4513",
+    "Medieval": "#CD853F",
+    "Edo/Early Modern": "#DAA520",
+    "Meiji/Taishō": "#2E8B57",
+    "Prewar/Shōwa": "#4682B4",
+    "Postwar": "#6A5ACD",
+    "Contemporary": "#DC143C"
+};
+
+const GENRE_COLORS = {
+    "Novel/Fiction": "#2ca02c",
+    "Poetry": "#9467bd",
+    "Drama/Theater": "#d62728",
+    "Film/Cinema": "#ff7f0e",
+    "Anime/Manga": "#e377c2",
+    "Essay/Criticism": "#7f7f7f",
+    "Diary/Life Writing": "#bcbd22",
+    "Translation": "#17becf",
+    "Digital/New Media": "#1f77b4"
+};
+
+// Literary figure colors: d3.schemeTableau10 + 5 extras
+const FIGURE_PALETTE = [
+    "#4e79a7", "#f28e2b", "#e15759", "#76b7b2", "#59a14f",
+    "#edc948", "#b07aa1", "#ff9da7", "#9c755f", "#bab0ac",
+    "#6b6ecf", "#d62728", "#2ca02c", "#1f77b4", "#ff7f0e"
+];
+
+// Era groupings for literary figures legend
+const FIGURE_ERAS = {
+    "Classical": ["Genji monogatari", "Murasaki Shikibu"],
+    "Meiji/Taishō": ["Natsume Sōseki", "Izumi Kyōka", "Akutagawa Ryūnosuke"],
+    "Shōwa": ["Tanizaki Jun'ichirō", "Dazai Osamu", "Mishima Yukio",
+                   "Ōe Kenzaburō", "Enchi Fumiko", "Nakagami Kenji",
+                   "Ōba Minako", "Medoruma Shun"],
+    "Contemporary": ["Murakami Haruki", "Tawada Yōko", "Kawakami Hiromi",
+                     "Kawakami Mieko", "Kirino Natsuo", "Yoshimoto Banana"]
+};
+
+function getColor(tab, termId) {
+    if (tab === 'themes') return THEME_COLORS[termId] || '#888';
+    if (tab === 'periods') return PERIOD_COLORS[termId] || '#888';
+    if (tab === 'genres') return GENRE_COLORS[termId] || '#888';
+    if (tab === 'figures') {
+        const idx = ALL_DATA.figures.items.findIndex(d => d.id === termId);
+        return idx >= 0 ? FIGURE_PALETTE[idx % FIGURE_PALETTE.length] : '#888';
+    }
+    return '#888';
+}
+
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+    themes:  { chart: 'stacked', mode: 'count', active: null },
+    figures: { chart: 'stacked', mode: 'count', active: null },
+    genres:  { chart: 'stacked', mode: 'count', active: null },
+    periods: { chart: 'stacked', mode: 'count', active: null },
+};
+let activeTab = 'themes';
+let isDark = false;
+
+// ============================================================
+// MARGINS & SIZING
+// ============================================================
+const MARGIN = { top: 36, right: 16, bottom: 56, left: 52 };
+
+function getChartDimensions(tab) {
+    const el = document.getElementById('chartArea-' + tab);
+    const w = el.clientWidth || 700;
+    const h = 460;
+    return { width: w, height: h };
+}
+
+// ============================================================
+// TAB & CONTROL WIRING
+// ============================================================
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+        btn.classList.add('active');
+        activeTab = btn.dataset.tab;
+        document.getElementById('tab-' + activeTab).classList.add('active');
+        render(activeTab);
+    });
+});
+
+document.querySelectorAll('.btn-group').forEach(group => {
+    const tab = group.dataset.tab;
+    const field = group.dataset.field;
+    group.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            group.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            state[tab][field] = btn.dataset.val;
+            render(tab);
+        });
+    });
+});
+
+// Theme toggle
+document.getElementById('themeBtn').addEventListener('click', () => {
+    isDark = !isDark;
+    document.body.classList.toggle('dark-mode', isDark);
+    document.getElementById('themeBtn').innerHTML = isDark ? '&#9788; Light' : '&#9789; Dark';
+    render(activeTab);
+});
+
+// ============================================================
+// LEGEND
+// ============================================================
+function buildLegend(tab) {
+    const panel = document.getElementById('legend-' + tab);
+    panel.innerHTML = '';
+    const data = ALL_DATA[tab];
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'legend-header';
+    header.textContent = tab === 'themes' ? 'Themes' :
+                         tab === 'figures' ? 'Literary Figures' :
+                         tab === 'genres' ? 'Genres / Media' : 'Periods';
+    panel.appendChild(header);
+
+    // All button
+    const allBtn = document.createElement('div');
+    allBtn.className = 'legend-all-btn';
+    allBtn.innerHTML = '<span style="font-size:14px">&#9632;</span> Show All';
+    allBtn.addEventListener('click', () => {
+        state[tab].active = null;
+        updateLegendDimming(tab);
+        render(tab);
+    });
+    panel.appendChild(allBtn);
+
+    // For figures tab, group by era
+    if (tab === 'figures') {
+        const itemsById = {};
+        data.items.forEach(item => { itemsById[item.id] = item; });
+
+        // Track which items we've placed (to handle any not in FIGURE_ERAS)
+        const placed = new Set();
+
+        for (const [era, names] of Object.entries(FIGURE_ERAS)) {
+            // Only show era divider if any of its figures are in data
+            const eraItems = names.filter(n => itemsById[n]);
+            if (eraItems.length === 0) continue;
+
+            const divider = document.createElement('div');
+            divider.className = 'legend-divider';
+            divider.textContent = era;
+            panel.appendChild(divider);
+
+            eraItems.forEach(name => {
+                const item = itemsById[name];
+                if (!item) return;
+                placed.add(name);
+                panel.appendChild(makeLegendItem(tab, item));
+            });
+        }
+
+        // Any remaining (not in FIGURE_ERAS)
+        const remaining = data.items.filter(d => !placed.has(d.id));
+        if (remaining.length > 0) {
+            const divider = document.createElement('div');
+            divider.className = 'legend-divider';
+            divider.textContent = 'Other';
+            panel.appendChild(divider);
+            remaining.forEach(item => panel.appendChild(makeLegendItem(tab, item)));
+        }
+    } else {
+        data.items.forEach(item => {
+            panel.appendChild(makeLegendItem(tab, item));
+        });
+    }
+}
+
+function makeLegendItem(tab, item) {
+    const div = document.createElement('div');
+    div.className = 'legend-item';
+    div.dataset.itemId = item.id;
+    const color = getColor(tab, item.id);
+    div.innerHTML = `<div class="legend-swatch" style="background:${color}"></div>` +
+                    `<span class="legend-label" title="${item.label}">${item.label}</span>` +
+                    `<span class="legend-count">${item.total}</span>`;
+
+    div.addEventListener('click', (e) => {
+        const st = state[tab];
+        const data = ALL_DATA[tab];
+        if (e.shiftKey) {
+            // Shift-click: add/remove from selection
+            if (st.active === null) {
+                // Was showing all; now show only this one
+                st.active = new Set([item.id]);
+            } else if (st.active.has(item.id)) {
+                st.active.delete(item.id);
+                if (st.active.size === 0) st.active = null;
+            } else {
+                st.active.add(item.id);
+                if (st.active.size === data.items.length) st.active = null;
+            }
+        } else {
+            // Plain click: isolate this one (or reset if already isolated)
+            if (st.active !== null && st.active.size === 1 && st.active.has(item.id)) {
+                st.active = null;
+            } else {
+                st.active = new Set([item.id]);
+            }
+        }
+        updateLegendDimming(tab);
+        render(tab);
+    });
+    return div;
+}
+
+function updateLegendDimming(tab) {
+    const panel = document.getElementById('legend-' + tab);
+    panel.querySelectorAll('.legend-item').forEach(el => {
+        const id = el.dataset.itemId;
+        if (!id) return;
+        if (state[tab].active !== null && !state[tab].active.has(id)) {
+            el.classList.add('dimmed');
+        } else {
+            el.classList.remove('dimmed');
+        }
+    });
+}
+
+// ============================================================
+// TOOLTIP
+// ============================================================
+const tooltip = document.getElementById('tooltip');
+
+function showTooltip(evt, html) {
+    tooltip.innerHTML = html;
+    tooltip.style.display = 'block';
+    const tx = evt.clientX + 14;
+    const ty = evt.clientY + 14;
+    const tw = tooltip.offsetWidth;
+    const th = tooltip.offsetHeight;
+    tooltip.style.left = (tx + tw > window.innerWidth ? evt.clientX - tw - 10 : tx) + 'px';
+    tooltip.style.top = (ty + th > window.innerHeight ? evt.clientY - th - 10 : ty) + 'px';
+}
+
+function hideTooltip() {
+    tooltip.style.display = 'none';
+}
+
+// ============================================================
+// RENDERING
+// ============================================================
+function render(tab) {
+    const st = state[tab];
+    const container = document.getElementById('chartArea-' + tab);
+    container.innerHTML = '';
+    if (st.chart === 'stacked') {
+        drawStackedBar(tab, container);
+    } else {
+        drawBumpChart(tab, container);
+    }
+}
+
+function cssVar(name) {
+    return getComputedStyle(document.body).getPropertyValue(name).trim();
+}
+
+// ============================================================
+// STACKED BAR CHART
+// ============================================================
+function drawStackedBar(tab, container) {
+    const data = ALL_DATA[tab];
+    const st = state[tab];
+    const showPct = st.mode === 'pct';
+    const activeSet = st.active;
+
+    const { width: W, height: H } = getChartDimensions(tab);
+    const plotW = W - MARGIN.left - MARGIN.right;
+    const plotH = H - MARGIN.top - MARGIN.bottom;
+
+    const svg = d3.select(container).append('svg')
+        .attr('width', W).attr('height', H)
+        .attr('xmlns', 'http://www.w3.org/2000/svg');
+
+    const years = data.years;
+    const items = data.items;
+    const vals = showPct ? data.percentages : data.counts;
+
+    // X scale: band for years
+    const x = d3.scaleBand()
+        .domain(years)
+        .range([MARGIN.left, MARGIN.left + plotW])
+        .padding(0.15);
+
+    // Compute stacked data using d3.stack
+    const keys = items.map(d => d.id);
+    const stackData = years.map((yr, yi) => {
+        const row = { year: yr };
+        keys.forEach(k => { row[k] = vals[k] ? vals[k][yi] : 0; });
+        return row;
+    });
+
+    const stack = d3.stack().keys(keys).order(d3.stackOrderNone).offset(d3.stackOffsetNone);
+    const series = stack(stackData);
+
+    // Y scale
+    const maxY = d3.max(series, s => d3.max(s, d => d[1])) || 1;
+    const y = d3.scaleLinear()
+        .domain([0, maxY * 1.05])
+        .range([MARGIN.top + plotH, MARGIN.top])
+        .nice();
+
+    // Grid lines
+    const gridG = svg.append('g');
+    y.ticks(6).forEach(tick => {
+        gridG.append('line')
+            .attr('x1', MARGIN.left).attr('x2', MARGIN.left + plotW)
+            .attr('y1', y(tick)).attr('y2', y(tick))
+            .attr('stroke', cssVar('--grid')).attr('stroke-width', 1);
+    });
+
+    // Bars
+    const barG = svg.append('g');
+    series.forEach((s, si) => {
+        const termId = keys[si];
+        const isActive = activeSet === null || activeSet.has(termId);
+        const color = getColor(tab, termId);
+
+        s.forEach((d, di) => {
+            const yr = years[di];
+            const barH = y(d[0]) - y(d[1]);
+            if (barH < 0.5) return;
+
+            barG.append('rect')
+                .attr('x', x(yr))
+                .attr('y', y(d[1]))
+                .attr('width', x.bandwidth())
+                .attr('height', barH)
+                .attr('fill', color)
+                .attr('opacity', isActive ? 0.85 : 0.08)
+                .attr('data-term', termId)
+                .attr('data-year', yr)
+                .attr('data-count', data.counts[termId] ? data.counts[termId][di] : 0)
+                .attr('data-pct', data.percentages[termId] ? data.percentages[termId][di] : 0)
+                .on('mousemove', function(evt) {
+                    const cnt = +this.getAttribute('data-count');
+                    const pct = (+this.getAttribute('data-pct')).toFixed(1);
+                    const term = this.getAttribute('data-term');
+                    const year = this.getAttribute('data-year');
+                    showTooltip(evt,
+                        `<b>${term}</b><br>` +
+                        `Year: ${year}<br>` +
+                        `Count: <span class="tt-val">${cnt}</span><br>` +
+                        `<span class="tt-pct">${pct}% of presentations</span>`
+                    );
+                })
+                .on('mouseleave', hideTooltip);
+        });
+    });
+
+    // X axis
+    const xAxisG = svg.append('g')
+        .attr('transform', `translate(0,${MARGIN.top + plotH})`);
+    const xAxis = d3.axisBottom(x)
+        .tickValues(years.filter((yr, i) => i % 2 === 0))
+        .tickSize(4);
+    xAxisG.call(xAxis)
+        .selectAll('text')
+        .attr('transform', 'rotate(-45)')
+        .attr('text-anchor', 'end')
+        .attr('dx', '-4px').attr('dy', '2px')
+        .attr('fill', cssVar('--fg2'))
+        .style('font-size', '11px');
+    xAxisG.select('.domain').attr('stroke', cssVar('--border'));
+    xAxisG.selectAll('.tick line').attr('stroke', cssVar('--border'));
+
+    // Y axis
+    const yAxisG = svg.append('g')
+        .attr('transform', `translate(${MARGIN.left},0)`);
+    const yAxis = d3.axisLeft(y).ticks(6)
+        .tickFormat(d => showPct ? d.toFixed(0) + '%' : d.toFixed(0));
+    yAxisG.call(yAxis)
+        .selectAll('text')
+        .attr('fill', cssVar('--fg2'))
+        .style('font-size', '11px');
+    yAxisG.select('.domain').attr('stroke', cssVar('--border'));
+    yAxisG.selectAll('.tick line').attr('stroke', cssVar('--border'));
+
+    // Y axis label
+    svg.append('text')
+        .attr('transform', `rotate(-90)`)
+        .attr('x', -(MARGIN.top + plotH / 2))
+        .attr('y', 14)
+        .attr('text-anchor', 'middle')
+        .attr('fill', cssVar('--fg3'))
+        .style('font-size', '11px')
+        .text(showPct ? '% of Presentations' : 'Count');
+
+    // Title
+    svg.append('text')
+        .attr('x', MARGIN.left)
+        .attr('y', 20)
+        .attr('fill', cssVar('--fg2'))
+        .style('font-size', '12px')
+        .text(showPct ? 'Percentage of presentations per year (topics may overlap)' :
+                        'Topic mentions per year (presentations may have multiple topics)');
+}
+
+// ============================================================
+// BUMP CHART
+// ============================================================
+function drawBumpChart(tab, container) {
+    const data = ALL_DATA[tab];
+    const st = state[tab];
+    const activeSet = st.active;
+    const showPct = st.mode === 'pct';
+
+    const { width: W, height: H } = getChartDimensions(tab);
+    const rightLabel = 140;
+    const plotW = W - MARGIN.left - MARGIN.right - rightLabel;
+    const plotH = H - MARGIN.top - MARGIN.bottom;
+
+    // Filter to terms appearing in >= 3 years
+    const items = data.items.filter(d => (data.yearsPresent[d.id] || 0) >= 3);
+    const nItems = items.length;
+    if (nItems === 0) return;
+
+    const years = data.years;
+
+    const svg = d3.select(container).append('svg')
+        .attr('width', W).attr('height', H)
+        .attr('xmlns', 'http://www.w3.org/2000/svg');
+
+    // X scale
+    const x = d3.scalePoint()
+        .domain(years)
+        .range([MARGIN.left, MARGIN.left + plotW])
+        .padding(0.3);
+
+    // Y scale: rank 0 at top, nItems-1 at bottom
+    const y = d3.scaleLinear()
+        .domain([0, nItems - 1])
+        .range([MARGIN.top + 10, MARGIN.top + plotH - 10]);
+
+    // Grid lines
+    const gridG = svg.append('g');
+    for (let r = 0; r < nItems; r++) {
+        gridG.append('line')
+            .attr('x1', MARGIN.left).attr('x2', MARGIN.left + plotW)
+            .attr('y1', y(r)).attr('y2', y(r))
+            .attr('stroke', cssVar('--grid')).attr('stroke-width', 0.5);
+    }
+
+    // Compute ranks among filtered items only, per year
+    const itemRanks = {};  // termId -> [rank per year or null]
+    items.forEach(d => { itemRanks[d.id] = []; });
+
+    years.forEach((yr, yi) => {
+        const yearVals = items.map(d => ({
+            id: d.id,
+            count: showPct
+                ? (data.percentages[d.id] ? data.percentages[d.id][yi] : 0)
+                : (data.counts[d.id] ? data.counts[d.id][yi] : 0)
+        }));
+        yearVals.sort((a, b) => b.count - a.count || a.id.localeCompare(b.id));
+        yearVals.forEach((v, rank) => {
+            itemRanks[v.id][yi] = v.count > 0 ? rank : null;
+        });
+    });
+
+    // Draw lines and dots
+    const line = d3.line()
+        .defined(d => d[1] !== null)
+        .x(d => x(d[0]))
+        .y(d => y(d[1]))
+        .curve(d3.curveMonotoneX);
+
+    items.forEach((item) => {
+        const termId = item.id;
+        const isActive = activeSet === null || activeSet.has(termId);
+        const color = getColor(tab, termId);
+        const lineData = years.map((yr, yi) => [yr, itemRanks[termId][yi]]);
+
+        // Invisible wider overlay for easier clicking
+        svg.append('path')
+            .datum(lineData.filter(d => d[1] !== null))
+            .attr('d', line)
+            .attr('fill', 'none')
+            .attr('stroke', 'transparent')
+            .attr('stroke-width', 14)
+            .attr('cursor', 'pointer')
+            .attr('data-term', termId)
+            .on('click', () => {
+                const st2 = state[tab];
+                if (st2.active !== null && st2.active.size === 1 && st2.active.has(termId)) {
+                    st2.active = null;
+                } else {
+                    st2.active = new Set([termId]);
+                }
+                updateLegendDimming(tab);
+                render(tab);
+            });
+
+        // Path
+        svg.append('path')
+            .datum(lineData.filter(d => d[1] !== null))
+            .attr('d', line)
+            .attr('fill', 'none')
+            .attr('stroke', color)
+            .attr('stroke-width', isActive && activeSet !== null ? 3 : 1.5)
+            .attr('opacity', isActive ? 0.85 : 0.07)
+            .attr('pointer-events', 'none');
+
+        // Dots
+        lineData.forEach(([yr, rank]) => {
+            if (rank === null) return;
+            const yi = years.indexOf(yr);
+            const cnt = data.counts[termId] ? data.counts[termId][yi] : 0;
+            const pct = data.percentages[termId] ? data.percentages[termId][yi] : 0;
+
+            svg.append('circle')
+                .attr('cx', x(yr))
+                .attr('cy', y(rank))
+                .attr('r', isActive && activeSet !== null ? 4.5 : 2.5)
+                .attr('fill', color)
+                .attr('opacity', isActive ? 0.9 : 0.08)
+                .on('mousemove', (evt) => {
+                    showTooltip(evt,
+                        `<b>${termId}</b><br>` +
+                        `Year: ${yr}<br>` +
+                        `Rank: <span class="tt-val">#${rank + 1}</span><br>` +
+                        `Count: ${cnt} <span class="tt-pct">(${pct.toFixed(1)}%)</span>`
+                    );
+                })
+                .on('mouseleave', hideTooltip);
+        });
+
+        // End label (last non-null rank)
+        const lastValid = lineData.filter(d => d[1] !== null);
+        if (lastValid.length > 0) {
+            const [lastYr, lastRank] = lastValid[lastValid.length - 1];
+            const isSelected = activeSet !== null && activeSet.has(termId);
+            svg.append('text')
+                .attr('x', MARGIN.left + plotW + 8)
+                .attr('y', y(lastRank) + 4)
+                .attr('fill', color)
+                .attr('opacity', isActive ? 0.9 : 0.1)
+                .style('font-size', isSelected ? '12px' : (isActive && activeSet !== null ? '11px' : '10px'))
+                .style('font-weight', isSelected ? '800' : (isActive && activeSet !== null ? '700' : '400'))
+                .text(item.label.length > 18 ? item.label.substring(0, 18) + '...' : item.label);
+        }
+    });
+
+    // X axis
+    const xAxisG = svg.append('g')
+        .attr('transform', `translate(0,${MARGIN.top + plotH})`);
+    const xAxis = d3.axisBottom(x)
+        .tickValues(years.filter((yr, i) => i % 2 === 0))
+        .tickSize(4);
+    xAxisG.call(xAxis)
+        .selectAll('text')
+        .attr('transform', 'rotate(-45)')
+        .attr('text-anchor', 'end')
+        .attr('dx', '-4px').attr('dy', '2px')
+        .attr('fill', cssVar('--fg2'))
+        .style('font-size', '11px');
+    xAxisG.select('.domain').attr('stroke', cssVar('--border'));
+    xAxisG.selectAll('.tick line').attr('stroke', cssVar('--border'));
+
+    // Y axis labels
+    svg.append('text')
+        .attr('x', MARGIN.left - 8)
+        .attr('y', y(0) + 4)
+        .attr('text-anchor', 'end')
+        .attr('fill', cssVar('--fg3'))
+        .style('font-size', '10px')
+        .text('#1');
+
+    if (nItems > 2) {
+        const mid = Math.floor(nItems / 2);
+        svg.append('text')
+            .attr('x', MARGIN.left - 8)
+            .attr('y', y(mid) + 4)
+            .attr('text-anchor', 'end')
+            .attr('fill', cssVar('--fg3'))
+            .style('font-size', '10px')
+            .text('#' + (mid + 1));
+    }
+
+    svg.append('text')
+        .attr('x', MARGIN.left - 8)
+        .attr('y', y(nItems - 1) + 4)
+        .attr('text-anchor', 'end')
+        .attr('fill', cssVar('--fg3'))
+        .style('font-size', '10px')
+        .text('#' + nItems);
+
+    // Title
+    svg.append('text')
+        .attr('x', MARGIN.left)
+        .attr('y', 20)
+        .attr('fill', cssVar('--fg2'))
+        .style('font-size', '12px')
+        .text('Rank trajectory over time (terms appearing in 3+ years)');
+}
+
+// ============================================================
+// EXPORT: PNG
+// ============================================================
+document.getElementById('exportPngBtn').addEventListener('click', () => {
+    const svgEl = document.querySelector('#chartArea-' + activeTab + ' svg');
+    if (!svgEl) return;
+    const serializer = new XMLSerializer();
+    const svgStr = serializer.serializeToString(svgEl);
+    const canvas = document.createElement('canvas');
+    const w = +svgEl.getAttribute('width');
+    const h = +svgEl.getAttribute('height');
+    canvas.width = w * 2;
+    canvas.height = h * 2;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(2, 2);
+
+    // Fill background
+    ctx.fillStyle = cssVar('--bg');
+    ctx.fillRect(0, 0, w, h);
+
+    const img = new Image();
+    const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+        ctx.drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        const link = document.createElement('a');
+        link.download = `ajls_${activeTab}_${state[activeTab].chart}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    };
+    img.src = url;
+});
+
+// ============================================================
+// EXPORT: CSV
+// ============================================================
+document.getElementById('exportCsvBtn').addEventListener('click', () => {
+    const data = ALL_DATA[activeTab];
+    const years = data.years;
+    const items = data.items;
+
+    let csvContent = 'term,total,' + years.join(',') + '\n';
+    items.forEach(item => {
+        const counts = data.counts[item.id] || [];
+        csvContent += '"' + item.label.replace(/"/g, '""') + '",' + item.total + ',' +
+                      counts.join(',') + '\n';
+    });
+
+    // Totals row
+    csvContent += '"TOTAL_PRESENTATIONS",,' + data.totals.join(',') + '\n';
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = `ajls_${activeTab}_data.csv`;
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+});
+
+// ============================================================
+// INIT
+// ============================================================
+['themes', 'figures', 'genres', 'periods'].forEach(tab => {
+    buildLegend(tab);
+});
+
+// Render default tab
+render('themes');
+
+// Resize handler
+window.addEventListener('resize', () => render(activeTab));
+</script>
+{info_html}
+</body>
+</html>

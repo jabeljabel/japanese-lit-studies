@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About & Methods — Japanese Literary Studies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f6f3ee;
+  --bg-card: #ffffff;
+  --text: #2c2826;
+  --text-muted: #6b6460;
+  --text-light: #9e9590;
+  --accent: #8b3a3a;
+  --accent-light: #c4847a;
+  --border: #e0dbd5;
+}
+
+[data-theme="dark"] {
+  --bg: #1a1816;
+  --bg-card: #242120;
+  --text: #e8e2da;
+  --text-muted: #9e9590;
+  --text-light: #6b6460;
+  --accent: #c4847a;
+  --accent-light: #d4a69e;
+  --border: #3a3533;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Source Sans 3', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+.breadcrumb {
+  margin-bottom: 24px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.breadcrumb a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+header {
+  margin-bottom: 48px;
+}
+
+h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  font-weight: 300;
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  transition: all 0.2s ease;
+  z-index: 100;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.05);
+  border-color: var(--accent);
+}
+
+section {
+  margin-bottom: 48px;
+}
+
+h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: var(--accent);
+}
+
+h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-top: 32px;
+  margin-bottom: 12px;
+}
+
+p {
+  margin-bottom: 16px;
+}
+
+ul, ol {
+  margin-left: 24px;
+  margin-bottom: 16px;
+}
+
+li {
+  margin-bottom: 8px;
+}
+
+.data-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 20px;
+  margin: 24px 0;
+}
+
+.data-box h4 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--accent);
+}
+
+.data-box ul {
+  margin-left: 20px;
+}
+
+.caveat-box {
+  background: var(--bg-card);
+  border-left: 4px solid var(--accent-light);
+  padding: 20px;
+  margin: 24px 0;
+}
+
+.caveat-box h4 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--accent);
+}
+
+code {
+  font-family: 'Courier New', monospace;
+  background: var(--bg-card);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+@media (max-width: 680px) {
+  h1 {
+    font-size: 2.2rem;
+  }
+  h2 {
+    font-size: 1.6rem;
+  }
+}
+</style>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
+</head>
+<body>
+
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">◑</button>
+
+<div class="container">
+  <nav class="breadcrumb">
+    <a href="index.html">Home</a> / About & Methods
+  </nav>
+
+  <header>
+    <h1>About & Methods</h1>
+    <p class="subtitle">Data sources, methodology, technical notes, and important caveats for interpreting these visualizations.</p>
+  </header>
+
+  <section>
+    <h2>Project Overview</h2>
+    <p>This project maps the field of Japanese literary studies through network analysis, content mining, and interactive visualization. By combining data from dissertations, conference proceedings, journal articles, citations, translations, and encyclopedic sources, we construct a multi-dimensional portrait of how this academic field has evolved from 1915 to the present.</p>
+    <p>The visualizations presented here represent over 7,900 dissertations, 13,500 conference presentations, 81,000 citation relationships, 36,000 translations, and 17,000 literary works. This is not a complete census—scholarly activity extends beyond what can be captured in databases—but it represents the most comprehensive computational analysis of the field to date.</p>
+  </section>
+
+  <section>
+    <h2>Data Sources</h2>
+
+    <div class="data-box">
+      <h4>Scholarly Networks & Dissertations</h4>
+      <ul>
+        <li><strong>ProQuest Dissertations & Theses:</strong> 7,922 dissertations (1915-2025) identified through keyword searches</li>
+        <li><strong>Advisor-advisee relationships:</strong> Extracted from dissertation acknowledgments and institutional records</li>
+        <li><strong>JSTOR:</strong> 57,990 citation edges from journal articles</li>
+        <li><strong>OpenAlex:</strong> 23,213 citation edges (culled from 950,000+ raw citations using content filters)</li>
+        <li><strong>Book review data:</strong> Manual extraction from major journals</li>
+      </ul>
+    </div>
+
+    <div class="data-box">
+      <h4>Conference Data</h4>
+      <ul>
+        <li><strong>AJLS (Association for Japanese Literary Studies):</strong> 1,116 presentations (1998-2025) from programs and proceedings</li>
+        <li><strong>AAS (Association for Asian Studies):</strong> 2,208 presentations (2013-2025) via Confex API + PDF parsing</li>
+        <li><strong>MLA (Modern Language Association):</strong> 1,462 presentations (1968-2026) from PMLA archives and Confex API</li>
+        <li><strong>ACLA (American Comparative Literature Association):</strong> 861 presentations (1992-2026) from PDF programs</li>
+        <li><strong>SCMS (Society for Cinema and Media Studies):</strong> 2,803 presentations (2008-2026) from PDF programs</li>
+      </ul>
+    </div>
+
+    <div class="data-box">
+      <h4>Job Market Data</h4>
+      <ul>
+        <li><strong>MLA Job Information List:</strong> 4,280 job listings (1966-2025) from MLA JIL archives</li>
+        <li><strong>Japan Foundation grants and fellowship data</strong></li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Methodology</h2>
+
+    <h3>Network Construction</h3>
+    <p>The scholarly network comprises three edge types:</p>
+    <ul>
+      <li><strong>Advisor edges:</strong> PhD advisor → advisee relationships create genealogical lineages spanning six generations (Founders through Emerging scholars)</li>
+      <li><strong>Citation edges:</strong> Author → cited author relationships from JSTOR and OpenAlex, filtered for field relevance</li>
+      <li><strong>Review edges:</strong> Reviewer → reviewed author relationships from book reviews</li>
+    </ul>
+    <p>Network metrics include degree centrality, betweenness centrality, PageRank, and generational influence scores. Authority rankings combine multiple metrics weighted by data quality.</p>
+
+    <h3>Content Analysis</h3>
+    <p>Dissertation and conference titles were analyzed using:</p>
+    <ul>
+      <li><strong>Term frequency-inverse document frequency (TF-IDF):</strong> Identifies distinctive vocabulary by institution, time period, or venue</li>
+      <li><strong>Topic modeling:</strong> Latent Dirichlet Allocation (LDA) with 15-50 topics depending on corpus size</li>
+      <li><strong>Named entity recognition:</strong> Extracts author names, literary works, theoretical frameworks, and geographic references</li>
+      <li><strong>Temporal analysis:</strong> Tracks term frequency changes over time to identify emerging trends</li>
+    </ul>
+
+    <h3>Canonicity Framework</h3>
+    <p>The three-axis canonicity model measures authors on three independent dimensions:</p>
+    <ul>
+      <li><strong>Japanese canonicity:</strong> Encyclopedia biography length + zenshū publication count + cross-references</li>
+      <li><strong>Academic reception:</strong> Dissertation mentions + conference presentations weighted by venue prestige</li>
+      <li><strong>Translation reception:</strong> Translation count + number of target languages</li>
+    </ul>
+    <p>This framework reveals misalignments: authors canonical in Japan but unstudied in Western academia, global bestsellers (Murakami) not yet established in Japanese canon, and Nobel laureates who fall below domestic canonicity thresholds.</p>
+
+    <h3>Entity Resolution</h3>
+    <p>Person name matching across heterogeneous data sources used:</p>
+    <ul>
+      <li>Exact matches on normalized names (diacritics stripped, case-insensitive)</li>
+      <li>Fuzzy matching on last name + first initial (manually reviewed for common surnames)</li>
+      <li>Institutional affiliation as secondary evidence</li>
+      <li>Manual curation of ambiguous cases (5-10% of corpus)</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Important Caveats</h2>
+
+    <div class="caveat-box">
+      <h4>Selection Bias</h4>
+      <p>These data privilege English-language scholarship and North American institutions. Japanese-language scholarship, non-PhD pathways, and scholars based in Japan or other non-Western countries are underrepresented. Conference data covers only five venues; many regional conferences and workshops are omitted.</p>
+    </div>
+
+    <div class="caveat-box">
+      <h4>Temporal Coverage Gaps</h4>
+      <p>Pre-1970 data is sparse. Early career scholars (PhD 2020+) have limited publication records. Some conference years are missing due to unavailable programs or cancelled events (e.g., AAS 2020-2021 pandemic cancellations).</p>
+    </div>
+
+    <div class="caveat-box">
+      <h4>Citation Data Quality</h4>
+      <p>OpenAlex citations were aggressively filtered (from 950,000 to 23,000 edges) to remove false positives from name collisions (common in East Asian names). This prioritizes precision over recall—genuine citations may have been excluded. JSTOR coverage favors older journals and omits recent open-access publications.</p>
+    </div>
+
+    <div class="caveat-box">
+      <h4>Name Ambiguity</h4>
+      <p>Approximately 5-10% of person records involve ambiguous name matches. Short surnames (Li, Kim, Wang), variant romanizations (Ōe vs Oe), and married name changes complicate entity resolution. Some scholars may be split across multiple records or incorrectly merged.</p>
+    </div>
+
+    <div class="caveat-box">
+      <h4>Canonicity Model Limitations</h4>
+      <p>The three-axis framework reflects measurable data (encyclopedia entries, translations, dissertations) rather than literary quality or cultural significance. It privileges certain forms of recognition (encyclopedia treatment, academic study) over others (popular readership, pedagogical influence). Newly published authors lack time to accumulate metrics.</p>
+    </div>
+
+    <div class="caveat-box">
+      <h4>Encyclopedia Scope</h4>
+      <p>The Shinchō Encyclopedia (our primary source) focuses on Japanese-language creative writers. Critics, translators, and non-Japanese authors of Japanese literature are largely excluded. The encyclopedia's editorial choices reflect mid-20th century Japanese literary establishment values.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Technical Implementation</h2>
+    <p>Visualizations use <strong>D3.js v7</strong> for interactive graphics, with data processing in <strong>Python 3.13</strong> (pandas, numpy, networkx, sqlite3). The encyclopedia project used <strong>Claude AI</strong> for NLP-based thematic classification. All code and raw data are available on request.</p>
+    <p>The color palette uses traditional Japanese color names adapted for accessibility in light and dark modes. Typography: Cormorant Garamond (headings), Source Sans 3 (body).</p>
+  </section>
+
+  <section>
+    <h2>Attribution & Contact</h2>
+    <p>This project was created by <strong>Jonathan E. Abel</strong> (Pennsylvania State University) as part of an ongoing investigation into the structure and evolution of Japanese literary studies.</p>
+    <p>Data sources are acknowledged throughout the visualizations. If you identify errors or have additional data to contribute, please reach out via the institutional website.</p>
+    <p><strong>Citation:</strong> Abel, Jonathan E. (2026). <em>Japanese Literary Studies: Interactive Visualizations</em>. Digital Humanities Project. <a href="index.html">https://[URL]</a></p>
+  </section>
+
+  <section>
+    <h2>Acknowledgments</h2>
+    <p>Thanks to the institutions that make their data publicly available: ProQuest, JSTOR, OpenAlex, Wikidata, Japan Foundation, MLA, AAS, ACLA, SCMS, and AJLS. Thanks to colleagues who provided feedback on early versions of these visualizations.</p>
+  </section>
+</div>
+
+<script>
+const themeToggle = document.getElementById('themeToggle');
+const html = document.documentElement;
+
+const savedTheme = localStorage.getItem('theme') ||
+  (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+html.setAttribute('data-theme', savedTheme);
+
+themeToggle.addEventListener('click', () => {
+  const currentTheme = html.getAttribute('data-theme');
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+});
+</script>
+
+</body>
+</html>

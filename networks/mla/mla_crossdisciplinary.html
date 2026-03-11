@@ -1,0 +1,2037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLA: Japan Scholars Inside & Outside the Field</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #ffffff;
+            --bg2: #f5f5f5;
+            --fg: #333333;
+            --fg2: #666666;
+            --border: #ddd;
+            --japan-color: #4a90e2;
+            --cross-color: #f5a623;
+        }
+
+        body.dark-mode {
+            --bg: #1e1e1e;
+            --bg2: #2d2d2d;
+            --fg: #e0e0e0;
+            --fg2: #999999;
+            --border: #444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            line-height: 1.6;
+        }
+
+        header {
+            background: var(--bg2);
+            border-bottom: 2px solid var(--border);
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 { font-size: 28px; margin-bottom: 5px; }
+        h2 { font-size: 18px; font-weight: normal; color: var(--fg2); }
+
+        .controls {
+            padding: 15px;
+            background: var(--bg2);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 8px 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--fg);
+        }
+
+        button:hover { background: var(--bg2); }
+        button.active { background: var(--japan-color); color: white; border-color: var(--japan-color); }
+
+        .panels {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .panel {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .panel.full { grid-column: 1 / -1; }
+
+        .panel h3 {
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        svg { width: 100%; }
+
+        .scholar-item {
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+        }
+
+        .scholar-item:hover { background: var(--bg); }
+
+        .scholar-name { font-weight: 600; margin-bottom: 5px; }
+        .scholar-inst { font-size: 12px; color: var(--fg2); margin-bottom: 8px; }
+
+        .bar-container {
+            height: 20px;
+            background: var(--bg);
+            border-radius: 3px;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .bar-segment {
+            height: 100%;
+            transition: width 0.3s;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-box {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+
+        .scholar-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .topic-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+    </style>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
+</head>
+<body>
+    <header>
+        <h1>Japan Scholars at MLA: Inside & Outside the Field</h1>
+        <h2>Cross-Disciplinary Engagement in Japanese Literary Studies (1968-2026)</h2>
+    </header>
+
+    <div class="controls">
+        <button id="themeToggle">🌙 Dark Mode</button>
+        <button id="toggleView">📊 Show Percentage</button>
+        <span style="margin-left: auto; font-size: 14px; color: var(--fg2);">
+            Total: 2394 presentations |
+            723 scholars |
+            59 years
+        </span>
+    </div>
+
+    <div class="panels">
+        <!-- Panel 1: Timeline -->
+        <div class="panel full">
+            <h3>Timeline: Inside vs. Outside the Field</h3>
+            <svg id="timeline" height="400"></svg>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-box" style="background: var(--japan-color);"></div>
+                    <span>Japan-focused panels</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box" style="background: var(--cross-color);"></div>
+                    <span>Cross-disciplinary panels</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 2: Scholar Profiles -->
+        <div class="panel">
+            <h3>The Bridge Builders: Top Scholars</h3>
+            <div id="scholarList" class="scholar-list"></div>
+        </div>
+
+        <!-- Panel 3: Topic Distribution -->
+        <div class="panel">
+            <h3>Where Japan Scholars Go</h3>
+            <svg id="topics" height="500"></svg>
+        </div>
+    </div>
+
+    <script>
+        const data = [
+        {
+                "year": 1965,
+                "japan": 0,
+                "crossdisciplinary": 1,
+                "total": 1,
+                "ratio": 100.0,
+                "scholars": 1
+        },
+        {
+                "year": 1966,
+                "japan": 0,
+                "crossdisciplinary": 1,
+                "total": 1,
+                "ratio": 100.0,
+                "scholars": 1
+        },
+        {
+                "year": 1967,
+                "japan": 0,
+                "crossdisciplinary": 1,
+                "total": 1,
+                "ratio": 100.0,
+                "scholars": 1
+        },
+        {
+                "year": 1968,
+                "japan": 12,
+                "crossdisciplinary": 2,
+                "total": 14,
+                "ratio": 14.3,
+                "scholars": 5
+        },
+        {
+                "year": 1969,
+                "japan": 0,
+                "crossdisciplinary": 1,
+                "total": 1,
+                "ratio": 100.0,
+                "scholars": 1
+        },
+        {
+                "year": 1970,
+                "japan": 0,
+                "crossdisciplinary": 4,
+                "total": 4,
+                "ratio": 100.0,
+                "scholars": 4
+        },
+        {
+                "year": 1971,
+                "japan": 2,
+                "crossdisciplinary": 7,
+                "total": 9,
+                "ratio": 77.8,
+                "scholars": 6
+        },
+        {
+                "year": 1972,
+                "japan": 0,
+                "crossdisciplinary": 4,
+                "total": 4,
+                "ratio": 100.0,
+                "scholars": 3
+        },
+        {
+                "year": 1973,
+                "japan": 0,
+                "crossdisciplinary": 2,
+                "total": 2,
+                "ratio": 100.0,
+                "scholars": 2
+        },
+        {
+                "year": 1974,
+                "japan": 0,
+                "crossdisciplinary": 2,
+                "total": 2,
+                "ratio": 100.0,
+                "scholars": 2
+        },
+        {
+                "year": 1975,
+                "japan": 1,
+                "crossdisciplinary": 2,
+                "total": 3,
+                "ratio": 66.7,
+                "scholars": 2
+        },
+        {
+                "year": 1976,
+                "japan": 2,
+                "crossdisciplinary": 6,
+                "total": 8,
+                "ratio": 75.0,
+                "scholars": 8
+        },
+        {
+                "year": 1977,
+                "japan": 4,
+                "crossdisciplinary": 2,
+                "total": 6,
+                "ratio": 33.3,
+                "scholars": 3
+        },
+        {
+                "year": 1978,
+                "japan": 2,
+                "crossdisciplinary": 5,
+                "total": 7,
+                "ratio": 71.4,
+                "scholars": 5
+        },
+        {
+                "year": 1979,
+                "japan": 15,
+                "crossdisciplinary": 7,
+                "total": 22,
+                "ratio": 31.8,
+                "scholars": 15
+        },
+        {
+                "year": 1980,
+                "japan": 5,
+                "crossdisciplinary": 2,
+                "total": 7,
+                "ratio": 28.6,
+                "scholars": 4
+        },
+        {
+                "year": 1981,
+                "japan": 7,
+                "crossdisciplinary": 7,
+                "total": 14,
+                "ratio": 50.0,
+                "scholars": 10
+        },
+        {
+                "year": 1982,
+                "japan": 6,
+                "crossdisciplinary": 7,
+                "total": 13,
+                "ratio": 53.8,
+                "scholars": 6
+        },
+        {
+                "year": 1983,
+                "japan": 16,
+                "crossdisciplinary": 12,
+                "total": 28,
+                "ratio": 42.9,
+                "scholars": 18
+        },
+        {
+                "year": 1984,
+                "japan": 9,
+                "crossdisciplinary": 13,
+                "total": 22,
+                "ratio": 59.1,
+                "scholars": 9
+        },
+        {
+                "year": 1985,
+                "japan": 14,
+                "crossdisciplinary": 16,
+                "total": 30,
+                "ratio": 53.3,
+                "scholars": 17
+        },
+        {
+                "year": 1986,
+                "japan": 16,
+                "crossdisciplinary": 20,
+                "total": 36,
+                "ratio": 55.6,
+                "scholars": 22
+        },
+        {
+                "year": 1987,
+                "japan": 21,
+                "crossdisciplinary": 29,
+                "total": 50,
+                "ratio": 58.0,
+                "scholars": 25
+        },
+        {
+                "year": 1988,
+                "japan": 18,
+                "crossdisciplinary": 29,
+                "total": 47,
+                "ratio": 61.7,
+                "scholars": 22
+        },
+        {
+                "year": 1989,
+                "japan": 24,
+                "crossdisciplinary": 17,
+                "total": 41,
+                "ratio": 41.5,
+                "scholars": 19
+        },
+        {
+                "year": 1990,
+                "japan": 13,
+                "crossdisciplinary": 14,
+                "total": 27,
+                "ratio": 51.9,
+                "scholars": 17
+        },
+        {
+                "year": 1991,
+                "japan": 16,
+                "crossdisciplinary": 8,
+                "total": 24,
+                "ratio": 33.3,
+                "scholars": 16
+        },
+        {
+                "year": 1992,
+                "japan": 21,
+                "crossdisciplinary": 10,
+                "total": 31,
+                "ratio": 32.3,
+                "scholars": 18
+        },
+        {
+                "year": 1993,
+                "japan": 22,
+                "crossdisciplinary": 16,
+                "total": 38,
+                "ratio": 42.1,
+                "scholars": 17
+        },
+        {
+                "year": 1994,
+                "japan": 17,
+                "crossdisciplinary": 12,
+                "total": 29,
+                "ratio": 41.4,
+                "scholars": 15
+        },
+        {
+                "year": 1995,
+                "japan": 13,
+                "crossdisciplinary": 17,
+                "total": 30,
+                "ratio": 56.7,
+                "scholars": 22
+        },
+        {
+                "year": 1996,
+                "japan": 25,
+                "crossdisciplinary": 14,
+                "total": 39,
+                "ratio": 35.9,
+                "scholars": 21
+        },
+        {
+                "year": 1997,
+                "japan": 16,
+                "crossdisciplinary": 18,
+                "total": 34,
+                "ratio": 52.9,
+                "scholars": 19
+        },
+        {
+                "year": 1998,
+                "japan": 19,
+                "crossdisciplinary": 17,
+                "total": 36,
+                "ratio": 47.2,
+                "scholars": 26
+        },
+        {
+                "year": 1999,
+                "japan": 27,
+                "crossdisciplinary": 14,
+                "total": 41,
+                "ratio": 34.1,
+                "scholars": 23
+        },
+        {
+                "year": 2000,
+                "japan": 13,
+                "crossdisciplinary": 10,
+                "total": 23,
+                "ratio": 43.5,
+                "scholars": 15
+        },
+        {
+                "year": 2001,
+                "japan": 25,
+                "crossdisciplinary": 17,
+                "total": 42,
+                "ratio": 40.5,
+                "scholars": 22
+        },
+        {
+                "year": 2002,
+                "japan": 29,
+                "crossdisciplinary": 21,
+                "total": 50,
+                "ratio": 42.0,
+                "scholars": 25
+        },
+        {
+                "year": 2003,
+                "japan": 21,
+                "crossdisciplinary": 35,
+                "total": 56,
+                "ratio": 62.5,
+                "scholars": 30
+        },
+        {
+                "year": 2005,
+                "japan": 34,
+                "crossdisciplinary": 45,
+                "total": 79,
+                "ratio": 57.0,
+                "scholars": 33
+        },
+        {
+                "year": 2006,
+                "japan": 28,
+                "crossdisciplinary": 47,
+                "total": 75,
+                "ratio": 62.7,
+                "scholars": 40
+        },
+        {
+                "year": 2007,
+                "japan": 34,
+                "crossdisciplinary": 51,
+                "total": 85,
+                "ratio": 60.0,
+                "scholars": 41
+        },
+        {
+                "year": 2008,
+                "japan": 30,
+                "crossdisciplinary": 67,
+                "total": 97,
+                "ratio": 69.1,
+                "scholars": 51
+        },
+        {
+                "year": 2009,
+                "japan": 25,
+                "crossdisciplinary": 61,
+                "total": 86,
+                "ratio": 70.9,
+                "scholars": 45
+        },
+        {
+                "year": 2012,
+                "japan": 49,
+                "crossdisciplinary": 0,
+                "total": 49,
+                "ratio": 0.0,
+                "scholars": 30
+        },
+        {
+                "year": 2013,
+                "japan": 59,
+                "crossdisciplinary": 0,
+                "total": 59,
+                "ratio": 0.0,
+                "scholars": 34
+        },
+        {
+                "year": 2014,
+                "japan": 38,
+                "crossdisciplinary": 0,
+                "total": 38,
+                "ratio": 0.0,
+                "scholars": 25
+        },
+        {
+                "year": 2015,
+                "japan": 58,
+                "crossdisciplinary": 54,
+                "total": 112,
+                "ratio": 48.2,
+                "scholars": 49
+        },
+        {
+                "year": 2016,
+                "japan": 37,
+                "crossdisciplinary": 0,
+                "total": 37,
+                "ratio": 0.0,
+                "scholars": 18
+        },
+        {
+                "year": 2017,
+                "japan": 80,
+                "crossdisciplinary": 0,
+                "total": 80,
+                "ratio": 0.0,
+                "scholars": 43
+        },
+        {
+                "year": 2018,
+                "japan": 40,
+                "crossdisciplinary": 29,
+                "total": 69,
+                "ratio": 42.0,
+                "scholars": 48
+        },
+        {
+                "year": 2019,
+                "japan": 29,
+                "crossdisciplinary": 27,
+                "total": 56,
+                "ratio": 48.2,
+                "scholars": 37
+        },
+        {
+                "year": 2020,
+                "japan": 28,
+                "crossdisciplinary": 28,
+                "total": 56,
+                "ratio": 50.0,
+                "scholars": 37
+        },
+        {
+                "year": 2021,
+                "japan": 27,
+                "crossdisciplinary": 16,
+                "total": 43,
+                "ratio": 37.2,
+                "scholars": 26
+        },
+        {
+                "year": 2022,
+                "japan": 19,
+                "crossdisciplinary": 17,
+                "total": 36,
+                "ratio": 47.2,
+                "scholars": 21
+        },
+        {
+                "year": 2023,
+                "japan": 44,
+                "crossdisciplinary": 38,
+                "total": 82,
+                "ratio": 46.3,
+                "scholars": 39
+        },
+        {
+                "year": 2024,
+                "japan": 52,
+                "crossdisciplinary": 32,
+                "total": 84,
+                "ratio": 38.1,
+                "scholars": 42
+        },
+        {
+                "year": 2025,
+                "japan": 91,
+                "crossdisciplinary": 51,
+                "total": 142,
+                "ratio": 35.9,
+                "scholars": 69
+        },
+        {
+                "year": 2026,
+                "japan": 105,
+                "crossdisciplinary": 51,
+                "total": 156,
+                "ratio": 32.7,
+                "scholars": 70
+        }
+];
+        const scholars = [
+        {
+                "id": 5491,
+                "name": "Dasenbrock, Reed Way",
+                "institution": "Unknown",
+                "japan": 0,
+                "crossdisciplinary": 34,
+                "total": 34,
+                "ratio": 100.0,
+                "years": [
+                        1981,
+                        1982,
+                        1983,
+                        1985,
+                        1986,
+                        1988,
+                        1989,
+                        1991,
+                        1992,
+                        1995,
+                        1996,
+                        1997,
+                        1998,
+                        1999,
+                        2000,
+                        2002,
+                        2003,
+                        2005
+                ],
+                "topTopics": [
+                        "Other",
+                        "Pedagogy"
+                ]
+        },
+        {
+                "id": 3550,
+                "name": "Prescott, Anne Elizabeth",
+                "institution": "Unknown",
+                "japan": 0,
+                "crossdisciplinary": 26,
+                "total": 26,
+                "ratio": 100.0,
+                "years": [
+                        1985,
+                        1986,
+                        1988,
+                        1989,
+                        1990,
+                        1992,
+                        1993,
+                        1995,
+                        1996,
+                        2000,
+                        2002,
+                        2006,
+                        2007,
+                        2008
+                ],
+                "topTopics": [
+                        "Other",
+                        "Gender & Sexuality"
+                ]
+        },
+        {
+                "id": 2983,
+                "name": "Miner, Earl",
+                "institution": "Princeton University",
+                "japan": 0,
+                "crossdisciplinary": 25,
+                "total": 25,
+                "ratio": 100.0,
+                "years": [
+                        1968,
+                        1970,
+                        1971,
+                        1972,
+                        1973,
+                        1976,
+                        1978,
+                        1979,
+                        1980,
+                        1981,
+                        1982,
+                        1983,
+                        1987,
+                        1990,
+                        1992,
+                        1996,
+                        1997,
+                        1998,
+                        1999
+                ],
+                "topTopics": [
+                        "Other",
+                        "Theory & Criticism",
+                        "Media Studies"
+                ]
+        },
+        {
+                "id": 5575,
+                "name": "Layoun, Mary Nicola",
+                "institution": "Unknown",
+                "japan": 0,
+                "crossdisciplinary": 19,
+                "total": 19,
+                "ratio": 100.0,
+                "years": [
+                        1986,
+                        1987,
+                        1988,
+                        1990,
+                        1992,
+                        1993,
+                        1994,
+                        1995,
+                        2006,
+                        2007,
+                        2008,
+                        2009
+                ],
+                "topTopics": [
+                        "Other",
+                        "Gender & Sexuality",
+                        "Postcolonial"
+                ]
+        },
+        {
+                "id": 4158,
+                "name": "Sorensen, Joseph Tsuyoshi",
+                "institution": "University of Colorado at Boulder",
+                "japan": 7,
+                "crossdisciplinary": 12,
+                "total": 19,
+                "ratio": 63.2,
+                "years": [
+                        2005,
+                        2006,
+                        2007,
+                        2008,
+                        2009,
+                        2012,
+                        2014
+                ],
+                "topTopics": [
+                        "Other"
+                ]
+        },
+        {
+                "id": 2972,
+                "name": "Miller, Stephen",
+                "institution": "University of Massachusetts-Amherst",
+                "japan": 1,
+                "crossdisciplinary": 17,
+                "total": 18,
+                "ratio": 94.4,
+                "years": [
+                        1983,
+                        1985,
+                        1995,
+                        1996,
+                        1998,
+                        1999,
+                        2001,
+                        2006,
+                        2007,
+                        2009,
+                        2016
+                ],
+                "topTopics": [
+                        "Other",
+                        "Cultural Studies"
+                ]
+        },
+        {
+                "id": 4540,
+                "name": "Tyutina, Svetlana",
+                "institution": "Unknown",
+                "japan": 0,
+                "crossdisciplinary": 18,
+                "total": 18,
+                "ratio": 100.0,
+                "years": [
+                        2015,
+                        2018,
+                        2019,
+                        2020,
+                        2021,
+                        2022,
+                        2023,
+                        2024,
+                        2025,
+                        2026
+                ],
+                "topTopics": [
+                        "Pedagogy",
+                        "Other"
+                ]
+        },
+        {
+                "id": 5230,
+                "name": "Sellin, Eric",
+                "institution": "Unknown",
+                "japan": 0,
+                "crossdisciplinary": 17,
+                "total": 17,
+                "ratio": 100.0,
+                "years": [
+                        1966,
+                        1971,
+                        1972,
+                        1973,
+                        1974,
+                        1975,
+                        1976,
+                        1983,
+                        1984,
+                        1987,
+                        1988,
+                        1990
+                ],
+                "topTopics": [
+                        "Other",
+                        "Cultural Studies"
+                ]
+        },
+        {
+                "id": 1119,
+                "name": "Eubanks, Charlotte",
+                "institution": "Pennsylvania State Univ",
+                "japan": 11,
+                "crossdisciplinary": 5,
+                "total": 16,
+                "ratio": 31.2,
+                "years": [
+                        2005,
+                        2008,
+                        2009,
+                        2012,
+                        2013,
+                        2014,
+                        2015,
+                        2016,
+                        2017,
+                        2021
+                ],
+                "topTopics": [
+                        "Other",
+                        "Translation Studies"
+                ]
+        },
+        {
+                "id": 4426,
+                "name": "Thornber, Karen",
+                "institution": "Harvard University\"",
+                "japan": 2,
+                "crossdisciplinary": 14,
+                "total": 16,
+                "ratio": 87.5,
+                "years": [
+                        2006,
+                        2007,
+                        2008,
+                        2009,
+                        2017,
+                        2023,
+                        2025,
+                        2026
+                ],
+                "topTopics": [
+                        "Other",
+                        "Postcolonial",
+                        "Comparative Literature"
+                ]
+        },
+        {
+                "id": 1659,
+                "name": "Henry, David A.",
+                "institution": "Unknown",
+                "japan": 0,
+                "crossdisciplinary": 14,
+                "total": 14,
+                "ratio": 100.0,
+                "years": [
+                        1981,
+                        1990,
+                        1994,
+                        1998,
+                        1999,
+                        2000,
+                        2001,
+                        2008
+                ],
+                "topTopics": [
+                        "Other",
+                        "Professional/Career",
+                        "Theory & Criticism"
+                ]
+        },
+        {
+                "id": 5185,
+                "name": "Nelson, Thomas Eustis",
+                "institution": "Unknown",
+                "japan": 0,
+                "crossdisciplinary": 14,
+                "total": 14,
+                "ratio": 100.0,
+                "years": [
+                        1986,
+                        1997,
+                        1998,
+                        1999,
+                        2000,
+                        2001,
+                        2002,
+                        2003,
+                        2005,
+                        2006
+                ],
+                "topTopics": [
+                        "Other",
+                        "Environmental",
+                        "Postcolonial"
+                ]
+        },
+        {
+                "id": 690,
+                "name": "Chow, Rey",
+                "institution": "Brown University",
+                "japan": 2,
+                "crossdisciplinary": 12,
+                "total": 14,
+                "ratio": 85.7,
+                "years": [
+                        1989,
+                        1990,
+                        1991,
+                        1994,
+                        1997,
+                        1998,
+                        1999,
+                        2003,
+                        2007,
+                        2015
+                ],
+                "topTopics": [
+                        "Other",
+                        "Pedagogy",
+                        "Translation Studies"
+                ]
+        },
+        {
+                "id": 2034,
+                "name": "Kamens, Edward",
+                "institution": "Harvard University",
+                "japan": 5,
+                "crossdisciplinary": 8,
+                "total": 13,
+                "ratio": 61.5,
+                "years": [
+                        1988,
+                        2024,
+                        2025,
+                        2026
+                ],
+                "topTopics": [
+                        "Other"
+                ]
+        },
+        {
+                "id": 2439,
+                "name": "Ledesma, Eduardo",
+                "institution": "Unknown",
+                "japan": 0,
+                "crossdisciplinary": 13,
+                "total": 13,
+                "ratio": 100.0,
+                "years": [
+                        2008,
+                        2009,
+                        2015,
+                        2018,
+                        2019,
+                        2020,
+                        2024,
+                        2025,
+                        2026
+                ],
+                "topTopics": [
+                        "Other",
+                        "Media Studies",
+                        "Theory & Criticism"
+                ]
+        },
+        {
+                "id": 5653,
+                "name": "Miller, John Scott",
+                "institution": "Unknown",
+                "japan": 0,
+                "crossdisciplinary": 12,
+                "total": 12,
+                "ratio": 100.0,
+                "years": [
+                        1978,
+                        1981,
+                        1983,
+                        1984,
+                        1988,
+                        1998,
+                        1999,
+                        2002,
+                        2005,
+                        2024
+                ],
+                "topTopics": [
+                        "Other"
+                ]
+        },
+        {
+                "id": 5695,
+                "name": "Christopher, Renny Teresa",
+                "institution": "Unknown",
+                "japan": 0,
+                "crossdisciplinary": 12,
+                "total": 12,
+                "ratio": 100.0,
+                "years": [
+                        1989,
+                        1993,
+                        1994,
+                        1995,
+                        1996,
+                        1997,
+                        2001,
+                        2003
+                ],
+                "topTopics": [
+                        "Other",
+                        "Media Studies",
+                        "Cultural Studies"
+                ]
+        },
+        {
+                "id": 1987,
+                "name": "Jones, Sumie A.",
+                "institution": "Indiana University",
+                "japan": 2,
+                "crossdisciplinary": 9,
+                "total": 11,
+                "ratio": 81.8,
+                "years": [
+                        1981,
+                        1986,
+                        1987,
+                        1988,
+                        1991
+                ],
+                "topTopics": [
+                        "Other"
+                ]
+        },
+        {
+                "id": 2706,
+                "name": "MacDonald, Ian",
+                "institution": "Florida Atlantic University",
+                "japan": 0,
+                "crossdisciplinary": 11,
+                "total": 11,
+                "ratio": 100.0,
+                "years": [
+                        1986,
+                        2015,
+                        2018,
+                        2020,
+                        2021,
+                        2022,
+                        2023,
+                        2025
+                ],
+                "topTopics": [
+                        "Other",
+                        "Cultural Studies"
+                ]
+        },
+        {
+                "id": 3703,
+                "name": "Rodd, Laurel Rasplica",
+                "institution": "U. of Colorado",
+                "japan": 1,
+                "crossdisciplinary": 10,
+                "total": 11,
+                "ratio": 90.9,
+                "years": [
+                        2001,
+                        2002,
+                        2005,
+                        2006,
+                        2007,
+                        2008
+                ],
+                "topTopics": [
+                        "Other"
+                ]
+        },
+        {
+                "id": 1521,
+                "name": "Hall, John Whitney",
+                "institution": "Doshisha University",
+                "japan": 0,
+                "crossdisciplinary": 10,
+                "total": 10,
+                "ratio": 100.0,
+                "years": [
+                        1976,
+                        1982,
+                        1983,
+                        1987,
+                        1988,
+                        1991,
+                        1993,
+                        1994
+                ],
+                "topTopics": [
+                        "Other"
+                ]
+        },
+        {
+                "id": 1671,
+                "name": "Hill, Christopher",
+                "institution": "Yale University",
+                "japan": 2,
+                "crossdisciplinary": 8,
+                "total": 10,
+                "ratio": 80.0,
+                "years": [
+                        1987,
+                        2002,
+                        2006,
+                        2008,
+                        2013,
+                        2017
+                ],
+                "topTopics": [
+                        "Other"
+                ]
+        },
+        {
+                "id": 2228,
+                "name": "Kleeman, Faye",
+                "institution": "University of Colorado at Boulder",
+                "japan": 1,
+                "crossdisciplinary": 9,
+                "total": 10,
+                "ratio": 90.0,
+                "years": [
+                        1992,
+                        1993,
+                        1994,
+                        2003,
+                        2005,
+                        2006,
+                        2007
+                ],
+                "topTopics": [
+                        "Other",
+                        "Gender & Sexuality",
+                        "Cultural Studies"
+                ]
+        },
+        {
+                "id": 3657,
+                "name": "Rhine, Marjorie Edna",
+                "institution": "Unknown",
+                "japan": 1,
+                "crossdisciplinary": 9,
+                "total": 10,
+                "ratio": 90.0,
+                "years": [
+                        1995,
+                        2001,
+                        2003,
+                        2006,
+                        2009
+                ],
+                "topTopics": [
+                        "Other",
+                        "Postcolonial"
+                ]
+        },
+        {
+                "id": 3342,
+                "name": "Ortabasi, Melek Su",
+                "institution": "Hamilton College",
+                "japan": 4,
+                "crossdisciplinary": 6,
+                "total": 10,
+                "ratio": 60.0,
+                "years": [
+                        2003,
+                        2009,
+                        2012,
+                        2014,
+                        2015,
+                        2020
+                ],
+                "topTopics": [
+                        "Other"
+                ]
+        },
+        {
+                "id": 4021,
+                "name": "Shih, Shu-mei",
+                "institution": "University of California, Los Angeles",
+                "japan": 1,
+                "crossdisciplinary": 9,
+                "total": 10,
+                "ratio": 90.0,
+                "years": [
+                        2007,
+                        2009,
+                        2012,
+                        2018,
+                        2020,
+                        2022
+                ],
+                "topTopics": [
+                        "Other",
+                        "Postcolonial",
+                        "Comparative Literature"
+                ]
+        },
+        {
+                "id": 226,
+                "name": "Bassoe, Pedro",
+                "institution": "Purdue University",
+                "japan": 7,
+                "crossdisciplinary": 3,
+                "total": 10,
+                "ratio": 30.0,
+                "years": [
+                        2017,
+                        2024,
+                        2025,
+                        2026
+                ],
+                "topTopics": [
+                        "Other",
+                        "Comparative Literature"
+                ]
+        },
+        {
+                "id": 4487,
+                "name": "Treat, John Whittier",
+                "institution": "Yale University",
+                "japan": 3,
+                "crossdisciplinary": 6,
+                "total": 9,
+                "ratio": 66.7,
+                "years": [
+                        1998,
+                        2002,
+                        2005,
+                        2006,
+                        2007,
+                        2008,
+                        2013
+                ],
+                "topTopics": [
+                        "Other"
+                ]
+        },
+        {
+                "id": 4194,
+                "name": "Stecopoulos, Harilaos",
+                "institution": "Unknown",
+                "japan": 0,
+                "crossdisciplinary": 9,
+                "total": 9,
+                "ratio": 100.0,
+                "years": [
+                        2006,
+                        2007,
+                        2008,
+                        2025,
+                        2026
+                ],
+                "topTopics": [
+                        "Other"
+                ]
+        },
+        {
+                "id": 1125,
+                "name": "Exley, Charles Marvin, III",
+                "institution": "Unknown",
+                "japan": 3,
+                "crossdisciplinary": 6,
+                "total": 9,
+                "ratio": 66.7,
+                "years": [
+                        2018,
+                        2024,
+                        2025,
+                        2026
+                ],
+                "topTopics": [
+                        "Other",
+                        "Media Studies"
+                ]
+        },
+        {
+                "id": 2968,
+                "name": "Miller, Marilyn",
+                "institution": "Unknown",
+                "japan": 1,
+                "crossdisciplinary": 7,
+                "total": 8,
+                "ratio": 87.5,
+                "years": [
+                        1986,
+                        1997,
+                        2001,
+                        2006,
+                        2018,
+                        2023,
+                        2025
+                ],
+                "topTopics": [
+                        "Other"
+                ]
+        },
+        {
+                "id": 2241,
+                "name": "Knight, Melinda",
+                "institution": "Unknown",
+                "japan": 0,
+                "crossdisciplinary": 8,
+                "total": 8,
+                "ratio": 100.0,
+                "years": [
+                        1990,
+                        1991,
+                        1993,
+                        1994,
+                        1995,
+                        2002,
+                        2003,
+                        2005
+                ],
+                "topTopics": [
+                        "Other",
+                        "Professional/Career"
+                ]
+        },
+        {
+                "id": 3270,
+                "name": "O'Leary, Thomas Francis",
+                "institution": "Unknown",
+                "japan": 0,
+                "crossdisciplinary": 8,
+                "total": 8,
+                "ratio": 100.0,
+                "years": [
+                        2001,
+                        2005,
+                        2006,
+                        2007,
+                        2008
+                ],
+                "topTopics": [
+                        "Other",
+                        "Cultural Studies",
+                        "Media Studies"
+                ]
+        },
+        {
+                "id": 280,
+                "name": "Bernards, Brian Christopher",
+                "institution": "Unknown",
+                "japan": 1,
+                "crossdisciplinary": 7,
+                "total": 8,
+                "ratio": 87.5,
+                "years": [
+                        2015,
+                        2018,
+                        2019,
+                        2020,
+                        2022
+                ],
+                "topTopics": [
+                        "Other"
+                ]
+        },
+        {
+                "id": 2856,
+                "name": "McCarthy, John Edward",
+                "institution": "Unknown",
+                "japan": 0,
+                "crossdisciplinary": 7,
+                "total": 7,
+                "ratio": 100.0,
+                "years": [
+                        1977,
+                        1979,
+                        1985,
+                        1986,
+                        1987,
+                        2003,
+                        2006
+                ],
+                "topTopics": [
+                        "Other"
+                ]
+        },
+        {
+                "id": 328821,
+                "name": "Rao, Sushma Ramesh",
+                "institution": "Unknown",
+                "japan": 7,
+                "crossdisciplinary": 0,
+                "total": 7,
+                "ratio": 0.0,
+                "years": [
+                        1988,
+                        1989,
+                        1991,
+                        1992,
+                        1993,
+                        1994,
+                        1995
+                ],
+                "topTopics": []
+        },
+        {
+                "id": 5568,
+                "name": "Brown, Robert Alan",
+                "institution": "Unknown",
+                "japan": 0,
+                "crossdisciplinary": 7,
+                "total": 7,
+                "ratio": 100.0,
+                "years": [
+                        1989,
+                        1997,
+                        2003,
+                        2007
+                ],
+                "topTopics": [
+                        "Other"
+                ]
+        },
+        {
+                "id": 5991,
+                "name": "Wood, Michael S.",
+                "institution": "Unknown",
+                "japan": 0,
+                "crossdisciplinary": 7,
+                "total": 7,
+                "ratio": 100.0,
+                "years": [
+                        1997,
+                        1998,
+                        2003,
+                        2006
+                ],
+                "topTopics": [
+                        "Other",
+                        "Translation Studies"
+                ]
+        },
+        {
+                "id": 471,
+                "name": "Bush, Christopher Paul",
+                "institution": "Unknown",
+                "japan": 1,
+                "crossdisciplinary": 6,
+                "total": 7,
+                "ratio": 85.7,
+                "years": [
+                        1998,
+                        2002,
+                        2003,
+                        2009,
+                        2018
+                ],
+                "topTopics": [
+                        "Other"
+                ]
+        },
+        {
+                "id": 4956,
+                "name": "Yildiz, Yasemin",
+                "institution": "Unknown",
+                "japan": 0,
+                "crossdisciplinary": 7,
+                "total": 7,
+                "ratio": 100.0,
+                "years": [
+                        2003,
+                        2009,
+                        2015,
+                        2024
+                ],
+                "topTopics": [
+                        "Other",
+                        "Gender & Sexuality"
+                ]
+        },
+        {
+                "id": 907,
+                "name": "Dawes, James Roger",
+                "institution": "Unknown",
+                "japan": 0,
+                "crossdisciplinary": 7,
+                "total": 7,
+                "ratio": 100.0,
+                "years": [
+                        2005,
+                        2007,
+                        2008,
+                        2009,
+                        2019,
+                        2020
+                ],
+                "topTopics": [
+                        "Other"
+                ]
+        },
+        {
+                "id": 1561,
+                "name": "Hanscom, Christopher Paul",
+                "institution": "Unknown",
+                "japan": 2,
+                "crossdisciplinary": 5,
+                "total": 7,
+                "ratio": 71.4,
+                "years": [
+                        2007,
+                        2013,
+                        2017,
+                        2018,
+                        2019,
+                        2020
+                ],
+                "topTopics": [
+                        "Other",
+                        "Postcolonial"
+                ]
+        },
+        {
+                "id": 1088,
+                "name": "Emmerich, Michael D.",
+                "institution": "University of California, Los Angeles",
+                "japan": 3,
+                "crossdisciplinary": 4,
+                "total": 7,
+                "ratio": 57.1,
+                "years": [
+                        2009,
+                        2014,
+                        2015,
+                        2017,
+                        2018
+                ],
+                "topTopics": [
+                        "Other",
+                        "Translation Studies"
+                ]
+        },
+        {
+                "id": 507,
+                "name": "Campana, Andrew Pasquale",
+                "institution": "Cornell University",
+                "japan": 3,
+                "crossdisciplinary": 4,
+                "total": 7,
+                "ratio": 57.1,
+                "years": [
+                        2019,
+                        2021,
+                        2023,
+                        2026
+                ],
+                "topTopics": [
+                        "Other",
+                        "Media Studies",
+                        "Cultural Studies"
+                ]
+        },
+        {
+                "id": 2510,
+                "name": "Leong, Michael",
+                "institution": "Unknown",
+                "japan": 0,
+                "crossdisciplinary": 7,
+                "total": 7,
+                "ratio": 100.0,
+                "years": [
+                        2021,
+                        2022,
+                        2023,
+                        2024,
+                        2025,
+                        2026
+                ],
+                "topTopics": [
+                        "Other",
+                        "Pedagogy"
+                ]
+        },
+        {
+                "id": 4814,
+                "name": "Wilson, William R.",
+                "institution": "Unknown",
+                "japan": 0,
+                "crossdisciplinary": 6,
+                "total": 6,
+                "ratio": 100.0,
+                "years": [
+                        1982,
+                        1983,
+                        1986,
+                        1988,
+                        1992,
+                        2008
+                ],
+                "topTopics": [
+                        "Other"
+                ]
+        },
+        {
+                "id": 5484,
+                "name": "Yasuhara, Eri Fujita",
+                "institution": "Unknown",
+                "japan": 2,
+                "crossdisciplinary": 4,
+                "total": 6,
+                "ratio": 66.7,
+                "years": [
+                        1984,
+                        1988,
+                        1989
+                ],
+                "topTopics": [
+                        "Other"
+                ]
+        },
+        {
+                "id": 7366,
+                "name": "Hirata, Hosea",
+                "institution": "Tufts University",
+                "japan": 0,
+                "crossdisciplinary": 6,
+                "total": 6,
+                "ratio": 100.0,
+                "years": [
+                        1987,
+                        1988,
+                        1989
+                ],
+                "topTopics": [
+                        "Other"
+                ]
+        },
+        {
+                "id": 5578,
+                "name": "Miyake, Lynne Kimiko",
+                "institution": "Pomona College:",
+                "japan": 1,
+                "crossdisciplinary": 5,
+                "total": 6,
+                "ratio": 83.3,
+                "years": [
+                        1989,
+                        2005,
+                        2006,
+                        2019
+                ],
+                "topTopics": [
+                        "Other",
+                        "Cultural Studies"
+                ]
+        },
+        {
+                "id": 16913,
+                "name": "Lupke, Christopher",
+                "institution": "Unknown",
+                "japan": 6,
+                "crossdisciplinary": 0,
+                "total": 6,
+                "ratio": 0.0,
+                "years": [
+                        1990,
+                        2006,
+                        2007,
+                        2013,
+                        2016
+                ],
+                "topTopics": []
+        }
+];  // Top 50
+        const topics = [
+        {
+                "topic": "Other",
+                "count": 874
+        },
+        {
+                "topic": "Comparative Literature",
+                "count": 27
+        },
+        {
+                "topic": "Media Studies",
+                "count": 27
+        },
+        {
+                "topic": "Translation Studies",
+                "count": 24
+        },
+        {
+                "topic": "Pedagogy",
+                "count": 24
+        },
+        {
+                "topic": "Cultural Studies",
+                "count": 21
+        },
+        {
+                "topic": "Gender & Sexuality",
+                "count": 13
+        },
+        {
+                "topic": "Postcolonial",
+                "count": 13
+        },
+        {
+                "topic": "Professional/Career",
+                "count": 5
+        },
+        {
+                "topic": "Theory & Criticism",
+                "count": 4
+        },
+        {
+                "topic": "Environmental",
+                "count": 2
+        },
+        {
+                "topic": "Disability Studies",
+                "count": 2
+        }
+];
+
+        let showPercent = false;
+
+        // Theme toggle
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const btn = document.getElementById('themeToggle');
+            btn.textContent = document.body.classList.contains('dark-mode') ? '☀️ Light Mode' : '🌙 Dark Mode';
+            drawAll();
+        });
+
+        // View toggle
+        document.getElementById('toggleView').addEventListener('click', () => {
+            showPercent = !showPercent;
+            const btn = document.getElementById('toggleView');
+            btn.textContent = showPercent ? '📊 Show Count' : '📊 Show Percentage';
+            drawTimeline();
+        });
+
+        // Draw timeline
+        function drawTimeline() {
+            const svg = d3.select('#timeline');
+            svg.selectAll('*').remove();
+
+            const margin = {top: 30, right: 30, bottom: 50, left: 60};
+            const width = svg.node().getBoundingClientRect().width - margin.left - margin.right;
+            const height = 400 - margin.top - margin.bottom;
+
+            const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+            const x = d3.scaleBand()
+                .domain(data.map(d => d.year))
+                .range([0, width])
+                .padding(0.1);
+
+            const maxVal = showPercent ? 100 : d3.max(data, d => d.total);
+            const y = d3.scaleLinear()
+                .domain([0, maxVal])
+                .range([height, 0]);
+
+            // X axis
+            g.append('g')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(x).tickValues(x.domain().filter((d, i) => i % 5 === 0)))
+                .selectAll('text')
+                .attr('transform', 'rotate(-45)')
+                .style('text-anchor', 'end');
+
+            // Y axis
+            g.append('g')
+                .call(d3.axisLeft(y))
+                .append('text')
+                .attr('fill', 'currentColor')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', -50)
+                .attr('x', -height/2)
+                .attr('text-anchor', 'middle')
+                .text(showPercent ? 'Percentage' : 'Number of Presentations');
+
+            // Stacked bars
+            data.forEach(d => {
+                const japanHeight = showPercent ? (d.japan / d.total * 100) : d.japan;
+                const crossHeight = showPercent ? (d.crossdisciplinary / d.total * 100) : d.crossdisciplinary;
+
+                // Japan bar
+                g.append('rect')
+                    .attr('x', x(d.year))
+                    .attr('y', y(japanHeight + crossHeight))
+                    .attr('width', x.bandwidth())
+                    .attr('height', y(0) - y(japanHeight))
+                    .attr('fill', getComputedStyle(document.body).getPropertyValue('--japan-color'));
+
+                // Cross-disciplinary bar
+                g.append('rect')
+                    .attr('x', x(d.year))
+                    .attr('y', y(crossHeight))
+                    .attr('width', x.bandwidth())
+                    .attr('height', y(0) - y(crossHeight))
+                    .attr('fill', getComputedStyle(document.body).getPropertyValue('--cross-color'));
+            });
+
+            // Trend line (3-year moving average of ratio)
+            if (!showPercent) {
+                const trendData = [];
+                for (let i = 1; i < data.length - 1; i++) {
+                    const avg = (data[i-1].ratio + data[i].ratio + data[i+1].ratio) / 3;
+                    trendData.push({year: data[i].year, ratio: avg});
+                }
+
+                const yRatio = d3.scaleLinear()
+                    .domain([0, 100])
+                    .range([height, 0]);
+
+                const line = d3.line()
+                    .x(d => x(d.year) + x.bandwidth() / 2)
+                    .y(d => yRatio(d.ratio))
+                    .curve(d3.curveMonotoneX);
+
+                g.append('path')
+                    .datum(trendData)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#e74c3c')
+                    .attr('stroke-width', 2)
+                    .attr('stroke-dasharray', '5,5')
+                    .attr('d', line);
+            }
+        }
+
+        // Draw scholar list
+        function drawScholars() {
+            const list = document.getElementById('scholarList');
+            list.innerHTML = '';
+
+            scholars.forEach(s => {
+                const div = document.createElement('div');
+                div.className = 'scholar-item';
+
+                const total = s.japan + s.crossdisciplinary;
+                const japanPct = (s.japan / total * 100).toFixed(0);
+                const crossPct = (s.crossdisciplinary / total * 100).toFixed(0);
+
+                div.innerHTML = `
+                    <div class="scholar-name">${s.name}</div>
+                    <div class="scholar-inst">${s.institution} | ${s.years[0]}-${s.years[s.years.length-1]}</div>
+                    <div class="bar-container">
+                        <div class="bar-segment" style="width: ${japanPct}%; background: var(--japan-color);"></div>
+                        <div class="bar-segment" style="width: ${crossPct}%; background: var(--cross-color);"></div>
+                    </div>
+                    <div style="font-size: 12px; margin-top: 5px; color: var(--fg2);">
+                        ${s.total} total | ${s.crossdisciplinary} cross-disc (${s.ratio}%)
+                        ${s.topTopics.length > 0 ? ' | ' + s.topTopics.join(', ') : ''}
+                    </div>
+                `;
+
+                list.appendChild(div);
+            });
+        }
+
+        // Draw topic distribution
+        function drawTopics() {
+            const svg = d3.select('#topics');
+            svg.selectAll('*').remove();
+
+            const width = svg.node().getBoundingClientRect().width;
+            const height = 500;
+            const margin = 40;
+
+            const radius = Math.min(width, height) / 2 - margin;
+
+            const g = svg.append('g')
+                .attr('transform', `translate(${width/2},${height/2})`);
+
+            const color = d3.scaleOrdinal()
+                .domain(topics.map(d => d.topic))
+                .range(d3.schemeSet3);
+
+            const pie = d3.pie()
+                .value(d => d.count)
+                .sort(null);
+
+            const arc = d3.arc()
+                .innerRadius(radius * 0.5)
+                .outerRadius(radius);
+
+            const arcs = g.selectAll('arc')
+                .data(pie(topics))
+                .enter()
+                .append('g');
+
+            arcs.append('path')
+                .attr('d', arc)
+                .attr('fill', d => color(d.data.topic))
+                .attr('stroke', 'var(--bg)')
+                .attr('stroke-width', 2);
+
+            arcs.append('text')
+                .attr('transform', d => `translate(${arc.centroid(d)})`)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '11px')
+                .attr('fill', 'currentColor')
+                .text(d => d.data.count > 10 ? d.data.topic.split(' ')[0] : '');
+
+            // Legend
+            const legend = svg.append('g')
+                .attr('transform', `translate(20, 20)`);
+
+            topics.forEach((t, i) => {
+                const item = legend.append('g')
+                    .attr('transform', `translate(0, ${i * 20})`);
+
+                item.append('rect')
+                    .attr('width', 15)
+                    .attr('height', 15)
+                    .attr('fill', color(t.topic));
+
+                item.append('text')
+                    .attr('x', 20)
+                    .attr('y', 12)
+                    .attr('font-size', '12px')
+                    .attr('fill', 'currentColor')
+                    .text(`${t.topic} (${t.count})`);
+            });
+        }
+
+        function drawAll() {
+            drawTimeline();
+            drawScholars();
+            drawTopics();
+        }
+
+        drawAll();
+        window.addEventListener('resize', drawAll);
+    </script>
+</body>
+</html>

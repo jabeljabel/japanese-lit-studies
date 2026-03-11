@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Job Market Content Analysis</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--fg); }
+body.light-mode { --bg: #fff; --bg2: #f5f5f5; --fg: #333; --border: #ddd; }
+body.dark-mode { --bg: #1a1a1a; --bg2: #2a2a2a; --fg: #e0e0e0; --border: #444; }
+#header { padding: 20px; background: var(--bg2); border-bottom: 1px solid var(--border); }
+h1 { font-size: 24px; margin-bottom: 10px; }
+#controls { display: flex; gap: 20px; margin-top: 15px; }
+select, button { padding: 8px 12px; background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; }
+#main { padding: 20px; }
+#chart { margin: 20px 0; }
+.axis line, .axis path { stroke: var(--border); }
+.axis text { fill: var(--fg); font-size: 11px; }
+</style>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
+</head>
+<body class="light-mode">
+<div id="header">
+<h1>💼 Job Market Content Analysis</h1>
+<p>MLA Job Information List (1960s-2000s)</p>
+<div id="controls">
+<select id="category-select">
+<option value="all">All Categories</option>
+<option value="theory_methodology">Theory & Methodology</option>
+<option value="gender_identity">Gender & Identity</option>
+<option value="media_popculture">Media & Pop Culture</option>
+<option value="period_terms">Period Terms</option>
+<option value="disciplinary">Disciplinary</option>
+</select>
+<button id="theme-toggle">🌙 Dark Mode</button>
+</div>
+</div>
+<div id="main">
+<div id="chart"></div>
+</div>
+<script>
+const data = [{"decade": "1960s", "term_category": "period_terms", "term": "medieval", "frequency": 1, "proportion": 0.0007974481658692185}, {"decade": "1960s", "term_category": "period_terms", "term": "modern", "frequency": 2, "proportion": 0.001594896331738437}, {"decade": "1970s", "term_category": "theory_methodology", "term": "theoretical", "frequency": 5, "proportion": 6.924152829901262e-05}, {"decade": "1970s", "term_category": "theory_methodology", "term": "critical", "frequency": 8, "proportion": 0.00011078644527842018}, {"decade": "1970s", "term_category": "theory_methodology", "term": "theory", "frequency": 13, "proportion": 0.00018002797357743281}, {"decade": "1970s", "term_category": "theory_methodology", "term": "criticism", "frequency": 3, "proportion": 4.154491697940757e-05}, {"decade": "1970s", "term_category": "theory_methodology", "term": "agency", "frequency": 1, "proportion": 1.3848305659802523e-05}, {"decade": "1970s", "term_category": "theory_methodology", "term": "discourse", "frequency": 3, "proportion": 4.154491697940757e-05}, {"decade": "1970s", "term_category": "gender_identity", "term": "woman", "frequency": 8, "proportion": 0.00011078644527842018}, {"decade": "1970s", "term_category": "gender_identity", "term": "women", "frequency": 22, "proportion": 0.0003046627245156555}, {"decade": "1970s", "term_category": "media_popculture", "term": "media", "frequency": 2, "proportion": 2.7696611319605045e-05}, {"decade": "1970s", "term_category": "media_popculture", "term": "cinema", "frequency": 1, "proportion": 1.3848305659802523e-05}, {"decade": "1970s", "term_category": "media_popculture", "term": "film", "frequency": 9, "proportion": 0.0001246347509382227}, {"decade": "1970s", "term_category": "media_popculture", "term": "television", "frequency": 1, "proportion": 1.3848305659802523e-05}, {"decade": "1970s", "term_category": "media_popculture", "term": "visual", "frequency": 1, "proportion": 1.3848305659802523e-05}, {"decade": "1970s", "term_category": "period_terms", "term": "modern", "frequency": 677, "proportion": 0.009375302931686308}, {"decade": "1970s", "term_category": "period_terms", "term": "medieval", "frequency": 15, "proportion": 0.00020772458489703785}, {"decade": "1970s", "term_category": "period_terms", "term": "contemporary", "frequency": 12, "proportion": 0.00016617966791763027}, {"decade": "1970s", "term_category": "period_terms", "term": "tokugawa", "frequency": 2, "proportion": 2.7696611319605045e-05}, {"decade": "1970s", "term_category": "period_terms", "term": "edo", "frequency": 1, "proportion": 1.3848305659802523e-05}, {"decade": "1970s", "term_category": "period_terms", "term": "heian", "frequency": 3, "proportion": 4.154491697940757e-05}, {"decade": "1970s", "term_category": "period_terms", "term": "kamakura", "frequency": 1, "proportion": 1.3848305659802523e-05}, {"decade": "1970s", "term_category": "literary_figures", "term": "\u014de", "frequency": 4, "proportion": 5.539322263921009e-05}, {"decade": "1970s", "term_category": "literary_figures", "term": "oe", "frequency": 4, "proportion": 5.539322263921009e-05}, {"decade": "1970s", "term_category": "disciplinary", "term": "comparative", "frequency": 149, "proportion": 0.002063397543310576}, {"decade": "1970s", "term_category": "disciplinary", "term": "translation", "frequency": 19, "proportion": 0.00026311780753624794}, {"decade": "1970s", "term_category": "disciplinary", "term": "interdisciplinary", "frequency": 8, "proportion": 0.00011078644527842018}, {"decade": "1970s", "term_category": "disciplinary", "term": "area studies", "frequency": 2, "proportion": 2.7696611319605045e-05}, {"decade": "1970s", "term_category": "disciplinary", "term": "world literature", "frequency": 3, "proportion": 4.154491697940757e-05}, {"decade": "1980s", "term_category": "theory_methodology", "term": "theory", "frequency": 92, "proportion": 0.0008970271350708359}, {"decade": "1980s", "term_category": "theory_methodology", "term": "criticism", "frequency": 11, "proportion": 0.00010725324441064343}, {"decade": "1980s", "term_category": "theory_methodology", "term": "agency", "frequency": 2, "proportion": 1.9500589892844258e-05}, {"decade": "1980s", "term_category": "theory_methodology", "term": "critical", "frequency": 22, "proportion": 0.00021450648882128686}, {"decade": "1980s", "term_category": "theory_methodology", "term": "theoretical", "frequency": 11, "proportion": 0.00010725324441064343}, {"decade": "1980s", "term_category": "theory_methodology", "term": "narrative", "frequency": 2, "proportion": 1.9500589892844258e-05}, {"decade": "1980s", "term_category": "theory_methodology", "term": "discourse", "frequency": 6, "proportion": 5.8501769678532776e-05}, {"decade": "1980s", "term_category": "theory_methodology", "term": "deconstruction", "frequency": 1, "proportion": 9.750294946422129e-06}, {"decade": "1980s", "term_category": "gender_identity", "term": "feminist", "frequency": 9, "proportion": 8.775265451779917e-05}, {"decade": "1980s", "term_category": "gender_identity", "term": "women", "frequency": 106, "proportion": 0.0010335312643207457}, {"decade": "1980s", "term_category": "gender_identity", "term": "woman", "frequency": 5, "proportion": 4.8751474732110645e-05}, {"decade": "1980s", "term_category": "gender_identity", "term": "lesbian", "frequency": 1, "proportion": 9.750294946422129e-06}, {"decade": "1980s", "term_category": "gender_identity", "term": "gender", "frequency": 9, "proportion": 8.775265451779917e-05}, {"decade": "1980s", "term_category": "gender_identity", "term": "feminism", "frequency": 1, "proportion": 9.750294946422129e-06}, {"decade": "1980s", "term_category": "media_popculture", "term": "film", "frequency": 29, "proportion": 0.0002827585534462417}, {"decade": "1980s", "term_category": "media_popculture", "term": "visual", "frequency": 5, "proportion": 4.8751474732110645e-05}, {"decade": "1980s", "term_category": "media_popculture", "term": "television", "frequency": 1, "proportion": 9.750294946422129e-06}, {"decade": "1980s", "term_category": "media_popculture", "term": "cinema", "frequency": 3, "proportion": 2.9250884839266388e-05}, {"decade": "1980s", "term_category": "period_terms", "term": "modern", "frequency": 364, "proportion": 0.003549107360497655}, {"decade": "1980s", "term_category": "period_terms", "term": "medieval", "frequency": 27, "proportion": 0.0002632579635533975}, {"decade": "1980s", "term_category": "period_terms", "term": "contemporary", "frequency": 19, "proportion": 0.00018525560398202046}, {"decade": "1980s", "term_category": "period_terms", "term": "premodern", "frequency": 1, "proportion": 9.750294946422129e-06}, {"decade": "1980s", "term_category": "period_terms", "term": "meiji", "frequency": 2, "proportion": 1.9500589892844258e-05}, {"decade": "1980s", "term_category": "period_terms", "term": "heian", "frequency": 2, "proportion": 1.9500589892844258e-05}, {"decade": "1980s", "term_category": "period_terms", "term": "edo", "frequency": 3, "proportion": 2.9250884839266388e-05}, {"decade": "1980s", "term_category": "literary_figures", "term": "\u014de", "frequency": 3, "proportion": 2.9250884839266388e-05}, {"decade": "1980s", "term_category": "literary_figures", "term": "oe", "frequency": 3, "proportion": 2.9250884839266388e-05}, {"decade": "1980s", "term_category": "disciplinary", "term": "comparative", "frequency": 151, "proportion": 0.0014722945369097416}, {"decade": "1980s", "term_category": "disciplinary", "term": "translation", "frequency": 98, "proportion": 0.0009555289047493687}, {"decade": "1980s", "term_category": "disciplinary", "term": "interdisciplinary", "frequency": 33, "proportion": 0.00032175973323193027}, {"decade": "1980s", "term_category": "disciplinary", "term": "area studies", "frequency": 3, "proportion": 2.9250884839266388e-05}, {"decade": "1980s", "term_category": "disciplinary", "term": "cultural studies", "frequency": 8, "proportion": 7.800235957137703e-05}, {"decade": "1980s", "term_category": "disciplinary", "term": "world literature", "frequency": 4, "proportion": 3.9001179785688515e-05}, {"decade": "1990s", "term_category": "theory_methodology", "term": "theory", "frequency": 80, "proportion": 0.0010136076831462383}, {"decade": "1990s", "term_category": "theory_methodology", "term": "critical", "frequency": 18, "proportion": 0.00022806172870790361}, {"decade": "1990s", "term_category": "theory_methodology", "term": "criticism", "frequency": 15, "proportion": 0.00019005144058991966}, {"decade": "1990s", "term_category": "theory_methodology", "term": "theoretical", "frequency": 6, "proportion": 7.602057623596787e-05}, {"decade": "1990s", "term_category": "theory_methodology", "term": "discourse", "frequency": 5, "proportion": 6.335048019663989e-05}, {"decade": "1990s", "term_category": "theory_methodology", "term": "narrative", "frequency": 3, "proportion": 3.8010288117983936e-05}, {"decade": "1990s", "term_category": "theory_methodology", "term": "deconstruction", "frequency": 1, "proportion": 1.2670096039327979e-05}, {"decade": "1990s", "term_category": "theory_methodology", "term": "postcolonial", "frequency": 5, "proportion": 6.335048019663989e-05}, {"decade": "1990s", "term_category": "gender_identity", "term": "women", "frequency": 175, "proportion": 0.0022172668068823963}, {"decade": "1990s", "term_category": "gender_identity", "term": "feminist", "frequency": 7, "proportion": 8.869067227529585e-05}, {"decade": "1990s", "term_category": "gender_identity", "term": "feminism", "frequency": 4, "proportion": 5.0680384157311914e-05}, {"decade": "1990s", "term_category": "gender_identity", "term": "sexuality", "frequency": 2, "proportion": 2.5340192078655957e-05}, {"decade": "1990s", "term_category": "gender_identity", "term": "woman", "frequency": 1, "proportion": 1.2670096039327979e-05}, {"decade": "1990s", "term_category": "gender_identity", "term": "gender", "frequency": 19, "proportion": 0.00024073182474723158}, {"decade": "1990s", "term_category": "gender_identity", "term": "queer", "frequency": 1, "proportion": 1.2670096039327979e-05}, {"decade": "1990s", "term_category": "gender_identity", "term": "lesbian", "frequency": 1, "proportion": 1.2670096039327979e-05}, {"decade": "1990s", "term_category": "media_popculture", "term": "visual", "frequency": 9, "proportion": 0.00011403086435395181}, {"decade": "1990s", "term_category": "media_popculture", "term": "film", "frequency": 48, "proportion": 0.000608164609887743}, {"decade": "1990s", "term_category": "media_popculture", "term": "media", "frequency": 15, "proportion": 0.00019005144058991966}, {"decade": "1990s", "term_category": "media_popculture", "term": "cinema", "frequency": 9, "proportion": 0.00011403086435395181}, {"decade": "1990s", "term_category": "media_popculture", "term": "television", "frequency": 2, "proportion": 2.5340192078655957e-05}, {"decade": "1990s", "term_category": "period_terms", "term": "contemporary", "frequency": 14, "proportion": 0.0001773813445505917}, {"decade": "1990s", "term_category": "period_terms", "term": "medieval", "frequency": 39, "proportion": 0.0004941337455337912}, {"decade": "1990s", "term_category": "period_terms", "term": "modern", "frequency": 149, "proportion": 0.0018878443098598687}, {"decade": "1990s", "term_category": "period_terms", "term": "heian", "frequency": 1, "proportion": 1.2670096039327979e-05}, {"decade": "1990s", "term_category": "period_terms", "term": "kamakura", "frequency": 1, "proportion": 1.2670096039327979e-05}, {"decade": "1990s", "term_category": "period_terms", "term": "meiji", "frequency": 1, "proportion": 1.2670096039327979e-05}, {"decade": "1990s", "term_category": "period_terms", "term": "taish\u014d", "frequency": 1, "proportion": 1.2670096039327979e-05}, {"decade": "1990s", "term_category": "period_terms", "term": "taisho", "frequency": 1, "proportion": 1.2670096039327979e-05}, {"decade": "1990s", "term_category": "period_terms", "term": "early modern", "frequency": 5, "proportion": 6.335048019663989e-05}, {"decade": "1990s", "term_category": "period_terms", "term": "tokugawa", "frequency": 3, "proportion": 3.8010288117983936e-05}, {"decade": "1990s", "term_category": "period_terms", "term": "premodern", "frequency": 1, "proportion": 1.2670096039327979e-05}, {"decade": "1990s", "term_category": "literary_figures", "term": "\u014de", "frequency": 2, "proportion": 2.5340192078655957e-05}, {"decade": "1990s", "term_category": "literary_figures", "term": "oe", "frequency": 2, "proportion": 2.5340192078655957e-05}, {"decade": "1990s", "term_category": "disciplinary", "term": "comparative", "frequency": 132, "proportion": 0.0016724526771912931}, {"decade": "1990s", "term_category": "disciplinary", "term": "translation", "frequency": 31, "proportion": 0.00039277297721916735}, {"decade": "1990s", "term_category": "disciplinary", "term": "cultural studies", "frequency": 44, "proportion": 0.000557484225730431}, {"decade": "1990s", "term_category": "disciplinary", "term": "interdisciplinary", "frequency": 55, "proportion": 0.0006968552821630388}, {"decade": "1990s", "term_category": "disciplinary", "term": "area studies", "frequency": 3, "proportion": 3.8010288117983936e-05}, {"decade": "1990s", "term_category": "disciplinary", "term": "world literature", "frequency": 4, "proportion": 5.0680384157311914e-05}, {"decade": "2000s", "term_category": "theory_methodology", "term": "theory", "frequency": 55, "proportion": 0.0005922001851971488}, {"decade": "2000s", "term_category": "theory_methodology", "term": "critical", "frequency": 30, "proportion": 0.0003230182828348085}, {"decade": "2000s", "term_category": "theory_methodology", "term": "theoretical", "frequency": 12, "proportion": 0.00012920731313392338}, {"decade": "2000s", "term_category": "theory_methodology", "term": "narrative", "frequency": 4, "proportion": 4.306910437797446e-05}, {"decade": "2000s", "term_category": "theory_methodology", "term": "agency", "frequency": 2, "proportion": 2.153455218898723e-05}, {"decade": "2000s", "term_category": "theory_methodology", "term": "criticism", "frequency": 4, "proportion": 4.306910437797446e-05}, {"decade": "2000s", "term_category": "theory_methodology", "term": "postcolonial", "frequency": 7, "proportion": 7.53709326614553e-05}, {"decade": "2000s", "term_category": "theory_methodology", "term": "discourse", "frequency": 5, "proportion": 5.383638047246808e-05}, {"decade": "2000s", "term_category": "theory_methodology", "term": "postmodern", "frequency": 1, "proportion": 1.0767276094493615e-05}, {"decade": "2000s", "term_category": "gender_identity", "term": "women", "frequency": 170, "proportion": 0.0018304369360639145}, {"decade": "2000s", "term_category": "gender_identity", "term": "gender", "frequency": 37, "proportion": 0.00039838921549626376}, {"decade": "2000s", "term_category": "gender_identity", "term": "feminist", "frequency": 7, "proportion": 7.53709326614553e-05}, {"decade": "2000s", "term_category": "gender_identity", "term": "sexuality", "frequency": 5, "proportion": 5.383638047246808e-05}, {"decade": "2000s", "term_category": "gender_identity", "term": "queer", "frequency": 5, "proportion": 5.383638047246808e-05}, {"decade": "2000s", "term_category": "gender_identity", "term": "feminism", "frequency": 2, "proportion": 2.153455218898723e-05}, {"decade": "2000s", "term_category": "media_popculture", "term": "media", "frequency": 78, "proportion": 0.000839847535370502}, {"decade": "2000s", "term_category": "media_popculture", "term": "film", "frequency": 52, "proportion": 0.000559898356913668}, {"decade": "2000s", "term_category": "media_popculture", "term": "visual", "frequency": 25, "proportion": 0.00026918190236234035}, {"decade": "2000s", "term_category": "media_popculture", "term": "cinema", "frequency": 29, "proportion": 0.00031225100674031484}, {"decade": "2000s", "term_category": "media_popculture", "term": "television", "frequency": 11, "proportion": 0.00011844003703942976}, {"decade": "2000s", "term_category": "period_terms", "term": "modern", "frequency": 230, "proportion": 0.0024764735017335313}, {"decade": "2000s", "term_category": "period_terms", "term": "contemporary", "frequency": 25, "proportion": 0.00026918190236234035}, {"decade": "2000s", "term_category": "period_terms", "term": "medieval", "frequency": 23, "proportion": 0.00024764735017335313}, {"decade": "2000s", "term_category": "period_terms", "term": "meiji", "frequency": 1, "proportion": 1.0767276094493615e-05}, {"decade": "2000s", "term_category": "period_terms", "term": "early modern", "frequency": 5, "proportion": 5.383638047246808e-05}, {"decade": "2000s", "term_category": "period_terms", "term": "premodern", "frequency": 1, "proportion": 1.0767276094493615e-05}, {"decade": "2000s", "term_category": "literary_figures", "term": "\u014de", "frequency": 1, "proportion": 1.0767276094493615e-05}, {"decade": "2000s", "term_category": "literary_figures", "term": "oe", "frequency": 1, "proportion": 1.0767276094493615e-05}, {"decade": "2000s", "term_category": "disciplinary", "term": "cultural studies", "frequency": 75, "proportion": 0.0008075457070870211}, {"decade": "2000s", "term_category": "disciplinary", "term": "world literature", "frequency": 18, "proportion": 0.00019381096970088506}, {"decade": "2000s", "term_category": "disciplinary", "term": "comparative", "frequency": 115, "proportion": 0.0012382367508667657}, {"decade": "2000s", "term_category": "disciplinary", "term": "interdisciplinary", "frequency": 74, "proportion": 0.0007967784309925275}, {"decade": "2000s", "term_category": "disciplinary", "term": "area studies", "frequency": 3, "proportion": 3.2301828283480846e-05}, {"decade": "2000s", "term_category": "disciplinary", "term": "translation", "frequency": 29, "proportion": 0.00031225100674031484}, {"decade": "2010s", "term_category": "theory_methodology", "term": "theory", "frequency": 27, "proportion": 0.00018319989143710137}, {"decade": "2010s", "term_category": "theory_methodology", "term": "criticism", "frequency": 7, "proportion": 4.749626815035962e-05}, {"decade": "2010s", "term_category": "theory_methodology", "term": "discourse", "frequency": 3, "proportion": 2.0355543493011264e-05}, {"decade": "2010s", "term_category": "theory_methodology", "term": "critical", "frequency": 47, "proportion": 0.00031890351472384313}, {"decade": "2010s", "term_category": "theory_methodology", "term": "agency", "frequency": 10, "proportion": 6.785181164337088e-05}, {"decade": "2010s", "term_category": "theory_methodology", "term": "narrative", "frequency": 6, "proportion": 4.071108698602253e-05}, {"decade": "2010s", "term_category": "theory_methodology", "term": "postcolonial", "frequency": 12, "proportion": 8.142217397204506e-05}, {"decade": "2010s", "term_category": "theory_methodology", "term": "theoretical", "frequency": 9, "proportion": 6.10666304790338e-05}, {"decade": "2010s", "term_category": "gender_identity", "term": "women", "frequency": 131, "proportion": 0.0008888587325281585}, {"decade": "2010s", "term_category": "gender_identity", "term": "gender", "frequency": 121, "proportion": 0.0008210069208847876}, {"decade": "2010s", "term_category": "gender_identity", "term": "sexuality", "frequency": 25, "proportion": 0.00016962952910842718}, {"decade": "2010s", "term_category": "gender_identity", "term": "queer", "frequency": 1, "proportion": 6.7851811643370875e-06}, {"decade": "2010s", "term_category": "media_popculture", "term": "media", "frequency": 161, "proportion": 0.001092414167458271}, {"decade": "2010s", "term_category": "media_popculture", "term": "film", "frequency": 201, "proportion": 0.0013638214140317547}, {"decade": "2010s", "term_category": "media_popculture", "term": "visual", "frequency": 74, "proportion": 0.0005021034061609444}, {"decade": "2010s", "term_category": "media_popculture", "term": "cinema", "frequency": 30, "proportion": 0.00020355543493011263}, {"decade": "2010s", "term_category": "media_popculture", "term": "television", "frequency": 4, "proportion": 2.714072465734835e-05}, {"decade": "2010s", "term_category": "media_popculture", "term": "manga", "frequency": 2, "proportion": 1.3570362328674175e-05}, {"decade": "2010s", "term_category": "media_popculture", "term": "anime", "frequency": 10, "proportion": 6.785181164337088e-05}, {"decade": "2010s", "term_category": "period_terms", "term": "modern", "frequency": 452, "proportion": 0.0030669018862803637}, {"decade": "2010s", "term_category": "period_terms", "term": "medieval", "frequency": 25, "proportion": 0.00016962952910842718}, {"decade": "2010s", "term_category": "period_terms", "term": "early modern", "frequency": 39, "proportion": 0.0002646220654091464}, {"decade": "2010s", "term_category": "period_terms", "term": "contemporary", "frequency": 69, "proportion": 0.0004681775003392591}, {"decade": "2010s", "term_category": "period_terms", "term": "premodern", "frequency": 19, "proportion": 0.00012891844212240466}, {"decade": "2010s", "term_category": "period_terms", "term": "edo", "frequency": 4, "proportion": 2.714072465734835e-05}, {"decade": "2010s", "term_category": "period_terms", "term": "postwar", "frequency": 1, "proportion": 6.7851811643370875e-06}, {"decade": "2010s", "term_category": "period_terms", "term": "tokugawa", "frequency": 2, "proportion": 1.3570362328674175e-05}, {"decade": "2010s", "term_category": "period_terms", "term": "meiji", "frequency": 7, "proportion": 4.749626815035962e-05}, {"decade": "2010s", "term_category": "period_terms", "term": "heian", "frequency": 1, "proportion": 6.7851811643370875e-06}, {"decade": "2010s", "term_category": "disciplinary", "term": "area studies", "frequency": 10, "proportion": 6.785181164337088e-05}, {"decade": "2010s", "term_category": "disciplinary", "term": "comparative", "frequency": 107, "proportion": 0.0007260143845840683}, {"decade": "2010s", "term_category": "disciplinary", "term": "cultural studies", "frequency": 145, "proportion": 0.0009838512688288778}, {"decade": "2010s", "term_category": "disciplinary", "term": "translation", "frequency": 57, "proportion": 0.000386755326367214}, {"decade": "2010s", "term_category": "disciplinary", "term": "interdisciplinary", "frequency": 131, "proportion": 0.0008888587325281585}, {"decade": "2010s", "term_category": "disciplinary", "term": "world literature", "frequency": 12, "proportion": 8.142217397204506e-05}, {"decade": "2010s", "term_category": "disciplinary", "term": "digital humanities", "frequency": 19, "proportion": 0.00012891844212240466}, {"decade": "2020s", "term_category": "theory_methodology", "term": "critical", "frequency": 7, "proportion": 0.00044745589363334184}, {"decade": "2020s", "term_category": "theory_methodology", "term": "theory", "frequency": 35, "proportion": 0.0022372794681667094}, {"decade": "2020s", "term_category": "theory_methodology", "term": "postcolonial", "frequency": 2, "proportion": 0.00012784454103809768}, {"decade": "2020s", "term_category": "theory_methodology", "term": "narrative", "frequency": 4, "proportion": 0.00025568908207619537}, {"decade": "2020s", "term_category": "theory_methodology", "term": "criticism", "frequency": 2, "proportion": 0.00012784454103809768}, {"decade": "2020s", "term_category": "theory_methodology", "term": "discourse", "frequency": 1, "proportion": 6.392227051904884e-05}, {"decade": "2020s", "term_category": "gender_identity", "term": "gender", "frequency": 34, "proportion": 0.0021733571976476603}, {"decade": "2020s", "term_category": "gender_identity", "term": "women", "frequency": 14, "proportion": 0.0008949117872666837}, {"decade": "2020s", "term_category": "gender_identity", "term": "sexuality", "frequency": 14, "proportion": 0.0008949117872666837}, {"decade": "2020s", "term_category": "gender_identity", "term": "feminist", "frequency": 1, "proportion": 6.392227051904884e-05}, {"decade": "2020s", "term_category": "gender_identity", "term": "queer", "frequency": 1, "proportion": 6.392227051904884e-05}, {"decade": "2020s", "term_category": "japanese_literary", "term": "noh", "frequency": 1, "proportion": 6.392227051904884e-05}, {"decade": "2020s", "term_category": "japanese_literary", "term": "tanka", "frequency": 1, "proportion": 6.392227051904884e-05}, {"decade": "2020s", "term_category": "media_popculture", "term": "film", "frequency": 71, "proportion": 0.004538481206852467}, {"decade": "2020s", "term_category": "media_popculture", "term": "media", "frequency": 89, "proportion": 0.005689082076195347}, {"decade": "2020s", "term_category": "media_popculture", "term": "visual", "frequency": 31, "proportion": 0.001981590386090514}, {"decade": "2020s", "term_category": "media_popculture", "term": "cinema", "frequency": 13, "proportion": 0.0008309895167476349}, {"decade": "2020s", "term_category": "media_popculture", "term": "manga", "frequency": 7, "proportion": 0.00044745589363334184}, {"decade": "2020s", "term_category": "media_popculture", "term": "anime", "frequency": 7, "proportion": 0.00044745589363334184}, {"decade": "2020s", "term_category": "media_popculture", "term": "video game", "frequency": 1, "proportion": 6.392227051904884e-05}, {"decade": "2020s", "term_category": "media_popculture", "term": "television", "frequency": 1, "proportion": 6.392227051904884e-05}, {"decade": "2020s", "term_category": "period_terms", "term": "premodern", "frequency": 33, "proportion": 0.0021094349271286116}, {"decade": "2020s", "term_category": "period_terms", "term": "modern", "frequency": 188, "proportion": 0.012017386857581181}, {"decade": "2020s", "term_category": "period_terms", "term": "contemporary", "frequency": 83, "proportion": 0.005305548453081054}, {"decade": "2020s", "term_category": "period_terms", "term": "heian", "frequency": 5, "proportion": 0.0003196113525952442}, {"decade": "2020s", "term_category": "period_terms", "term": "medieval", "frequency": 35, "proportion": 0.0022372794681667094}, {"decade": "2020s", "term_category": "period_terms", "term": "meiji", "frequency": 11, "proportion": 0.0007031449757095372}, {"decade": "2020s", "term_category": "period_terms", "term": "edo", "frequency": 8, "proportion": 0.0005113781641523907}, {"decade": "2020s", "term_category": "period_terms", "term": "early modern", "frequency": 35, "proportion": 0.0022372794681667094}, {"decade": "2020s", "term_category": "period_terms", "term": "sh\u014dwa", "frequency": 2, "proportion": 0.00012784454103809768}, {"decade": "2020s", "term_category": "period_terms", "term": "showa", "frequency": 2, "proportion": 0.00012784454103809768}, {"decade": "2020s", "term_category": "period_terms", "term": "tokugawa", "frequency": 3, "proportion": 0.0001917668115571465}, {"decade": "2020s", "term_category": "period_terms", "term": "postwar", "frequency": 1, "proportion": 6.392227051904884e-05}, {"decade": "2020s", "term_category": "period_terms", "term": "taish\u014d", "frequency": 1, "proportion": 6.392227051904884e-05}, {"decade": "2020s", "term_category": "period_terms", "term": "taisho", "frequency": 1, "proportion": 6.392227051904884e-05}, {"decade": "2020s", "term_category": "period_terms", "term": "muromachi", "frequency": 1, "proportion": 6.392227051904884e-05}, {"decade": "2020s", "term_category": "disciplinary", "term": "cultural studies", "frequency": 76, "proportion": 0.004858092559447712}, {"decade": "2020s", "term_category": "disciplinary", "term": "translation", "frequency": 43, "proportion": 0.0027486576323191}, {"decade": "2020s", "term_category": "disciplinary", "term": "digital humanities", "frequency": 21, "proportion": 0.0013423676809000255}, {"decade": "2020s", "term_category": "disciplinary", "term": "interdisciplinary", "frequency": 60, "proportion": 0.0038353362311429303}, {"decade": "2020s", "term_category": "disciplinary", "term": "comparative", "frequency": 64, "proportion": 0.004091025313219126}, {"decade": "2020s", "term_category": "disciplinary", "term": "area studies", "frequency": 10, "proportion": 0.0006392227051904884}, {"decade": "2020s", "term_category": "disciplinary", "term": "world literature", "frequency": 4, "proportion": 0.00025568908207619537}];
+let currentCategory = 'all';
+let selectedTerm = null;
+
+document.getElementById('category-select').addEventListener('change', e => {
+currentCategory = e.target.value;
+selectedTerm = null;
+render();
+});
+
+document.getElementById('theme-toggle').addEventListener('click', () => {
+document.body.classList.toggle('light-mode');
+document.body.classList.toggle('dark-mode');
+document.getElementById('theme-toggle').textContent =
+document.body.classList.contains('light-mode') ? '🌙 Dark Mode' : '☀️ Light Mode';
+render();
+});
+
+function render() {
+const container = document.getElementById('chart');
+container.innerHTML = '';
+
+const filtered = currentCategory === 'all' ? data :
+data.filter(d => d.term_category === currentCategory);
+
+// Group by decade and term
+const byDecade = d3.group(filtered, d => d.decade);
+const decades = Array.from(byDecade.keys()).sort();
+
+const width = 900;
+const height = 440;
+const margin = {top: 20, right: 20, bottom: 90, left: 60};
+
+const svg = d3.select('#chart').append('svg')
+.attr('width', width)
+.attr('height', height);
+
+const g = svg.append('g')
+.attr('transform', `translate(${margin.left},${margin.top})`);
+
+const innerWidth = width - margin.left - margin.right;
+const innerHeight = height - margin.top - margin.bottom;
+
+// Background rect to deselect on empty click
+g.append('rect')
+.attr('x', 0).attr('y', 0)
+.attr('width', innerWidth).attr('height', innerHeight)
+.attr('fill', 'transparent')
+.on('click', () => { selectedTerm = null; render(); });
+
+// Get top 10 terms overall by frequency
+const termTotals = {};
+filtered.forEach(d => {
+if (!termTotals[d.term]) termTotals[d.term] = 0;
+termTotals[d.term] += d.frequency;
+});
+const topTerms = Object.entries(termTotals)
+.sort((a,b) => b[1] - a[1])
+.slice(0, 10)
+.map(([term]) => term);
+
+// Prepare series data
+const series = topTerms.map(term => ({
+term,
+values: decades.map(decade => {
+const decadeData = byDecade.get(decade);
+const termData = decadeData ? decadeData.find(d => d.term === term) : null;
+return { decade, proportion: termData ? termData.proportion : 0 };
+})
+}));
+
+// Scales
+const xScale = d3.scaleBand()
+.domain(decades)
+.range([0, innerWidth])
+.padding(0.1);
+
+const yMax = d3.max(series, s => d3.max(s.values, v => v.proportion)) || 0.001;
+const yScale = d3.scaleLinear()
+.domain([0, yMax])
+.range([innerHeight, 0]);
+
+const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+// Draw lines
+const line = d3.line()
+.x(d => xScale(d.decade) + xScale.bandwidth() / 2)
+.y(d => yScale(d.proportion));
+
+series.forEach(s => {
+const isSelected = selectedTerm === s.term;
+const isFaded = selectedTerm !== null && !isSelected;
+const opacity = isFaded ? 0.12 : 1;
+const sw = isSelected ? 3.5 : 2;
+
+// Invisible wider path for easier clicking
+g.append('path')
+.datum(s.values)
+.attr('fill', 'none')
+.attr('stroke', 'transparent')
+.attr('stroke-width', 12)
+.attr('d', line)
+.attr('cursor', 'pointer')
+.on('click', (event) => {
+event.stopPropagation();
+selectedTerm = (selectedTerm === s.term) ? null : s.term;
+render();
+});
+
+g.append('path')
+.datum(s.values)
+.attr('fill', 'none')
+.attr('stroke', colorScale(s.term))
+.attr('stroke-width', sw)
+.attr('opacity', opacity)
+.attr('d', line)
+.attr('pointer-events', 'none');
+
+// Dots
+g.selectAll(`.dot-${s.term.replace(/[\s&]/g, '-')}`)
+.data(s.values)
+.enter().append('circle')
+.attr('cx', d => xScale(d.decade) + xScale.bandwidth() / 2)
+.attr('cy', d => yScale(d.proportion))
+.attr('r', isSelected ? 4 : 3)
+.attr('fill', colorScale(s.term))
+.attr('opacity', opacity)
+.attr('pointer-events', 'none');
+});
+
+// Axes
+g.append('g')
+.attr('class', 'axis')
+.attr('transform', `translate(0,${innerHeight})`)
+.call(d3.axisBottom(xScale));
+
+g.append('g')
+.attr('class', 'axis')
+.call(d3.axisLeft(yScale).tickFormat(d3.format('.1%')));
+
+// Legend — 2 rows of 5
+const legend = svg.append('g')
+.attr('transform', `translate(${margin.left},${height - 72})`);
+
+series.forEach((s, i) => {
+const col = i % 5;
+const row = Math.floor(i / 5);
+const isSelected = selectedTerm === s.term;
+const isFaded = selectedTerm !== null && !isSelected;
+const opacity = isFaded ? 0.25 : 1;
+
+const lg = legend.append('g')
+.attr('transform', `translate(${col * 168},${row * 20})`)
+.attr('cursor', 'pointer')
+.on('click', () => {
+selectedTerm = (selectedTerm === s.term) ? null : s.term;
+render();
+});
+
+lg.append('line')
+.attr('x1', 0).attr('x2', 20).attr('y1', 0).attr('y2', 0)
+.attr('stroke', colorScale(s.term))
+.attr('stroke-width', isSelected ? 3 : 2)
+.attr('opacity', opacity);
+
+lg.append('text')
+.attr('x', 25).attr('y', 4)
+.style('font-size', '11px')
+.style('fill', 'var(--fg)')
+.style('opacity', opacity)
+.style('font-weight', isSelected ? '700' : 'normal')
+.text(s.term);
+});
+}
+
+render();
+</script>
+</body>
+</html>

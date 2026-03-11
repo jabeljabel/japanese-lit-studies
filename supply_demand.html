@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supply/Demand Balance — Japanese Literary Studies (1966-2025)</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #1a1a1a;
+            --border: #ddd;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --card-bg: #f9fafb;
+            --tooltip-bg: rgba(0, 0, 0, 0.9);
+            --tooltip-text: #fff;
+            --supply-color: #059669;
+            --demand-color: #dc2626;
+            --balanced-color: #6366f1;
+        }
+
+        [data-theme="dark"] {
+            --bg: #1a1a1a;
+            --text: #e5e5e5;
+            --border: #404040;
+            --accent: #3b82f6;
+            --accent-hover: #60a5fa;
+            --card-bg: #262626;
+            --tooltip-bg: rgba(255, 255, 255, 0.95);
+            --tooltip-text: #1a1a1a;
+            --supply-color: #10b981;
+            --demand-color: #f87171;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 30px;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .stat-value.supply {
+            color: var(--supply-color);
+        }
+
+        .stat-value.demand {
+            color: var(--demand-color);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .mode-tabs {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            background: var(--accent-hover);
+            color: white;
+            border-color: var(--accent-hover);
+        }
+
+        .tab-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .line-toggles {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            font-size: 13px;
+            margin-left: 8px;
+        }
+        .line-toggles label { cursor: pointer; display: flex; align-items: center; gap: 4px; }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        #viz-container {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 30px;
+            min-height: 600px;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: var(--tooltip-bg);
+            color: var(--tooltip-text);
+            padding: 10px;
+            border-radius: 4px;
+            pointer-events: none;
+            opacity: 0;
+            font-size: 0.875rem;
+            line-height: 1.4;
+            max-width: 300px;
+            z-index: 1000;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+            font-size: 0.875rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 2px;
+        }
+
+        .axis {
+            font-size: 12px;
+        }
+
+        .axis path,
+        .axis line {
+            stroke: var(--border);
+        }
+
+        .axis text {
+            fill: var(--text);
+        }
+
+        .grid line {
+            stroke: var(--border);
+            stroke-opacity: 0.3;
+        }
+
+        .interpretation {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid var(--accent);
+        }
+
+        .interpretation h3 {
+            margin-bottom: 10px;
+            color: var(--accent);
+        }
+
+        .interpretation ul {
+            margin-left: 20px;
+        }
+
+        .interpretation li {
+            margin: 8px 0;
+        }
+
+        [data-theme="dark"] .axis path,
+        [data-theme="dark"] .axis line {
+            stroke: #404040;
+        }
+
+        [data-theme="dark"] .axis text {
+            fill: #e5e5e5;
+        }
+    </style>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Supply/Demand Balance</h1>
+            <div class="subtitle">Japanese Literary Studies Job Market • 1966-2025</div>
+        </header>
+
+        <div class="stats-bar">
+            <div class="stat">
+                <div class="stat-value supply">6,792</div>
+                <div class="stat-label">Total PhDs (Supply)</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value demand">2,341</div>
+                <div class="stat-label">Total Job Listings (Demand)</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">2.90</div>
+                <div class="stat-label">Overall Ratio (PhDs per Job)</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">6.33</div>
+                <div class="stat-label">Average Annual Ratio</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value supply">2010</div>
+                <div class="stat-label">Peak PhD Year (274 graduates)</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value demand">2024</div>
+                <div class="stat-label">Peak Job Year (134 listings)</div>
+            </div>
+        </div>
+
+        <div class="toolbar">
+            <div class="mode-tabs">
+                <button class="tab-btn active" data-mode="absolute">Absolute Counts</button>
+                <button class="tab-btn" data-mode="ratio">Supply/Demand Ratio</button>
+                <button class="tab-btn" data-mode="balance">Market Balance</button>
+            </div>
+            <div class="line-toggles" id="line-toggles">
+                <label><input type="checkbox" id="show-supply" checked> <span style="color:var(--supply-color);font-weight:600">&#9632; Supply</span></label>
+                <label><input type="checkbox" id="show-demand" checked> <span style="color:var(--demand-color);font-weight:600">&#9632; Demand</span></label>
+            </div>
+            <div class="line-toggles" id="job-filters" style="border-left:1px solid var(--border);padding-left:10px;margin-left:4px">
+                <span style="font-size:11px;opacity:0.7;margin-right:4px">Jobs:</span>
+                <label><input type="radio" name="job-type" id="jt-all" value="all" checked> All</label>
+                <label><input type="radio" name="job-type" id="jt-tt" value="tt"> TT only</label>
+                <label><input type="radio" name="job-type" id="jt-ntt" value="ntt"> Non-TT</label>
+                <label style="margin-left:8px"><input type="checkbox" id="na-only"> N. America only</label>
+            </div>
+            <div class="controls">
+                <button id="theme-toggle">🌙 Dark Mode</button>
+                <button id="export-png">📸 Export PNG</button>
+                <button id="export-csv">📊 Export CSV</button>
+            </div>
+        </div>
+
+        <div id="viz-container"></div>
+
+        <div class="interpretation">
+            <h3>💡 Key Insights</h3>
+            <ul>
+                <li><strong>Overall market:</strong> 6,792 PhDs vs. 2,341 jobs = 2.90 PhDs per job posting (1966-2025)</li>
+                <li><strong>Market balance:</strong> 19 years with undersupply (more jobs than PhDs), 77 years with oversupply</li>
+                <li><strong>Peak production:</strong> 2010 had 274 PhD graduates</li>
+                <li><strong>Peak hiring:</strong> 2024 had 134 job listings</li>
+                <li><strong>Current trend:</strong> 2023-2025 shows strong job recovery (381 listings) with PhD production at ~343</li>
+            </ul>
+        </div>
+
+        <div class="tooltip" id="tooltip"></div>
+    </div>
+
+    <script>
+        const DATA = [
+  {"year": 1915, "phds": 2, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 2, "ratio": 999},
+  {"year": 1918, "phds": 1, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 1, "ratio": 999},
+  {"year": 1922, "phds": 1, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 1, "ratio": 999},
+  {"year": 1927, "phds": 1, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 1, "ratio": 999},
+  {"year": 1929, "phds": 1, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 1, "ratio": 999},
+  {"year": 1930, "phds": 2, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 2, "ratio": 999},
+  {"year": 1934, "phds": 2, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 2, "ratio": 999},
+  {"year": 1935, "phds": 4, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 4, "ratio": 999},
+  {"year": 1936, "phds": 1, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 1, "ratio": 999},
+  {"year": 1937, "phds": 1, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 1, "ratio": 999},
+  {"year": 1939, "phds": 3, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 3, "ratio": 999},
+  {"year": 1941, "phds": 1, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 1, "ratio": 999},
+  {"year": 1942, "phds": 1, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 1, "ratio": 999},
+  {"year": 1943, "phds": 2, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 2, "ratio": 999},
+  {"year": 1944, "phds": 2, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 2, "ratio": 999},
+  {"year": 1945, "phds": 5, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 5, "ratio": 999},
+  {"year": 1946, "phds": 3, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 3, "ratio": 999},
+  {"year": 1947, "phds": 1, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 1, "ratio": 999},
+  {"year": 1948, "phds": 3, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 3, "ratio": 999},
+  {"year": 1949, "phds": 6, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 6, "ratio": 999},
+  {"year": 1950, "phds": 8, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 8, "ratio": 999},
+  {"year": 1951, "phds": 7, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 7, "ratio": 999},
+  {"year": 1952, "phds": 9, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 9, "ratio": 999},
+  {"year": 1953, "phds": 1, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 1, "ratio": 999},
+  {"year": 1954, "phds": 9, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 9, "ratio": 999},
+  {"year": 1955, "phds": 13, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 13, "ratio": 999},
+  {"year": 1956, "phds": 8, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 8, "ratio": 999},
+  {"year": 1957, "phds": 12, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 12, "ratio": 999},
+  {"year": 1958, "phds": 6, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 6, "ratio": 999},
+  {"year": 1959, "phds": 10, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 10, "ratio": 999},
+  {"year": 1960, "phds": 18, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 18, "ratio": 999},
+  {"year": 1961, "phds": 26, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 26, "ratio": 999},
+  {"year": 1962, "phds": 46, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 46, "ratio": 999},
+  {"year": 1963, "phds": 7, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 7, "ratio": 999},
+  {"year": 1964, "phds": 5, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 5, "ratio": 999},
+  {"year": 1965, "phds": 11, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 11, "ratio": 999},
+  {"year": 1966, "phds": 8, "jobs": 3, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 3, "na_tt_jobs": 0, "surplus": 5, "ratio": 2.6666666666666665},
+  {"year": 1967, "phds": 15, "jobs": 1, "tt_jobs": 0, "ntt_jobs": 1, "na_jobs": 1, "na_tt_jobs": 0, "surplus": 14, "ratio": 15.0},
+  {"year": 1968, "phds": 11, "jobs": 1, "tt_jobs": 0, "ntt_jobs": 1, "na_jobs": 1, "na_tt_jobs": 0, "surplus": 10, "ratio": 11.0},
+  {"year": 1969, "phds": 16, "jobs": 0, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 0, "na_tt_jobs": 0, "surplus": 16, "ratio": 999},
+  {"year": 1970, "phds": 13, "jobs": 2, "tt_jobs": 0, "ntt_jobs": 2, "na_jobs": 2, "na_tt_jobs": 0, "surplus": 11, "ratio": 6.5},
+  {"year": 1971, "phds": 15, "jobs": 11, "tt_jobs": 0, "ntt_jobs": 4, "na_jobs": 11, "na_tt_jobs": 0, "surplus": 4, "ratio": 1.3636363636363635},
+  {"year": 1972, "phds": 19, "jobs": 8, "tt_jobs": 0, "ntt_jobs": 0, "na_jobs": 8, "na_tt_jobs": 0, "surplus": 11, "ratio": 2.375},
+  {"year": 1973, "phds": 30, "jobs": 18, "tt_jobs": 0, "ntt_jobs": 3, "na_jobs": 18, "na_tt_jobs": 0, "surplus": 12, "ratio": 1.6666666666666667},
+  {"year": 1974, "phds": 16, "jobs": 55, "tt_jobs": 0, "ntt_jobs": 9, "na_jobs": 53, "na_tt_jobs": 0, "surplus": -39, "ratio": 0.2909090909090909},
+  {"year": 1975, "phds": 24, "jobs": 23, "tt_jobs": 0, "ntt_jobs": 3, "na_jobs": 23, "na_tt_jobs": 0, "surplus": 1, "ratio": 1.0434782608695652},
+  {"year": 1976, "phds": 20, "jobs": 29, "tt_jobs": 0, "ntt_jobs": 9, "na_jobs": 29, "na_tt_jobs": 0, "surplus": -9, "ratio": 0.6896551724137931},
+  {"year": 1977, "phds": 18, "jobs": 46, "tt_jobs": 0, "ntt_jobs": 8, "na_jobs": 46, "na_tt_jobs": 0, "surplus": -28, "ratio": 0.391304347826087},
+  {"year": 1978, "phds": 27, "jobs": 56, "tt_jobs": 5, "ntt_jobs": 15, "na_jobs": 56, "na_tt_jobs": 5, "surplus": -29, "ratio": 0.48214285714285715},
+  {"year": 1979, "phds": 20, "jobs": 53, "tt_jobs": 10, "ntt_jobs": 15, "na_jobs": 53, "na_tt_jobs": 10, "surplus": -33, "ratio": 0.37735849056603776},
+  {"year": 1980, "phds": 26, "jobs": 51, "tt_jobs": 8, "ntt_jobs": 12, "na_jobs": 51, "na_tt_jobs": 8, "surplus": -25, "ratio": 0.5098039215686274},
+  {"year": 1981, "phds": 20, "jobs": 29, "tt_jobs": 6, "ntt_jobs": 7, "na_jobs": 29, "na_tt_jobs": 6, "surplus": -9, "ratio": 0.6896551724137931},
+  {"year": 1982, "phds": 26, "jobs": 37, "tt_jobs": 13, "ntt_jobs": 11, "na_jobs": 36, "na_tt_jobs": 13, "surplus": -11, "ratio": 0.7027027027027027},
+  {"year": 1983, "phds": 33, "jobs": 37, "tt_jobs": 18, "ntt_jobs": 4, "na_jobs": 37, "na_tt_jobs": 18, "surplus": -4, "ratio": 0.8918918918918919},
+  {"year": 1984, "phds": 32, "jobs": 34, "tt_jobs": 16, "ntt_jobs": 6, "na_jobs": 34, "na_tt_jobs": 16, "surplus": -2, "ratio": 0.9411764705882353},
+  {"year": 1985, "phds": 30, "jobs": 66, "tt_jobs": 37, "ntt_jobs": 13, "na_jobs": 65, "na_tt_jobs": 37, "surplus": -36, "ratio": 0.45454545454545453},
+  {"year": 1986, "phds": 42, "jobs": 57, "tt_jobs": 40, "ntt_jobs": 13, "na_jobs": 57, "na_tt_jobs": 40, "surplus": -15, "ratio": 0.7368421052631579},
+  {"year": 1987, "phds": 33, "jobs": 76, "tt_jobs": 45, "ntt_jobs": 15, "na_jobs": 75, "na_tt_jobs": 45, "surplus": -43, "ratio": 0.4342105263157895},
+  {"year": 1988, "phds": 32, "jobs": 79, "tt_jobs": 50, "ntt_jobs": 12, "na_jobs": 79, "na_tt_jobs": 50, "surplus": -47, "ratio": 0.4050632911392405},
+  {"year": 1989, "phds": 48, "jobs": 79, "tt_jobs": 59, "ntt_jobs": 12, "na_jobs": 79, "na_tt_jobs": 59, "surplus": -31, "ratio": 0.6075949367088608},
+  {"year": 1990, "phds": 32, "jobs": 55, "tt_jobs": 44, "ntt_jobs": 6, "na_jobs": 54, "na_tt_jobs": 43, "surplus": -23, "ratio": 0.5818181818181818},
+  {"year": 1991, "phds": 62, "jobs": 73, "tt_jobs": 51, "ntt_jobs": 10, "na_jobs": 72, "na_tt_jobs": 50, "surplus": -11, "ratio": 0.8493150684931506},
+  {"year": 1992, "phds": 47, "jobs": 24, "tt_jobs": 16, "ntt_jobs": 2, "na_jobs": 23, "na_tt_jobs": 16, "surplus": 23, "ratio": 1.9583333333333333},
+  {"year": 1993, "phds": 56, "jobs": 5, "tt_jobs": 2, "ntt_jobs": 2, "na_jobs": 5, "na_tt_jobs": 2, "surplus": 51, "ratio": 11.2},
+  {"year": 1994, "phds": 95, "jobs": 38, "tt_jobs": 24, "ntt_jobs": 5, "na_jobs": 38, "na_tt_jobs": 24, "surplus": 57, "ratio": 2.5},
+  {"year": 1995, "phds": 104, "jobs": 15, "tt_jobs": 11, "ntt_jobs": 1, "na_jobs": 15, "na_tt_jobs": 11, "surplus": 89, "ratio": 6.933333333333334},
+  {"year": 1996, "phds": 91, "jobs": 36, "tt_jobs": 28, "ntt_jobs": 3, "na_jobs": 36, "na_tt_jobs": 28, "surplus": 55, "ratio": 2.5277777777777777},
+  {"year": 1997, "phds": 124, "jobs": 33, "tt_jobs": 27, "ntt_jobs": 3, "na_jobs": 33, "na_tt_jobs": 27, "surplus": 91, "ratio": 3.757575757575758},
+  {"year": 1998, "phds": 154, "jobs": 24, "tt_jobs": 18, "ntt_jobs": 3, "na_jobs": 24, "na_tt_jobs": 18, "surplus": 130, "ratio": 6.416666666666667},
+  {"year": 1999, "phds": 167, "jobs": 33, "tt_jobs": 22, "ntt_jobs": 2, "na_jobs": 33, "na_tt_jobs": 22, "surplus": 134, "ratio": 5.0606060606060606},
+  {"year": 2000, "phds": 201, "jobs": 28, "tt_jobs": 21, "ntt_jobs": 3, "na_jobs": 28, "na_tt_jobs": 21, "surplus": 173, "ratio": 7.178571428571429},
+  {"year": 2001, "phds": 207, "jobs": 26, "tt_jobs": 19, "ntt_jobs": 4, "na_jobs": 26, "na_tt_jobs": 19, "surplus": 181, "ratio": 7.961538461538462},
+  {"year": 2002, "phds": 178, "jobs": 25, "tt_jobs": 15, "ntt_jobs": 7, "na_jobs": 25, "na_tt_jobs": 15, "surplus": 153, "ratio": 7.12},
+  {"year": 2003, "phds": 203, "jobs": 26, "tt_jobs": 20, "ntt_jobs": 5, "na_jobs": 26, "na_tt_jobs": 20, "surplus": 177, "ratio": 7.8076923076923075},
+  {"year": 2004, "phds": 207, "jobs": 32, "tt_jobs": 26, "ntt_jobs": 4, "na_jobs": 32, "na_tt_jobs": 26, "surplus": 175, "ratio": 6.46875},
+  {"year": 2005, "phds": 206, "jobs": 39, "tt_jobs": 28, "ntt_jobs": 3, "na_jobs": 39, "na_tt_jobs": 28, "surplus": 167, "ratio": 5.282051282051282},
+  {"year": 2006, "phds": 243, "jobs": 41, "tt_jobs": 26, "ntt_jobs": 7, "na_jobs": 41, "na_tt_jobs": 26, "surplus": 202, "ratio": 5.926829268292683},
+  {"year": 2007, "phds": 243, "jobs": 31, "tt_jobs": 17, "ntt_jobs": 4, "na_jobs": 31, "na_tt_jobs": 17, "surplus": 212, "ratio": 7.838709677419355},
+  {"year": 2008, "phds": 230, "jobs": 32, "tt_jobs": 22, "ntt_jobs": 4, "na_jobs": 32, "na_tt_jobs": 22, "surplus": 198, "ratio": 7.1875},
+  {"year": 2009, "phds": 271, "jobs": 23, "tt_jobs": 10, "ntt_jobs": 9, "na_jobs": 23, "na_tt_jobs": 10, "surplus": 248, "ratio": 11.782608695652174},
+  {"year": 2010, "phds": 274, "jobs": 29, "tt_jobs": 15, "ntt_jobs": 9, "na_jobs": 28, "na_tt_jobs": 15, "surplus": 245, "ratio": 9.448275862068966},
+  {"year": 2011, "phds": 220, "jobs": 35, "tt_jobs": 24, "ntt_jobs": 5, "na_jobs": 34, "na_tt_jobs": 23, "surplus": 185, "ratio": 6.285714285714286},
+  {"year": 2012, "phds": 254, "jobs": 40, "tt_jobs": 22, "ntt_jobs": 8, "na_jobs": 39, "na_tt_jobs": 21, "surplus": 214, "ratio": 6.35},
+  {"year": 2013, "phds": 226, "jobs": 80, "tt_jobs": 43, "ntt_jobs": 22, "na_jobs": 80, "na_tt_jobs": 43, "surplus": 146, "ratio": 2.825},
+  {"year": 2014, "phds": 225, "jobs": 48, "tt_jobs": 32, "ntt_jobs": 7, "na_jobs": 48, "na_tt_jobs": 32, "surplus": 177, "ratio": 4.6875},
+  {"year": 2015, "phds": 208, "jobs": 65, "tt_jobs": 41, "ntt_jobs": 16, "na_jobs": 64, "na_tt_jobs": 41, "surplus": 143, "ratio": 3.2},
+  {"year": 2016, "phds": 192, "jobs": 71, "tt_jobs": 46, "ntt_jobs": 17, "na_jobs": 69, "na_tt_jobs": 44, "surplus": 121, "ratio": 2.704225352112676},
+  {"year": 2017, "phds": 182, "jobs": 30, "tt_jobs": 24, "ntt_jobs": 6, "na_jobs": 29, "na_tt_jobs": 23, "surplus": 152, "ratio": 6.066666666666666},
+  {"year": 2018, "phds": 140, "jobs": 44, "tt_jobs": 27, "ntt_jobs": 11, "na_jobs": 43, "na_tt_jobs": 27, "surplus": 96, "ratio": 3.1818181818181817},
+  {"year": 2019, "phds": 164, "jobs": 23, "tt_jobs": 18, "ntt_jobs": 2, "na_jobs": 19, "na_tt_jobs": 17, "surplus": 141, "ratio": 7.130434782608695},
+  {"year": 2020, "phds": 137, "jobs": 2, "tt_jobs": 1, "ntt_jobs": 1, "na_jobs": 2, "na_tt_jobs": 1, "surplus": 135, "ratio": 68.5},
+  {"year": 2021, "phds": 155, "jobs": 2, "tt_jobs": 1, "ntt_jobs": 1, "na_jobs": 2, "na_tt_jobs": 1, "surplus": 153, "ratio": 77.5},
+  {"year": 2022, "phds": 138, "jobs": 1, "tt_jobs": 1, "ntt_jobs": 0, "na_jobs": 1, "na_tt_jobs": 1, "surplus": 137, "ratio": 138.0},
+  {"year": 2023, "phds": 128, "jobs": 125, "tt_jobs": 68, "ntt_jobs": 44, "na_jobs": 66, "na_tt_jobs": 29, "surplus": 3, "ratio": 1.024},
+  {"year": 2024, "phds": 123, "jobs": 134, "tt_jobs": 86, "ntt_jobs": 42, "na_jobs": 60, "na_tt_jobs": 32, "surplus": -11, "ratio": 0.917910447761194},
+  {"year": 2025, "phds": 92, "jobs": 122, "tt_jobs": 70, "ntt_jobs": 46, "na_jobs": 43, "na_tt_jobs": 16, "surplus": -30, "ratio": 0.7540983606557377}
+];
+
+        // Job filter helper — returns the appropriate jobs count for a data point
+        function getJobs(d) {
+            const jt = document.querySelector('input[name="job-type"]:checked').value;
+            const naOnly = document.getElementById('na-only').checked;
+            if (jt === 'tt')  return naOnly ? d.na_tt_jobs : d.tt_jobs;
+            if (jt === 'ntt') return naOnly ? Math.max(0, d.na_jobs - d.na_tt_jobs) : d.ntt_jobs;
+            return naOnly ? d.na_jobs : d.jobs;
+        }
+
+        // Line visibility toggles
+        document.getElementById('show-supply').addEventListener('change', () => {
+            if (currentMode === 'absolute') renderCurrentMode();
+        });
+        document.getElementById('show-demand').addEventListener('change', () => {
+            if (currentMode === 'absolute') renderCurrentMode();
+        });
+
+        // Job filter controls
+        document.querySelectorAll('input[name="job-type"]').forEach(r =>
+            r.addEventListener('change', () => renderCurrentMode()));
+        document.getElementById('na-only').addEventListener('change', () => renderCurrentMode());
+
+        // Theme toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+        let isDark = false;
+
+        themeToggle.addEventListener('click', () => {
+            isDark = !isDark;
+            body.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            themeToggle.textContent = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
+            renderCurrentMode();
+        });
+
+        // Mode switching
+        let currentMode = 'absolute';
+        const tabBtns = document.querySelectorAll('.tab-btn');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentMode = btn.dataset.mode;
+                renderCurrentMode();
+            });
+        });
+
+        function renderCurrentMode() {
+            const container = d3.select('#viz-container');
+            container.selectAll('*').remove();
+            document.getElementById('line-toggles').style.display = currentMode === 'absolute' ? '' : 'none';
+            document.getElementById('job-filters').style.display = '';
+
+            switch(currentMode) {
+                case 'absolute':
+                    renderAbsolute(container);
+                    break;
+                case 'ratio':
+                    renderRatio(container);
+                    break;
+                case 'balance':
+                    renderBalance(container);
+                    break;
+            }
+        }
+
+        function renderAbsolute(container) {
+            const showSupply = document.getElementById('show-supply').checked;
+            const showDemand = document.getElementById('show-demand').checked;
+            const margin = {top: 40, right: 120, bottom: 60, left: 60};
+            const width = 1300 - margin.left - margin.right;
+            const height = 500 - margin.top - margin.bottom;
+
+            const svg = container.append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            const x = d3.scaleLinear()
+                .domain([1966, 2025])
+                .range([0, width]);
+
+            const maxY = d3.max(DATA, d => Math.max(d.phds, getJobs(d)));
+            const y = d3.scaleLinear()
+                .domain([0, maxY * 1.1])
+                .range([height, 0]);
+
+            // Grid
+            svg.append('g')
+                .attr('class', 'grid')
+                .call(d3.axisLeft(y).tickSize(-width).tickFormat(''));
+
+            // Areas
+            const areaPhds = d3.area()
+                .x(d => x(d.year))
+                .y0(height)
+                .y1(d => y(d.phds))
+                .curve(d3.curveMonotoneX);
+
+            const areaJobs = d3.area()
+                .x(d => x(d.year))
+                .y0(height)
+                .y1(d => y(getJobs(d)))
+                .curve(d3.curveMonotoneX);
+
+            if (showSupply) svg.append('path')
+                .datum(DATA)
+                .attr('fill', 'var(--supply-color)')
+                .attr('fill-opacity', 0.2)
+                .attr('d', areaPhds);
+
+            if (showDemand) svg.append('path')
+                .datum(DATA)
+                .attr('fill', 'var(--demand-color)')
+                .attr('fill-opacity', 0.2)
+                .attr('d', areaJobs);
+
+            // Lines
+            const line = d3.line()
+                .x(d => x(d.year))
+                .curve(d3.curveMonotoneX);
+
+            if (showSupply) svg.append('path')
+                .datum(DATA)
+                .attr('fill', 'none')
+                .attr('stroke', 'var(--supply-color)')
+                .attr('stroke-width', 3)
+                .attr('d', line.y(d => y(d.phds)));
+
+            if (showDemand) svg.append('path')
+                .datum(DATA)
+                .attr('fill', 'none')
+                .attr('stroke', 'var(--demand-color)')
+                .attr('stroke-width', 3)
+                .attr('d', line.y(d => y(getJobs(d))));
+
+            // Axes
+            svg.append('g')
+                .attr('class', 'axis')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(x).tickFormat(d3.format('d')));
+
+            svg.append('g')
+                .attr('class', 'axis')
+                .call(d3.axisLeft(y));
+
+            // Annotations
+            const events = [
+                {year: 1990, label: 'Japan Bubble Burst'},
+                {year: 2008, label: 'Financial Crisis'},
+                {year: 2020, label: 'COVID-19'}
+            ];
+
+            events.forEach(evt => {
+                const xPos = x(evt.year);
+                svg.append('line')
+                    .attr('x1', xPos)
+                    .attr('x2', xPos)
+                    .attr('y1', 0)
+                    .attr('y2', height)
+                    .attr('stroke', '#9ca3af')
+                    .attr('stroke-width', 1)
+                    .attr('stroke-dasharray', '3,3')
+                    .attr('opacity', 0.7);
+
+                svg.append('text')
+                    .attr('x', xPos + 5)
+                    .attr('y', 20)
+                    .attr('fill', '#9ca3af')
+                    .attr('font-size', '11px')
+                    .text(evt.label);
+            });
+
+            // Legend
+            const legend = container.append('div')
+                .attr('class', 'legend');
+
+            if (showSupply) legend.append('div')
+                .attr('class', 'legend-item')
+                .html('<div class="legend-color" style="background: var(--supply-color);"></div><span>PhD Graduates (Supply)</span>');
+
+            if (showDemand) legend.append('div')
+                .attr('class', 'legend-item')
+                .html('<div class="legend-color" style="background: var(--demand-color);"></div><span>Job Listings (Demand)</span>');
+
+            // Title
+            svg.append('text')
+                .attr('x', width / 2)
+                .attr('y', -10)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '16px')
+                .attr('font-weight', 'bold')
+                .attr('fill', getComputedStyle(document.body).getPropertyValue('--text'))
+                .text('PhD Production vs. Job Postings (1966-2025)');
+
+            // Hover interactions
+            const tooltip = d3.select('#tooltip');
+
+            svg.append('rect')
+                .attr('width', width)
+                .attr('height', height)
+                .attr('fill', 'none')
+                .attr('pointer-events', 'all')
+                .on('mousemove', function(event) {
+                    const [xPos] = d3.pointer(event);
+                    const year = Math.round(x.invert(xPos));
+                    const dataPoint = DATA.find(d => d.year === year);
+
+                    if (dataPoint) {
+                        const _j = getJobs(dataPoint), _s = dataPoint.phds - _j, _r = _j > 0 ? dataPoint.phds/_j : 999;
+                        tooltip.style('opacity', 1)
+                            .html(`
+                                <strong>${year}</strong><br>
+                                PhDs: ${dataPoint.phds}<br>
+                                Jobs: ${_j}<br>
+                                Ratio: ${_r < 100 ? _r.toFixed(2) : '∞'} PhDs/job<br>
+                                Balance: ${_s > 0 ? '+' : ''}${_s} (${_s > 0 ? 'oversupply' : 'undersupply'})
+                            `)
+                            .style('left', (event.pageX + 10) + 'px')
+                            .style('top', (event.pageY - 10) + 'px');
+                    }
+                })
+                .on('mouseout', () => {
+                    tooltip.style('opacity', 0);
+                });
+        }
+
+        function renderRatio(container) {
+            const margin = {top: 40, right: 120, bottom: 60, left: 60};
+            const width = 1300 - margin.left - margin.right;
+            const height = 500 - margin.top - margin.bottom;
+
+            const svg = container.append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            // Filter out infinite ratios for better visualization
+            const validData = DATA.filter(d => getJobs(d) > 0);
+
+            const x = d3.scaleLinear()
+                .domain([1966, 2025])
+                .range([0, width]);
+
+            const maxRatio = d3.max(validData, d => d.phds / getJobs(d));
+            const y = d3.scaleLinear()
+                .domain([0, Math.min(maxRatio * 1.2, 50)])
+                .range([height, 0]);
+
+            // Grid
+            svg.append('g')
+                .attr('class', 'grid')
+                .call(d3.axisLeft(y).tickSize(-width).tickFormat(''));
+
+            // Reference line at ratio = 1 (balanced market)
+            svg.append('line')
+                .attr('x1', 0)
+                .attr('x2', width)
+                .attr('y1', y(1))
+                .attr('y2', y(1))
+                .attr('stroke', 'var(--balanced-color)')
+                .attr('stroke-width', 2)
+                .attr('stroke-dasharray', '5,5')
+                .attr('opacity', 0.5);
+
+            svg.append('text')
+                .attr('x', width - 5)
+                .attr('y', y(1) - 5)
+                .attr('text-anchor', 'end')
+                .attr('fill', 'var(--balanced-color)')
+                .attr('font-size', '11px')
+                .text('Balanced (1:1)');
+
+            // Area
+            const area = d3.area()
+                .x(d => x(d.year))
+                .y0(height)
+                .y1(d => y(getJobs(d) > 0 ? d.phds / getJobs(d) : 0))
+                .curve(d3.curveMonotoneX);
+
+            svg.append('path')
+                .datum(validData)
+                .attr('fill', 'var(--accent)')
+                .attr('fill-opacity', 0.3)
+                .attr('d', area);
+
+            // Line
+            const line = d3.line()
+                .x(d => x(d.year))
+                .y(d => y(getJobs(d) > 0 ? d.phds / getJobs(d) : 0))
+                .curve(d3.curveMonotoneX);
+
+            svg.append('path')
+                .datum(validData)
+                .attr('fill', 'none')
+                .attr('stroke', 'var(--accent)')
+                .attr('stroke-width', 3)
+                .attr('d', line);
+
+            // Axes
+            svg.append('g')
+                .attr('class', 'axis')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(x).tickFormat(d3.format('d')));
+
+            svg.append('g')
+                .attr('class', 'axis')
+                .call(d3.axisLeft(y));
+
+            // Y-axis label
+            svg.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('x', -height / 2)
+                .attr('y', -45)
+                .attr('text-anchor', 'middle')
+                .attr('fill', getComputedStyle(document.body).getPropertyValue('--text'))
+                .attr('font-size', '12px')
+                .text('PhDs per Job Posting');
+
+            // Title
+            svg.append('text')
+                .attr('x', width / 2)
+                .attr('y', -10)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '16px')
+                .attr('font-weight', 'bold')
+                .attr('fill', getComputedStyle(document.body).getPropertyValue('--text'))
+                .text('Supply/Demand Ratio (Higher = More Competition)');
+
+            // Hover interactions
+            const tooltip = d3.select('#tooltip');
+
+            svg.append('rect')
+                .attr('width', width)
+                .attr('height', height)
+                .attr('fill', 'none')
+                .attr('pointer-events', 'all')
+                .on('mousemove', function(event) {
+                    const [xPos] = d3.pointer(event);
+                    const year = Math.round(x.invert(xPos));
+                    const dataPoint = DATA.find(d => d.year === year);
+
+                    if (dataPoint) {
+                        const _j2 = getJobs(dataPoint), _r2 = _j2 > 0 ? dataPoint.phds/_j2 : 999;
+                        const ratioText = _r2 < 100 ? _r2.toFixed(2) : '∞ (no jobs posted)';
+                        const interpretation = _r2 > 1 ?
+                            `Oversupply: ${dataPoint.phds - _j2} more PhDs than jobs` :
+                            _r2 < 1 ?
+                            `Undersupply: ${_j2 - dataPoint.phds} more jobs than PhDs` :
+                            'Balanced market';
+
+                        tooltip.style('opacity', 1)
+                            .html(`
+                                <strong>${year}</strong><br>
+                                PhDs: ${dataPoint.phds}<br>
+                                Jobs: ${_j2}<br>
+                                Ratio: ${ratioText}<br>
+                                <em>${interpretation}</em>
+                            `)
+                            .style('left', (event.pageX + 10) + 'px')
+                            .style('top', (event.pageY - 10) + 'px');
+                    }
+                })
+                .on('mouseout', () => {
+                    tooltip.style('opacity', 0);
+                });
+        }
+
+        function renderBalance(container) {
+            const margin = {top: 40, right: 120, bottom: 60, left: 60};
+            const width = 1300 - margin.left - margin.right;
+            const height = 500 - margin.top - margin.bottom;
+
+            const svg = container.append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            const x = d3.scaleLinear()
+                .domain([1966, 2025])
+                .range([0, width]);
+
+            const maxSurplus = d3.max(DATA, d => Math.abs(d.phds - getJobs(d)));
+            const y = d3.scaleLinear()
+                .domain([-maxSurplus * 1.1, maxSurplus * 1.1])
+                .range([height, 0]);
+
+            // Grid
+            svg.append('g')
+                .attr('class', 'grid')
+                .call(d3.axisLeft(y).tickSize(-width).tickFormat(''));
+
+            // Zero line
+            svg.append('line')
+                .attr('x1', 0)
+                .attr('x2', width)
+                .attr('y1', y(0))
+                .attr('y2', y(0))
+                .attr('stroke', 'var(--text)')
+                .attr('stroke-width', 2);
+
+            // Oversupply area (positive surplus)
+            const oversupplyData = DATA.map(d => ({
+                year: d.year,
+                value: Math.max(0, d.phds - getJobs(d))
+            }));
+
+            const areaOversupply = d3.area()
+                .x(d => x(d.year))
+                .y0(y(0))
+                .y1(d => y(d.value))
+                .curve(d3.curveMonotoneX);
+
+            svg.append('path')
+                .datum(oversupplyData)
+                .attr('fill', 'var(--supply-color)')
+                .attr('fill-opacity', 0.5)
+                .attr('d', areaOversupply);
+
+            // Undersupply area (negative surplus)
+            const undersupplyData = DATA.map(d => ({
+                year: d.year,
+                value: Math.min(0, d.phds - getJobs(d))
+            }));
+
+            const areaUndersupply = d3.area()
+                .x(d => x(d.year))
+                .y0(y(0))
+                .y1(d => y(d.value))
+                .curve(d3.curveMonotoneX);
+
+            svg.append('path')
+                .datum(undersupplyData)
+                .attr('fill', 'var(--demand-color)')
+                .attr('fill-opacity', 0.5)
+                .attr('d', areaUndersupply);
+
+            // Axes
+            svg.append('g')
+                .attr('class', 'axis')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(x).tickFormat(d3.format('d')));
+
+            svg.append('g')
+                .attr('class', 'axis')
+                .call(d3.axisLeft(y));
+
+            // Y-axis label
+            svg.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('x', -height / 2)
+                .attr('y', -45)
+                .attr('text-anchor', 'middle')
+                .attr('fill', getComputedStyle(document.body).getPropertyValue('--text'))
+                .attr('font-size', '12px')
+                .text('Market Balance (PhDs minus Jobs)');
+
+            // Labels
+            svg.append('text')
+                .attr('x', width - 10)
+                .attr('y', y(maxSurplus * 0.9))
+                .attr('text-anchor', 'end')
+                .attr('fill', 'var(--supply-color)')
+                .attr('font-size', '13px')
+                .attr('font-weight', 'bold')
+                .text('Oversupply (More PhDs)');
+
+            svg.append('text')
+                .attr('x', width - 10)
+                .attr('y', y(-maxSurplus * 0.9))
+                .attr('text-anchor', 'end')
+                .attr('fill', 'var(--demand-color)')
+                .attr('font-size', '13px')
+                .attr('font-weight', 'bold')
+                .text('Undersupply (More Jobs)');
+
+            // Title
+            svg.append('text')
+                .attr('x', width / 2)
+                .attr('y', -10)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '16px')
+                .attr('font-weight', 'bold')
+                .attr('fill', getComputedStyle(document.body).getPropertyValue('--text'))
+                .text('Market Balance: Surplus (+) vs. Deficit (-)');
+
+            // Hover interactions
+            const tooltip = d3.select('#tooltip');
+
+            svg.append('rect')
+                .attr('width', width)
+                .attr('height', height)
+                .attr('fill', 'none')
+                .attr('pointer-events', 'all')
+                .on('mousemove', function(event) {
+                    const [xPos] = d3.pointer(event);
+                    const year = Math.round(x.invert(xPos));
+                    const dataPoint = DATA.find(d => d.year === year);
+
+                    if (dataPoint) {
+                        const _sb = dataPoint.phds - getJobs(dataPoint);
+                        const status = _sb > 0 ? 'Oversupply' : _sb < 0 ? 'Undersupply' : 'Balanced';
+                        const color = _sb > 0 ? 'var(--supply-color)' :
+                                     _sb < 0 ? 'var(--demand-color)' : 'var(--text)';
+
+                        tooltip.style('opacity', 1)
+                            .html(`
+                                <strong>${year}</strong><br>
+                                PhDs: ${dataPoint.phds}<br>
+                                Jobs: ${getJobs(dataPoint)}<br>
+                                Balance: <span style="color: ${color}; font-weight: bold;">${dataPoint.phds - getJobs(dataPoint) > 0 ? '+' : ''}${dataPoint.phds - getJobs(dataPoint)}</span><br>
+                                Status: <strong style="color: ${color};">${status}</strong>
+                            `)
+                            .style('left', (event.pageX + 10) + 'px')
+                            .style('top', (event.pageY - 10) + 'px');
+                    }
+                })
+                .on('mouseout', () => {
+                    tooltip.style('opacity', 0);
+                });
+        }
+
+        // Export functions
+        document.getElementById('export-png').addEventListener('click', () => {
+            const svg = document.querySelector('#viz-container svg');
+            if (!svg) return;
+
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+
+            canvas.width = svg.width.baseVal.value;
+            canvas.height = svg.height.baseVal.value;
+
+            img.onload = () => {
+                ctx.fillStyle = getComputedStyle(document.body).backgroundColor;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+
+                const link = document.createElement('a');
+                link.download = `supply_demand_${currentMode}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            };
+
+            img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+        });
+
+        document.getElementById('export-csv').addEventListener('click', () => {
+            let csv = 'Year,PhDs,Jobs,Surplus,Ratio\n';
+            DATA.forEach(d => {
+                const j = getJobs(d), s = d.phds - j, r = j > 0 ? d.phds/j : 999;
+                csv += `${d.year},${d.phds},${j},${s},${r < 100 ? r.toFixed(2) : 'Inf'}\n`;
+            });
+
+            const blob = new Blob([csv], {type: 'text/csv'});
+            const link = document.createElement('a');
+            link.download = 'supply_demand_balance.csv';
+            link.href = URL.createObjectURL(blob);
+            link.click();
+        });
+
+        // Initial render
+        renderCurrentMode();
+    </script>
+</body>
+</html>

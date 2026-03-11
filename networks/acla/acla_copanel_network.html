@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ACLA Co-Paneling Network</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
+<style>
+
+:root {
+    --bg: #ffffff; --bg2: #f5f5f5; --bg3: #e8e8e8;
+    --fg: #1a1a2e; --fg2: #555; --fg3: #888;
+    --accent: #2563eb; --accent2: #dc2626;
+    --grid: rgba(0,0,0,0.08); --border: #ddd;
+}
+.dark-mode {
+    --bg: #0a0a1a; --bg2: #141428; --bg3: #1e1e3a;
+    --fg: #e0e0e0; --fg2: #aaa; --fg3: #777;
+    --accent: #4a9eff; --accent2: #ff6b6b;
+    --grid: rgba(255,255,255,0.05); --border: #333;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--fg);
+    overflow-x: hidden;
+}
+#toolbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px; background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap; min-height: 44px;
+}
+#toolbar h1 {
+    font-size: 16px; font-weight: 600; white-space: nowrap;
+}
+.spacer { flex: 1; }
+#toolbar button, #toolbar select {
+    padding: 5px 12px; border-radius: 4px;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--fg); cursor: pointer; font-size: 12px;
+}
+#toolbar button:hover { background: var(--bg3); }
+.info-btn {
+    width: 28px; height: 28px; border-radius: 50% !important;
+    padding: 0 !important; font-size: 14px !important;
+    display: flex; align-items: center; justify-content: center;
+}
+
+/* Tabs */
+.tabs {
+    display: flex; border-bottom: 2px solid var(--border);
+    padding: 0 16px; background: var(--bg2); gap: 2px;
+}
+.tab-btn {
+    padding: 8px 16px; border: none; background: transparent;
+    color: var(--fg2); cursor: pointer; font-size: 13px;
+    font-weight: 500; border-bottom: 2px solid transparent;
+    margin-bottom: -2px; transition: all 0.15s;
+}
+.tab-btn:hover { color: var(--fg); background: var(--bg3); }
+.tab-btn.active {
+    color: var(--accent); border-bottom-color: var(--accent);
+    font-weight: 600;
+}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Controls */
+.controls {
+    display: flex; gap: 12px; padding: 10px 16px;
+    flex-wrap: wrap; align-items: center;
+    border-bottom: 1px solid var(--border);
+}
+.btn-group {
+    display: flex; border: 1px solid var(--border); border-radius: 4px;
+    overflow: hidden;
+}
+.btn-group button {
+    padding: 4px 10px; border: none; border-right: 1px solid var(--border);
+    background: var(--bg); color: var(--fg2); cursor: pointer; font-size: 12px;
+}
+.btn-group button:last-child { border-right: none; }
+.btn-group button:hover { background: var(--bg3); }
+.btn-group button.active { background: var(--accent); color: #fff; }
+.controls label { font-size: 12px; color: var(--fg2); }
+.controls select {
+    padding: 3px 8px; font-size: 12px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--fg); border-radius: 3px;
+}
+.controls input[type="range"] { width: 120px; }
+
+/* Chart area */
+.chart-container {
+    display: flex; width: 100%; min-height: calc(100vh - 160px);
+}
+.chart-area {
+    flex: 1; overflow: hidden; position: relative;
+    padding: 16px;
+}
+.legend-panel {
+    width: 220px; min-width: 220px; padding: 10px;
+    border-left: 1px solid var(--border);
+    overflow-y: auto; font-size: 12px;
+    max-height: calc(100vh - 160px);
+}
+.legend-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3px 6px; cursor: pointer; border-radius: 3px;
+    transition: opacity 0.15s;
+}
+.legend-item:hover { background: var(--bg3); }
+.legend-item.muted { opacity: 0.25; }
+.legend-dot {
+    width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0;
+}
+.legend-label { flex: 1; }
+.legend-count { color: var(--fg3); font-size: 11px; }
+.legend-divider {
+    font-size: 10px; color: var(--fg3); text-transform: uppercase;
+    letter-spacing: 0.5px; padding: 6px 6px 2px;
+    margin-top: 4px; border-top: 1px solid var(--border);
+}
+.show-all-btn {
+    display: block; width: 100%; padding: 4px 8px; margin-top: 6px;
+    border: 1px solid var(--border); border-radius: 3px;
+    background: var(--bg2); color: var(--fg2); cursor: pointer;
+    font-size: 11px; text-align: center;
+}
+.show-all-btn:hover { background: var(--bg3); }
+
+/* Tooltip */
+#tooltip {
+    position: fixed; pointer-events: none; z-index: 1000;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 12px; font-size: 12px;
+    line-height: 1.4; max-width: 300px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: none;
+}
+#tooltip.show { display: block; }
+
+/* Sidebar (for network/presenter viz) */
+.sidebar {
+    width: 320px; min-width: 320px; padding: 12px;
+    border-left: 1px solid var(--border);
+    overflow-y: auto; font-size: 12px;
+    max-height: calc(100vh - 100px);
+}
+.sidebar h3 { font-size: 14px; margin-bottom: 8px; }
+.sidebar .stat { margin: 4px 0; }
+.sidebar .stat-label { color: var(--fg2); }
+
+/* Search */
+.search-box {
+    padding: 5px 10px; border: 1px solid var(--border);
+    border-radius: 4px; background: var(--bg); color: var(--fg);
+    font-size: 12px; width: 180px;
+}
+.search-box::placeholder { color: var(--fg3); }
+
+/* COVID annotation */
+.covid-marker {
+    font-size: 10px; color: var(--accent2); font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .chart-container { flex-direction: column; }
+    .legend-panel, .sidebar {
+        width: 100%; min-width: 100%;
+        max-height: 200px; border-left: none;
+        border-top: 1px solid var(--border);
+    }
+}
+
+
+    #main {
+        display: flex; width: 100%; height: calc(100vh - 48px);
+    }
+    #canvas-wrap {
+        flex: 1; position: relative; overflow: hidden;
+    }
+    #canvas-wrap canvas {
+        display: block; width: 100%; height: 100%;
+    }
+    #sidebar {
+        width: 320px; min-width: 320px; max-height: calc(100vh - 48px);
+        overflow-y: auto; border-left: 1px solid var(--border);
+        padding: 12px; font-size: 12px; display: none;
+    }
+    #sidebar.open { display: block; }
+    #sidebar h3 { font-size: 14px; margin-bottom: 6px; }
+    .sb-close {
+        float: right; background: none; border: none; font-size: 18px;
+        cursor: pointer; color: var(--fg2); padding: 0 4px;
+    }
+    .sb-stat { margin: 3px 0; }
+    .sb-stat .lbl { color: var(--fg2); }
+    .sb-papers { max-height: 240px; overflow-y: auto; margin: 8px 0; }
+    .sb-paper { padding: 3px 0; border-bottom: 1px solid var(--border); }
+    .sb-paper .yr { color: var(--accent); font-weight: 600; margin-right: 4px; }
+    .sb-bar-wrap { display: flex; align-items: center; gap: 4px; margin: 2px 0; }
+    .sb-bar { height: 14px; border-radius: 2px; }
+    .sb-bar-label { font-size: 11px; white-space: nowrap; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+    .sb-bar-cnt { font-size: 10px; color: var(--fg3); }
+    #stats-bar {
+        position: absolute; bottom: 8px; left: 8px;
+        background: var(--bg2); border: 1px solid var(--border);
+        border-radius: 4px; padding: 4px 10px; font-size: 11px;
+        color: var(--fg2); pointer-events: none; opacity: 0.9;
+    }
+    #inst-panel {
+        position: absolute; top: 8px; right: 8px;
+        background: var(--bg2); border: 1px solid var(--border);
+        border-radius: 6px; padding: 8px; font-size: 11px;
+        max-height: 400px; overflow-y: auto; display: none; width: 220px;
+    }
+    #inst-panel.open { display: block; }
+    #inst-panel h4 { font-size: 12px; margin-bottom: 6px; }
+    .inst-cb { display: flex; align-items: center; gap: 4px; padding: 2px 0; }
+    .inst-cb input { margin: 0; }
+    .inst-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    #search-results {
+        position: absolute; z-index: 100; background: var(--bg2);
+        border: 1px solid var(--border); border-radius: 4px;
+        max-height: 200px; overflow-y: auto; display: none; font-size: 12px;
+    }
+    #search-results div {
+        padding: 4px 10px; cursor: pointer;
+    }
+    #search-results div:hover { background: var(--bg3); }
+    .tb-group { display: flex; align-items: center; gap: 4px; font-size: 11px; }
+    .tb-group label { color: var(--fg2); white-space: nowrap; }
+    .tb-group input[type="range"] { width: 100px; }
+    .range-display { min-width: 55px; text-align: center; font-size: 11px; color: var(--fg2); }
+    @media (max-width: 900px) {
+        #sidebar { width: 100%; min-width: 100%; max-height: 250px; border-left: none; border-top: 1px solid var(--border); }
+        #main { flex-direction: column; }
+    }
+    
+</style>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
+</head>
+<body>
+
+<div id="toolbar">
+    <h1>ACLA Co-Paneling Network</h1>
+    <div class="spacer"></div>
+    <button class="info-btn" onclick="toggleInfoModal()" title="About this visualization">&#8505;</button>
+    <button onclick="exportPng()">Export PNG</button>
+    <button onclick="exportCsv()">Export CSV</button>
+    <button id="themeBtn" onclick="toggleTheme()">&#9790; Dark</button>
+</div>
+
+
+
+
+    <div id="main">
+        <div id="canvas-wrap">
+            <canvas id="graph"></canvas>
+            <div id="stats-bar"></div>
+            <div id="inst-panel">
+                <h4>Filter Institutions <button onclick="instSelectAll()" style="font-size:10px;cursor:pointer;border:none;background:none;color:var(--accent);">All</button>
+                <button onclick="instClearAll()" style="font-size:10px;cursor:pointer;border:none;background:none;color:var(--accent2);">None</button></h4>
+                <div id="inst-checks"></div>
+            </div>
+        </div>
+        <div id="sidebar">
+            <button class="sb-close" onclick="closeSidebar()">&times;</button>
+            <div id="sb-content"></div>
+        </div>
+    </div>
+    <div id="search-results"></div>
+    
+
+<div id="tooltip"></div>
+
+<script>
+const ALL_DATA = {"nodes": [{"id": 0, "name": "A. Owen Aldridge", "pid": 384762, "inst": "University of Illinois at Urbana-Champaign", "insts": ["University of Illinois at Urbana-Champaign"], "app": 1, "yr1": 1992, "yr2": 1992, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "Etiemble and the Portrayal of City in Kawabata's Kyoto", "y": 1992, "r": "presenter", "i": "University of Illinois at Urbana-Champaign"}], "copanelists": [{"name": "Janet Walker", "cnt": 1}, {"name": "John Dorsey", "cnt": 1}], "topics": [{"term": "Kawabata Yasunari", "cat": "literary_figure", "cnt": 1}, {"term": "Space & Place", "cat": "theme", "cnt": 1}]}, {"id": 1, "name": "Akiko Takenaka", "pid": 4347, "inst": "University of Kentucky", "insts": ["University of Kentucky"], "app": 1, "yr1": 2017, "yr2": 2017, "uyr": 1, "deg": 5, "roles": ["presenter"], "papers": [{"t": "Representing the Unrepresentable: Two Visual Artists Look at Disaster", "y": 2017, "r": "presenter", "i": "University of Kentucky"}], "copanelists": [{"name": "Douglas Slaymaker", "cnt": 1}, {"name": "Hisaaki Wake", "cnt": 1}, {"name": "Keita Hatooka", "cnt": 1}, {"name": "Rei Magosaki", "cnt": 1}, {"name": "Toshiya Ueno", "cnt": 1}], "topics": [{"term": "Nature & Environment", "cat": "theme", "cnt": 1}]}, {"id": 2, "name": "Alex Bates", "pid": 10906, "inst": "Dickinson College", "insts": ["Dickinson College"], "app": 3, "yr1": 2015, "yr2": 2017, "uyr": 3, "deg": 14, "roles": ["presenter"], "papers": [{"t": "Nature Strikes Back: human interaction with natural forces in literary representations of", "y": 2015, "r": "presenter", "i": "Dickinson College"}, {"t": "Vengeful Beast or Artist: “Nature” in Murakami Haruki’s After the Quake", "y": 2016, "r": "presenter", "i": "Dickinson College"}, {"t": "Behind Enemy Lines: Teaching the Literature of Japanese War Crimes", "y": 2017, "r": "presenter", "i": "Dickinson College"}], "copanelists": [{"name": "Masami Yuki", "cnt": 3}, {"name": "Keijiro Suga", "cnt": 2}, {"name": "Christine Marran", "cnt": 1}, {"name": "Daisuke Higuchi", "cnt": 1}, {"name": "Douglas Slaymaker", "cnt": 1}, {"name": "Hisaaki Wake", "cnt": 1}, {"name": "Keitaro Morita", "cnt": 1}, {"name": "Livia Monnet", "cnt": 1}, {"name": "Margherita Long", "cnt": 1}, {"name": "Marjorie Rhine", "cnt": 1}], "topics": [{"term": "Nature & Environment", "cat": "theme", "cnt": 2}, {"term": "Murakami Haruki", "cat": "literary_figure", "cnt": 1}, {"term": "War & Memory", "cat": "theme", "cnt": 1}]}, {"id": 3, "name": "Alexander Lin", "pid": 123638, "inst": "Princeton University", "insts": ["Princeton University"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "Gatherings of Irony and Love: Thomas Mann’s Der Zauberberg and Yukio Mishima’s Kyōko no ie", "y": 2018, "r": "presenter", "i": "Princeton University"}], "copanelists": [{"name": "Takashi Inoue", "cnt": 1}, {"name": "Yoshiki Tajiri", "cnt": 1}], "topics": [{"term": "Drama/Theater", "cat": "genre", "cnt": 1}, {"term": "Mishima Yukio", "cat": "literary_figure", "cnt": 1}]}, {"id": 4, "name": "Alicia Gibson", "pid": 1378, "inst": "University of Minnesota", "insts": ["University of Minnesota"], "app": 1, "yr1": 2011, "yr2": 2011, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Hiroshima in the World: Oda’s H and the Future of Critical", "y": 2011, "r": "presenter", "i": "University of Minnesota"}], "copanelists": [{"name": "Seigo Nakao", "cnt": 1}], "topics": [{"term": "War & Memory", "cat": "theme", "cnt": 1}]}, {"id": 5, "name": "Amanda Robinson", "pid": 667395, "inst": "University of Pittsburgh", "insts": ["University of Pittsburgh"], "app": 1, "yr1": 2016, "yr2": 2016, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "The Iyashi Boom: Marketing Sociality in Japanese Animal Cafes", "y": 2016, "r": "presenter", "i": "University of Pittsburgh"}], "copanelists": [{"name": "Michelle Ho", "cnt": 1}], "topics": [{"term": "Nature & Environment", "cat": "theme", "cnt": 1}]}, {"id": 6, "name": "Annegret Marten", "pid": 244557, "inst": "King's College London/Humboldt Universität Berlin", "insts": ["King's College London/Humboldt Universität Berlin"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 8, "roles": ["presenter"], "papers": [{"t": "Ecocritical Texts", "y": 2018, "r": "presenter", "i": "King's College London/Humboldt Universität Berlin"}], "copanelists": [{"name": "Bettina  Brandt", "cnt": 1}, {"name": "Brett de Bary", "cnt": 1}, {"name": "Dan Fujiwara", "cnt": 1}, {"name": "Douglas Slaymaker", "cnt": 1}, {"name": "Hiltrud Arens", "cnt": 1}, {"name": "Sabrina Jaromin", "cnt": 1}, {"name": "Sigrid Weigel", "cnt": 1}, {"name": "Tingting Hui", "cnt": 1}], "topics": []}, {"id": 7, "name": "Annette Vilslev", "pid": 36542, "inst": "University of Copenhagen", "insts": ["University of Copenhagen"], "app": 1, "yr1": 2011, "yr2": 2011, "uyr": 1, "deg": 5, "roles": ["presenter"], "papers": [{"t": "The Continuity of Consciousness. Comparing Soseki’s ishiki no", "y": 2011, "r": "presenter", "i": "University of Copenhagen"}], "copanelists": [{"name": "Jonathan Abel", "cnt": 1}, {"name": "Keiko Nakano", "cnt": 1}, {"name": "Shion Kono", "cnt": 1}, {"name": "Takushi Odagiri", "cnt": 1}, {"name": "William Bridges", "cnt": 1}], "topics": [{"term": "Drama/Theater", "cat": "genre", "cnt": 1}, {"term": "Natsume Sōseki", "cat": "literary_figure", "cnt": 1}]}, {"id": 8, "name": "Arthur Mitchell", "pid": 2995, "inst": "Macalester College", "insts": ["Macalester College"], "app": 1, "yr1": 2017, "yr2": 2017, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "Subversions of Sensation: The Modernist Fiction of Hirabayashi Taiko", "y": 2017, "r": "presenter", "i": "Macalester College"}], "copanelists": [{"name": "Reiko Abe Auestad", "cnt": 1}, {"name": "Sarah Frederick", "cnt": 1}], "topics": [{"term": "Body & Affect", "cat": "theme", "cnt": 1}, {"term": "Modernity & Modernism", "cat": "theme", "cnt": 1}, {"term": "Novel/Fiction", "cat": "genre", "cnt": 1}]}, {"id": 9, "name": "Atsunobu Katagiri", "pid": 632978, "inst": "Misasagi Ikebana School", "insts": ["Misasagi Ikebana School"], "app": 1, "yr1": 2015, "yr2": 2015, "uyr": 1, "deg": 3, "roles": ["presenter"], "papers": [{"t": "If You Are A Flower in the Field of Nuclear Pollution", "y": 2015, "r": "presenter", "i": "Misasagi Ikebana School"}], "copanelists": [{"name": "Dean Brink", "cnt": 1}, {"name": "Goro Takano", "cnt": 1}, {"name": "Keijiro Suga", "cnt": 1}], "topics": [{"term": "Nature & Environment", "cat": "theme", "cnt": 1}]}, {"id": 10, "name": "Bettina  Brandt", "pid": 489492, "inst": "Pennsylvania State University", "insts": ["Pennsylvania State University"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 8, "roles": ["presenter"], "papers": [{"t": "Yoko Tawada: Cutting, Gluing, Collecting", "y": 2018, "r": "presenter", "i": "Pennsylvania State University"}], "copanelists": [{"name": "Annegret Marten", "cnt": 1}, {"name": "Brett de Bary", "cnt": 1}, {"name": "Dan Fujiwara", "cnt": 1}, {"name": "Douglas Slaymaker", "cnt": 1}, {"name": "Hiltrud Arens", "cnt": 1}, {"name": "Sabrina Jaromin", "cnt": 1}, {"name": "Sigrid Weigel", "cnt": 1}, {"name": "Tingting Hui", "cnt": 1}], "topics": [{"term": "Tawada Yōko", "cat": "literary_figure", "cnt": 1}]}, {"id": 11, "name": "Brett de Bary", "pid": 5116, "inst": "Cornell University", "insts": ["Cornell University"], "app": 2, "yr1": 2018, "yr2": 2022, "uyr": 2, "deg": 10, "roles": ["presenter"], "papers": [{"t": "A Detour Around Area Studies in the Company of Tawada  Yōko", "y": 2018, "r": "presenter", "i": "Cornell University"}, {"t": "", "y": 2022, "r": "presenter", "i": "Cornell University"}], "copanelists": [{"name": "Annegret Marten", "cnt": 1}, {"name": "Bettina  Brandt", "cnt": 1}, {"name": "Dan Fujiwara", "cnt": 1}, {"name": "Dean Anthony Brink", "cnt": 1}, {"name": "Douglas Slaymaker", "cnt": 1}, {"name": "Hiltrud Arens", "cnt": 1}, {"name": "Sabrina Jaromin", "cnt": 1}, {"name": "Sigrid Weigel", "cnt": 1}, {"name": "Tingting Hui", "cnt": 1}, {"name": "Toshiya Ueno", "cnt": 1}], "topics": [{"term": "Tawada Yōko", "cat": "literary_figure", "cnt": 1}]}, {"id": 12, "name": "Cara Healey", "pid": 403960, "inst": "University of California, Santa Barbara", "insts": ["University of California, Santa Barbara"], "app": 1, "yr1": 2015, "yr2": 2015, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Speculations of Ascendency: Imagining China’s Rise Through Science Fiction", "y": 2015, "r": "presenter", "i": "University of California, Santa Barbara"}], "copanelists": [{"name": "Dear Enemy: Gender", "cnt": 1}], "topics": [{"term": "Novel/Fiction", "cat": "genre", "cnt": 1}]}, {"id": 13, "name": "Catherine M. Miskow", "pid": 2994, "inst": "University of California, Davis", "insts": ["University of California, Davis"], "app": 1, "yr1": 2009, "yr2": 2009, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Representing Japan: From the Goncourt Brothers to Paul Claudel", "y": 2009, "r": "presenter", "i": "University of California, Davis"}], "copanelists": [{"name": "Timothy P. Gaster", "cnt": 1}], "topics": []}, {"id": 14, "name": "Catherine Ryu", "pid": 3778, "inst": "Michigan State University", "insts": ["Michigan State University"], "app": 1, "yr1": 2013, "yr2": 2013, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "A Poetic Flight of Longing: The Figure of a ‘Maboroshi’ in The Tale of Genji", "y": 2013, "r": "presenter", "i": "Michigan State University"}], "copanelists": [{"name": "Eve Zimmerman", "cnt": 1}], "topics": [{"term": "Genji monogatari", "cat": "literary_figure", "cnt": 1}]}, {"id": 15, "name": "Christine Marran", "pid": 2785, "inst": "University of Minnesota", "insts": ["University of Minnesota", "University of Minnesota Twin Cities"], "app": 2, "yr1": 2016, "yr2": 2022, "uyr": 2, "deg": 13, "roles": ["presenter"], "papers": [{"t": "Biotropes and the Problem of Culture", "y": 2016, "r": "presenter", "i": "University of Minnesota"}, {"t": "You Turn to the Camera and I Smile: Trap Cams and Film Theory", "y": 2022, "r": "presenter", "i": "University of Minnesota Twin Cities"}], "copanelists": [{"name": "Keijiro Suga", "cnt": 2}, {"name": "Masami Yuki", "cnt": 2}, {"name": "Alex Bates", "cnt": 1}, {"name": "Douglas Slaymaker", "cnt": 1}, {"name": "Hisaaki Wake", "cnt": 1}, {"name": "Keitaro Morita", "cnt": 1}, {"name": "Livia Monnet", "cnt": 1}, {"name": "Margherita Long", "cnt": 1}, {"name": "Marjorie Rhine", "cnt": 1}, {"name": "Nobuko Yamasaki", "cnt": 1}], "topics": [{"term": "Film/Cinema", "cat": "genre", "cnt": 1}]}, {"id": 16, "name": "Christopher Lowy", "pid": 2664, "inst": "Florida State University", "insts": ["Florida State University", "University of Washington"], "app": 2, "yr1": 2009, "yr2": 2010, "uyr": 2, "deg": 12, "roles": ["presenter"], "papers": [{"t": "Kenneth Rexroth and an English Kambun", "y": 2009, "r": "presenter", "i": "Florida State University"}, {"t": "Inscriptions of Resistance in the Later Writings of Akutagawa Ryunosuke", "y": 2010, "r": "presenter", "i": "University of Washington"}], "copanelists": [{"name": "Ikuho Amano", "cnt": 2}, {"name": "Yoshihiro Yasuhara", "cnt": 2}, {"name": "Devon A. Cahill", "cnt": 1}, {"name": "Devon Cahill", "cnt": 1}, {"name": "Janice Yolanda Zehentbauer", "cnt": 1}, {"name": "Matthew Stanhope Mewhinney", "cnt": 1}, {"name": "Raechel Dumas", "cnt": 1}, {"name": "Raechel L. Dumas", "cnt": 1}, {"name": "Reiko Tachibana", "cnt": 1}, {"name": "Satoko Kakihara", "cnt": 1}], "topics": [{"term": "Akutagawa Ryūnosuke", "cat": "literary_figure", "cnt": 1}]}, {"id": 17, "name": "Daisuke Higuchi", "pid": 384398, "inst": "Kobe University", "insts": ["Kobe University"], "app": 1, "yr1": 2015, "yr2": 2015, "uyr": 1, "deg": 3, "roles": ["presenter"], "papers": [{"t": "Representation of Nomads in the Works of Michiko Ishimure", "y": 2015, "r": "presenter", "i": "Kobe University"}], "copanelists": [{"name": "Alex Bates", "cnt": 1}, {"name": "Masami Yuki", "cnt": 1}, {"name": "Mayumi Toyosato", "cnt": 1}], "topics": []}, {"id": 18, "name": "Daisy Yan Du", "pid": 1016, "inst": "Hong Kong University of Science and Technology", "insts": ["Hong Kong University of Science and Technology"], "app": 1, "yr1": 2016, "yr2": 2016, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "", "y": 2016, "r": "presenter", "i": "Hong Kong University of Science and Technology"}], "copanelists": [{"name": "Liang Luo", "cnt": 1}, {"name": "Sean Macdonald", "cnt": 1}], "topics": []}, {"id": 19, "name": "Dan Fujiwara", "pid": 433994, "inst": "Université Toulouse-Jean Jaurès (University of Toulouse-Jean Jaurès)", "insts": ["Université Toulouse-Jean Jaurès (University of Toulouse-Jean Jaurès)"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 8, "roles": ["presenter"], "papers": [{"t": "Time as a Globe or (new) Border in Tawada Yōko’s novels", "y": 2018, "r": "presenter", "i": "Université Toulouse-Jean Jaurès (University of Toulouse-Jean Jaurès)"}], "copanelists": [{"name": "Annegret Marten", "cnt": 1}, {"name": "Bettina  Brandt", "cnt": 1}, {"name": "Brett de Bary", "cnt": 1}, {"name": "Douglas Slaymaker", "cnt": 1}, {"name": "Hiltrud Arens", "cnt": 1}, {"name": "Sabrina Jaromin", "cnt": 1}, {"name": "Sigrid Weigel", "cnt": 1}, {"name": "Tingting Hui", "cnt": 1}], "topics": [{"term": "Tawada Yōko", "cat": "literary_figure", "cnt": 1}]}, {"id": 20, "name": "Daniel D. Baird", "pid": 184, "inst": "Duke University", "insts": ["Duke University"], "app": 1, "yr1": 2008, "yr2": 2008, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Marginal Authority: Familiar Essays of Woolf, Zhou, and Soseki", "y": 2008, "r": "presenter", "i": "Duke University"}], "copanelists": [{"name": "Indra Levy", "cnt": 1}], "topics": [{"term": "Natsume Sōseki", "cat": "literary_figure", "cnt": 1}]}, {"id": 21, "name": "David Kurnick", "pid": null, "inst": "Rutgers University", "insts": ["Rutgers University"], "app": 1, "yr1": 2015, "yr2": 2015, "uyr": 1, "deg": 5, "roles": ["presenter"], "papers": [{"t": "", "y": 2015, "r": "presenter", "i": "Rutgers University"}], "copanelists": [{"name": "Joel Calahan", "cnt": 1}, {"name": "Jonah Siegel", "cnt": 1}, {"name": "Kate Holland", "cnt": 1}, {"name": "Number in the Novel", "cnt": 1}, {"name": "Yoon Sun Lee", "cnt": 1}], "topics": []}, {"id": 22, "name": "Dean Anthony Brink", "pid": 411, "inst": "National Yang Ming Chiao Tung University", "insts": ["National Yang Ming Chiao Tung University"], "app": 1, "yr1": 2022, "yr2": 2022, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "Embodiment and Becoming in Miyaoi Yasuo’s Supernatural Tales", "y": 2022, "r": "presenter", "i": "National Yang Ming Chiao Tung University"}], "copanelists": [{"name": "Brett de Bary", "cnt": 1}, {"name": "Toshiya Ueno", "cnt": 1}], "topics": [{"term": "Body & Affect", "cat": "theme", "cnt": 1}, {"term": "Religion & Spirituality", "cat": "theme", "cnt": 1}]}, {"id": 23, "name": "Dean Brink", "pid": 411, "inst": "Tamkang U", "insts": ["Tamkang U", "Tamkang University"], "app": 2, "yr1": 2011, "yr2": 2015, "uyr": 2, "deg": 3, "roles": ["presenter"], "papers": [{"t": "Anamorphic Images of Race in Richard Wright's Haiku as", "y": 2011, "r": "presenter", "i": "Tamkang U"}, {"t": "Long-distance Ecopoetic Entanglement: Taiwan Tanka Association Poetry after 3.11", "y": 2015, "r": "presenter", "i": "Tamkang University"}], "copanelists": [{"name": "Atsunobu Katagiri", "cnt": 1}, {"name": "Goro Takano", "cnt": 1}, {"name": "Keijiro Suga", "cnt": 1}], "topics": [{"term": "Poetry", "cat": "genre", "cnt": 2}, {"term": "Empire & Colonialism", "cat": "theme", "cnt": 1}, {"term": "Race & Ethnicity", "cat": "theme", "cnt": 1}]}, {"id": 24, "name": "Dear Enemy: Gender", "pid": null, "inst": "Nation and the Pursuit of Happiness in Contemporary Chinese", "insts": ["Nation and the Pursuit of Happiness in Contemporary Chinese"], "app": 1, "yr1": 2015, "yr2": 2015, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "", "y": 2015, "r": "presenter", "i": "Nation and the Pursuit of Happiness in Contemporary Chinese"}], "copanelists": [{"name": "Cara Healey", "cnt": 1}], "topics": []}, {"id": 25, "name": "Devon A. Cahill", "pid": 603471, "inst": "Seton Hall U", "insts": ["Seton Hall U"], "app": 1, "yr1": 2009, "yr2": 2009, "uyr": 1, "deg": 8, "roles": ["presenter"], "papers": [{"t": "Reconciling Self in the Modern: The Life of Abe Kobo (1924-1993) and", "y": 2009, "r": "presenter", "i": "Seton Hall U"}], "copanelists": [{"name": "Christopher Lowy", "cnt": 1}, {"name": "Ikuho Amano", "cnt": 1}, {"name": "Janice Yolanda Zehentbauer", "cnt": 1}, {"name": "Matthew Stanhope Mewhinney", "cnt": 1}, {"name": "Raechel L. Dumas", "cnt": 1}, {"name": "Satoko Kakihara", "cnt": 1}, {"name": "Yoshihiro Yasuhara", "cnt": 1}, {"name": "Young J. Yi", "cnt": 1}], "topics": [{"term": "Abe Kōbō", "cat": "literary_figure", "cnt": 1}, {"term": "Modernity & Modernism", "cat": "theme", "cnt": 1}]}, {"id": 26, "name": "Devon Cahill", "pid": 603471, "inst": "University of Minnesota", "insts": ["University of Minnesota"], "app": 3, "yr1": 2010, "yr2": 2014, "uyr": 3, "deg": 6, "roles": ["presenter"], "papers": [{"t": "A Bounded Infinity: Modernity and the City in Abe Kobo’s The Ruined Map", "y": 2010, "r": "presenter", "i": "University of Minnesota"}, {"t": "Rubble Subjects: Excavating the Literature and Thought of Japan’s", "y": 2013, "r": "presenter", "i": "University of Minnesota"}, {"t": "Vestiges of the Metropolis: The Orphan in Postwar Japanese Literature", "y": 2014, "r": "presenter", "i": "University of Minnesota"}], "copanelists": [{"name": "Christopher Lowy", "cnt": 1}, {"name": "Ikuho Amano", "cnt": 1}, {"name": "Raechel Dumas", "cnt": 1}, {"name": "Reiko Tachibana", "cnt": 1}, {"name": "Yoshihiro Yasuhara", "cnt": 1}, {"name": "Yumi Tanaka", "cnt": 1}], "topics": [{"term": "Abe Kōbō", "cat": "literary_figure", "cnt": 1}, {"term": "Modernity & Modernism", "cat": "theme", "cnt": 1}, {"term": "Postwar", "cat": "period", "cnt": 1}, {"term": "Space & Place", "cat": "theme", "cnt": 1}]}, {"id": 27, "name": "Douglas Slaymaker", "pid": 4100, "inst": "University of Kentucky", "insts": ["University of Kentucky"], "app": 4, "yr1": 2014, "yr2": 2018, "uyr": 4, "deg": 22, "roles": ["presenter"], "papers": [{"t": "Kaneko Mitsuharu arcing across Southeast Asia", "y": 2014, "r": "presenter", "i": "University of Kentucky"}, {"t": "Furukawa Hideo’s “Horses”, and History", "y": 2016, "r": "presenter", "i": "University of Kentucky"}, {"t": "Animal Voices After 3.11", "y": 2017, "r": "presenter", "i": "University of Kentucky"}, {"t": "Yoko Tawada’s Radiation Nation", "y": 2018, "r": "presenter", "i": "University of Kentucky"}], "copanelists": [{"name": "Hisaaki Wake", "cnt": 2}, {"name": "Keijiro Suga", "cnt": 2}, {"name": "Masami Yuki", "cnt": 2}, {"name": "Rei Magosaki", "cnt": 2}, {"name": "Toshiya Ueno", "cnt": 2}, {"name": "Akiko Takenaka", "cnt": 1}, {"name": "Alex Bates", "cnt": 1}, {"name": "Annegret Marten", "cnt": 1}, {"name": "Bettina  Brandt", "cnt": 1}, {"name": "Brett de Bary", "cnt": 1}], "topics": [{"term": "Furukawa Hideo", "cat": "literary_figure", "cnt": 1}, {"term": "Nation & Identity", "cat": "theme", "cnt": 1}, {"term": "Nature & Environment", "cat": "theme", "cnt": 1}, {"term": "Tawada Yōko", "cat": "literary_figure", "cnt": 1}]}, {"id": 28, "name": "Enhua Zhang", "pid": 5039, "inst": "Columbia University", "insts": ["Columbia University"], "app": 1, "yr1": 2006, "yr2": 2006, "uyr": 1, "deg": 4, "roles": ["presenter"], "papers": [{"t": "The Will to Land, The Will to Revolution:", "y": 2006, "r": "presenter", "i": "Columbia University"}], "copanelists": [{"name": "Jing Tsu", "cnt": 1}, {"name": "Lanjun Xu", "cnt": 1}, {"name": "Liang Luo", "cnt": 1}, {"name": "Yoshihiro Yasuhara", "cnt": 1}], "topics": []}, {"id": 29, "name": "Eve Zimmerman", "pid": 5101, "inst": "Wellesley College", "insts": ["Wellesley College"], "app": 1, "yr1": 2013, "yr2": 2013, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Ogawa Yoko and Anne Frank: Putting Melancholia to Work", "y": 2013, "r": "presenter", "i": "Wellesley College"}], "copanelists": [{"name": "Catherine Ryu", "cnt": 1}], "topics": [{"term": "Ogawa Yōko", "cat": "literary_figure", "cnt": 1}]}, {"id": 30, "name": "Faye Kleeman", "pid": 2228, "inst": "University of Colorado Boulder", "insts": ["University of Colorado Boulder"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "Translation without translation:  Miyazaki Tōten and Transnational East Asian Literary and Cultural Sphere", "y": 2018, "r": "presenter", "i": "University of Colorado Boulder"}], "copanelists": [{"name": "Nobuko Toyosawa", "cnt": 1}, {"name": "Satoru Hashimoto", "cnt": 1}], "topics": [{"term": "Miyazaki Hayao", "cat": "literary_figure", "cnt": 1}, {"term": "Translation", "cat": "genre", "cnt": 1}, {"term": "Translation & World Lit", "cat": "theme", "cnt": 1}]}, {"id": 31, "name": "George Sipos", "pid": 4084, "inst": "University of Missouri", "insts": ["University of Missouri"], "app": 1, "yr1": 2020, "yr2": 2020, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "House in the Village by Nakano Shigeharu", "y": 2020, "r": "presenter", "i": "University of Missouri"}], "copanelists": [{"name": "Janice Brown", "cnt": 1}, {"name": "Sophia Sherry", "cnt": 1}], "topics": []}, {"id": 32, "name": "Gerry Yokota", "pid": 552664, "inst": "Osaka University", "insts": ["Osaka University"], "app": 1, "yr1": 2012, "yr2": 2012, "uyr": 1, "deg": 5, "roles": ["presenter"], "papers": [{"t": "Rhetorical Literacy and the Language of Catastrophe and Crisis in Japan,", "y": 2012, "r": "presenter", "i": "Osaka University"}], "copanelists": [{"name": "Ikuho Amano", "cnt": 1}, {"name": "Jonathan Abel", "cnt": 1}, {"name": "Jonathan E. Abel", "cnt": 1}, {"name": "Takushi Odagiri", "cnt": 1}, {"name": "William O. Gardner", "cnt": 1}], "topics": [{"term": "Technology & Media", "cat": "theme", "cnt": 1}]}, {"id": 33, "name": "Giovanni Borriello", "pid": 289351, "inst": "Roma Tre University", "insts": ["Roma Tre University"], "app": 2, "yr1": 2015, "yr2": 2016, "uyr": 2, "deg": 1, "roles": ["presenter"], "papers": [{"t": "The Idea of Body in the Japanese Medical Literature", "y": 2015, "r": "presenter", "i": "Roma Tre University"}, {"t": "The Body as a Metaphor: the Practice of Self-mummification in Japan", "y": 2016, "r": "presenter", "i": "Roma Tre University"}], "copanelists": [{"name": "Karen Thornber", "cnt": 1}], "topics": [{"term": "Body & Affect", "cat": "theme", "cnt": 2}]}, {"id": 34, "name": "Gizem Arslan", "pid": 317340, "inst": "Southern Methodist University", "insts": ["Southern Methodist University"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 6, "roles": ["presenter"], "papers": [{"t": "Tracing the Continual Present: Yoko Tawada and Vilem Flusser", "y": 2018, "r": "presenter", "i": "Southern Methodist University"}], "copanelists": [{"name": "John Kim", "cnt": 1}, {"name": "Keijiro Suga", "cnt": 1}, {"name": "Madalina Meirosu", "cnt": 1}, {"name": "Suzuko Mousel Knott", "cnt": 1}, {"name": "Tomoko Slutsky", "cnt": 1}, {"name": "Victoria Young", "cnt": 1}], "topics": [{"term": "Tawada Yōko", "cat": "literary_figure", "cnt": 1}]}, {"id": 35, "name": "Goro Takano", "pid": 4335, "inst": "Saga University", "insts": ["Saga University"], "app": 1, "yr1": 2015, "yr2": 2015, "uyr": 1, "deg": 3, "roles": ["presenter"], "papers": [{"t": "On Writing Catastrophes as a Poet", "y": 2015, "r": "presenter", "i": "Saga University"}], "copanelists": [{"name": "Atsunobu Katagiri", "cnt": 1}, {"name": "Dean Brink", "cnt": 1}, {"name": "Keijiro Suga", "cnt": 1}], "topics": []}, {"id": 36, "name": "Hannah Airriess", "pid": null, "inst": "University of California, Berkeley", "insts": ["University of California, Berkeley"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "Work is Work and Play is Play: Affective Labor and White-Collar Subjectivities in Japanese Postwar Cinema", "y": 2018, "r": "presenter", "i": "University of California, Berkeley"}], "copanelists": [{"name": "Makiko Mori", "cnt": 1}, {"name": "Shengqing Wu", "cnt": 1}], "topics": [{"term": "Film/Cinema", "cat": "genre", "cnt": 1}, {"term": "Postwar", "cat": "period", "cnt": 1}]}, {"id": 37, "name": "Hiltrud Arens", "pid": 543666, "inst": "University of Montana", "insts": ["University of Montana"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 8, "roles": ["presenter"], "papers": [{"t": "Of Animals and Humans in Yoko Tawada's Memoirs of a Polar Bear", "y": 2018, "r": "presenter", "i": "University of Montana"}], "copanelists": [{"name": "Annegret Marten", "cnt": 1}, {"name": "Bettina  Brandt", "cnt": 1}, {"name": "Brett de Bary", "cnt": 1}, {"name": "Dan Fujiwara", "cnt": 1}, {"name": "Douglas Slaymaker", "cnt": 1}, {"name": "Sabrina Jaromin", "cnt": 1}, {"name": "Sigrid Weigel", "cnt": 1}, {"name": "Tingting Hui", "cnt": 1}], "topics": [{"term": "Tawada Yōko", "cat": "literary_figure", "cnt": 1}]}, {"id": 38, "name": "Hisaaki Wake", "pid": 4632, "inst": "Bates College", "insts": ["Bates College", "Amherst College", "United States Air Force Academy"], "app": 5, "yr1": 2015, "yr2": 2024, "uyr": 4, "deg": 15, "roles": ["presenter"], "papers": [{"t": "Ecocriticism in Japan", "y": 2015, "r": "presenter", "i": "Bates College"}, {"t": "On the Ideological Manipulation Inherent in Japanese Anime", "y": 2015, "r": "presenter", "i": "Bates College"}, {"t": "The Eco-Performativity in the “Fire Festivals” of Nakagami Kenji and Yanagimachi", "y": 2016, "r": "presenter", "i": "Bates College"}, {"t": "Shin Godzilla and Anno’s Post-Fukushima Resurgence", "y": 2017, "r": "presenter", "i": "Amherst College"}, {"t": "Bears, Hunters, Nostalgia, and Reality—Three Narratives of Matagi and OSO-18", "y": 2024, "r": "presenter", "i": "United States Air Force Academy"}], "copanelists": [{"name": "Douglas Slaymaker", "cnt": 2}, {"name": "Keijiro Suga", "cnt": 2}, {"name": "Masami Yuki", "cnt": 2}, {"name": "Rei Magosaki", "cnt": 2}, {"name": "Toshiya Ueno", "cnt": 2}, {"name": "Akiko Takenaka", "cnt": 1}, {"name": "Alex Bates", "cnt": 1}, {"name": "Christine Marran", "cnt": 1}, {"name": "Keita Hatooka", "cnt": 1}, {"name": "Keitaro Morita", "cnt": 1}], "topics": [{"term": "Nature & Environment", "cat": "theme", "cnt": 2}, {"term": "Anime/Manga", "cat": "genre", "cnt": 1}, {"term": "Contemporary", "cat": "period", "cnt": 1}, {"term": "Nakagami Kenji", "cat": "literary_figure", "cnt": 1}]}, {"id": 39, "name": "Ikuho Amano", "pid": 84, "inst": "University of Nebraska Lincoln", "insts": ["Pennsylvania State University", "University of Nebraska Lincoln", "University of Nebraska-Lincoln"], "app": 7, "yr1": 2004, "yr2": 2024, "uyr": 7, "deg": 17, "roles": ["presenter"], "papers": [{"t": "Dandyism in Mishima Yukio’s Fiction and Persona", "y": 2004, "r": "presenter", "i": "Pennsylvania State University"}, {"t": "A Stalemate of Isms: The Uneasy Symbiosis of Naturalism and", "y": 2009, "r": "presenter", "i": "University of Nebraska Lincoln"}, {"t": "Obscure Desires of homo economicus: The Accursed Share in Indulgences by Iwano", "y": 2010, "r": "presenter", "i": "University of Nebraska Lincoln"}, {"t": "Overcoming the Defeat by Desire: Catastrophe and Libidinal Economy in", "y": 2012, "r": "presenter", "i": "University of Nebraska Lincoln"}, {"t": "Mercurial Capital: The Economy of Fecal Matter in Twentieth-Century Japanese Fiction", "y": 2015, "r": "presenter", "i": "University of Nebraska-Lincoln"}, {"t": "Decadent Imitatio: Tanizaki Jun’ichirō’s The Golden Death (1914)", "y": 2019, "r": "presenter", "i": "University of Nebraska-Lincoln"}, {"t": "Women in Waiting: From Domestication to Entrepreneurship in TV Commercials of Japanese Whisky", "y": 2024, "r": "presenter", "i": "University of Nebraska-Lincoln"}], "copanelists": [{"name": "Yoshihiro Yasuhara", "cnt": 3}, {"name": "Christopher Lowy", "cnt": 2}, {"name": "Devon A. Cahill", "cnt": 1}, {"name": "Devon Cahill", "cnt": 1}, {"name": "Gerry Yokota", "cnt": 1}, {"name": "Janice Yolanda Zehentbauer", "cnt": 1}, {"name": "Jonathan Abel", "cnt": 1}, {"name": "Jonathan E. Abel", "cnt": 1}, {"name": "Matthew Stanhope Mewhinney", "cnt": 1}, {"name": "Raechel Dumas", "cnt": 1}], "topics": [{"term": "Novel/Fiction", "cat": "genre", "cnt": 2}, {"term": "Body & Affect", "cat": "theme", "cnt": 1}, {"term": "Gender & Sexuality", "cat": "theme", "cnt": 1}, {"term": "Mishima Yukio", "cat": "literary_figure", "cnt": 1}, {"term": "Tanizaki Jun'ichirō", "cat": "literary_figure", "cnt": 1}]}, {"id": 40, "name": "Indra Levy", "pid": 2529, "inst": "Stanford University", "insts": ["Stanford University"], "app": 1, "yr1": 2008, "yr2": 2008, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Replacing Poetry with Translation: on the formation of modern Japanese", "y": 2008, "r": "presenter", "i": "Stanford University"}], "copanelists": [{"name": "Daniel D. Baird", "cnt": 1}], "topics": [{"term": "Modernity & Modernism", "cat": "theme", "cnt": 1}, {"term": "Poetry", "cat": "genre", "cnt": 1}, {"term": "Translation", "cat": "genre", "cnt": 1}, {"term": "Translation & World Lit", "cat": "theme", "cnt": 1}]}, {"id": 41, "name": "Janet A. Walker", "pid": 4641, "inst": "Rutgers University", "insts": ["Rutgers University"], "app": 1, "yr1": 2012, "yr2": 2012, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "A Japanese Woman in the Colonies: Shiga Naoya’s Character Oei in A Dark", "y": 2012, "r": "presenter", "i": "Rutgers University"}], "copanelists": [{"name": "Kimberly M. Chung", "cnt": 2}, {"name": "Wenjin Cui", "cnt": 1}], "topics": []}, {"id": 42, "name": "Janet Walker", "pid": 4641, "inst": "Rutgers University", "insts": ["Rutgers University"], "app": 3, "yr1": 1992, "yr2": 2014, "uyr": 3, "deg": 2, "roles": ["presenter"], "papers": [{"t": "The Japanese Discovery of Western-style Realistic Description in the 1880s: The Case of Shimei", "y": 1992, "r": "presenter", "i": "Rutgers University"}, {"t": "Van Gogh, Collector of Japanese Prints and Collector of Japanese Images: from Collection to Aesthetic Translation", "y": 2004, "r": "presenter", "i": "Rutgers University"}, {"t": "St. Petersburg in Tokyo: Futabatei Shimei’s Novel “Ukigumo” (Floating Clouds,", "y": 2014, "r": "presenter", "i": "Rutgers University"}], "copanelists": [{"name": "A. Owen Aldridge", "cnt": 1}, {"name": "John Dorsey", "cnt": 1}], "topics": [{"term": "Novel/Fiction", "cat": "genre", "cnt": 1}, {"term": "Space & Place", "cat": "theme", "cnt": 1}, {"term": "Translation", "cat": "genre", "cnt": 1}, {"term": "Translation & World Lit", "cat": "theme", "cnt": 1}]}, {"id": 43, "name": "Janice Brown", "pid": 429, "inst": "University of Colorado Boulder", "insts": ["University of Colorado Boulder"], "app": 1, "yr1": 2020, "yr2": 2020, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "Is Revolution the wind blowing north? Boris Savinkov and the construction of female voice in the poetry of", "y": 2020, "r": "presenter", "i": "University of Colorado Boulder"}], "copanelists": [{"name": "George Sipos", "cnt": 1}, {"name": "Sophia Sherry", "cnt": 1}], "topics": [{"term": "Gender & Sexuality", "cat": "theme", "cnt": 1}, {"term": "Poetry", "cat": "genre", "cnt": 1}, {"term": "Sound & Music", "cat": "theme", "cnt": 1}]}, {"id": 44, "name": "Janice Yolanda Zehentbauer", "pid": null, "inst": "Brock U", "insts": ["Brock U"], "app": 1, "yr1": 2009, "yr2": 2009, "uyr": 1, "deg": 8, "roles": ["presenter"], "papers": [{"t": "Heads and Tails: Kirino’s Out and Tabucchi’s The Missing Head of", "y": 2009, "r": "presenter", "i": "Brock U"}], "copanelists": [{"name": "Christopher Lowy", "cnt": 1}, {"name": "Devon A. Cahill", "cnt": 1}, {"name": "Ikuho Amano", "cnt": 1}, {"name": "Matthew Stanhope Mewhinney", "cnt": 1}, {"name": "Raechel L. Dumas", "cnt": 1}, {"name": "Satoko Kakihara", "cnt": 1}, {"name": "Yoshihiro Yasuhara", "cnt": 1}, {"name": "Young J. Yi", "cnt": 1}], "topics": [{"term": "Kirino Natsuo", "cat": "literary_figure", "cnt": 1}]}, {"id": 45, "name": "Jean Sébastien", "pid": null, "inst": "Collège de Maisonneuve", "insts": ["Collège de Maisonneuve"], "app": 1, "yr1": 2022, "yr2": 2022, "uyr": 1, "deg": 4, "roles": ["presenter"], "papers": [{"t": "Framing manga in Canada: the example of two Canadian publishers’ strategies (Udon and Lounak) chris reyns-chikuma, Unive", "y": 2022, "r": "presenter", "i": "Collège de Maisonneuve"}], "copanelists": [{"name": "Les Solitudes dans les cangas", "cnt": 1}, {"name": "Ryan Clement", "cnt": 1}, {"name": "Sylvain Rheault", "cnt": 1}, {"name": "Tsugumi (Mimi) Okabe", "cnt": 1}], "topics": [{"term": "Anime/Manga", "cat": "genre", "cnt": 1}]}, {"id": 46, "name": "Jing Tsu", "pid": 4509, "inst": "Rutgers University", "insts": ["Rutgers University"], "app": 1, "yr1": 2006, "yr2": 2006, "uyr": 1, "deg": 4, "roles": ["presenter"], "papers": [{"t": "Evolving and Revolving: Human, Humanism,", "y": 2006, "r": "presenter", "i": "Rutgers University"}], "copanelists": [{"name": "Enhua Zhang", "cnt": 1}, {"name": "Lanjun Xu", "cnt": 1}, {"name": "Liang Luo", "cnt": 1}, {"name": "Yoshihiro Yasuhara", "cnt": 1}], "topics": []}, {"id": 47, "name": "Joel Calahan", "pid": 656645, "inst": "University of Chicago", "insts": ["University of Chicago"], "app": 1, "yr1": 2015, "yr2": 2015, "uyr": 1, "deg": 5, "roles": ["presenter"], "papers": [{"t": "Historiography and the Problem of Language in De Sanctis’s Storia della letteratura italiana", "y": 2015, "r": "presenter", "i": "University of Chicago"}], "copanelists": [{"name": "David Kurnick", "cnt": 1}, {"name": "Jonah Siegel", "cnt": 1}, {"name": "Kate Holland", "cnt": 1}, {"name": "Number in the Novel", "cnt": 1}, {"name": "Yoon Sun Lee", "cnt": 1}], "topics": []}, {"id": 48, "name": "John Dorsey", "pid": 430741, "inst": "Rikkyo University, Tokyo", "insts": ["Rikkyo University, Tokyo"], "app": 1, "yr1": 1992, "yr2": 1992, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "Comparative Culture in Japan", "y": 1992, "r": "presenter", "i": "Rikkyo University, Tokyo"}], "copanelists": [{"name": "A. Owen Aldridge", "cnt": 1}, {"name": "Janet Walker", "cnt": 1}], "topics": [{"term": "Translation & World Lit", "cat": "theme", "cnt": 1}]}, {"id": 49, "name": "John Kim", "pid": 2167, "inst": "University of California, Riverside", "insts": ["University of California, Riverside"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 6, "roles": ["presenter"], "papers": [{"t": "", "y": 2018, "r": "presenter", "i": "University of California, Riverside"}], "copanelists": [{"name": "Gizem Arslan", "cnt": 1}, {"name": "Keijiro Suga", "cnt": 1}, {"name": "Madalina Meirosu", "cnt": 1}, {"name": "Suzuko Mousel Knott", "cnt": 1}, {"name": "Tomoko Slutsky", "cnt": 1}, {"name": "Victoria Young", "cnt": 1}], "topics": []}, {"id": 50, "name": "Jonah Siegel", "pid": 382710, "inst": "Rutgers University", "insts": ["Rutgers University"], "app": 1, "yr1": 2015, "yr2": 2015, "uyr": 1, "deg": 5, "roles": ["presenter"], "papers": [{"t": "Pater’s Houses: The Afterlives of an Image", "y": 2015, "r": "presenter", "i": "Rutgers University"}], "copanelists": [{"name": "David Kurnick", "cnt": 1}, {"name": "Joel Calahan", "cnt": 1}, {"name": "Kate Holland", "cnt": 1}, {"name": "Number in the Novel", "cnt": 1}, {"name": "Yoon Sun Lee", "cnt": 1}], "topics": [{"term": "Technology & Media", "cat": "theme", "cnt": 1}]}, {"id": 51, "name": "Jonathan Abel", "pid": 10, "inst": "Pennsylvania State University", "insts": ["Pennsylvania State University"], "app": 3, "yr1": 2011, "yr2": 2012, "uyr": 2, "deg": 9, "roles": ["presenter"], "papers": [{"t": "Philip Roth in Japan: How to Finally Ghetto-ize the Wandering", "y": 2011, "r": "presenter", "i": "Pennsylvania State University"}, {"t": "Karatani in 3D", "y": 2011, "r": "presenter", "i": "Pennsylvania State University"}, {"t": "The Poetics of Social Media: Twit Geiger Counter or Cultural Seismograph?", "y": 2012, "r": "presenter", "i": "Pennsylvania State University"}], "copanelists": [{"name": "Takushi Odagiri", "cnt": 2}, {"name": "Annette Vilslev", "cnt": 1}, {"name": "Gerry Yokota", "cnt": 1}, {"name": "Ikuho Amano", "cnt": 1}, {"name": "Jonathan E. Abel", "cnt": 1}, {"name": "Keiko Nakano", "cnt": 1}, {"name": "Shion Kono", "cnt": 1}, {"name": "William Bridges", "cnt": 1}, {"name": "William O. Gardner", "cnt": 1}], "topics": [{"term": "Digital/New Media", "cat": "genre", "cnt": 1}, {"term": "Poetry", "cat": "genre", "cnt": 1}, {"term": "Technology & Media", "cat": "theme", "cnt": 1}]}, {"id": 52, "name": "Jonathan E. Abel", "pid": 10, "inst": "Penn State University; Takushi Odagiri, Stanford University", "insts": ["Penn State University; Takushi Odagiri, Stanford University"], "app": 1, "yr1": 2012, "yr2": 2012, "uyr": 1, "deg": 5, "roles": ["presenter"], "papers": [{"t": "", "y": 2012, "r": "presenter", "i": "Penn State University; Takushi Odagiri, Stanford University"}], "copanelists": [{"name": "Gerry Yokota", "cnt": 1}, {"name": "Ikuho Amano", "cnt": 1}, {"name": "Jonathan Abel", "cnt": 1}, {"name": "Takushi Odagiri", "cnt": 1}, {"name": "William O. Gardner", "cnt": 1}], "topics": []}, {"id": 53, "name": "Julia González de Canales", "pid": 180672, "inst": "Universität Wien (University of Vienna)", "insts": ["Universität Wien (University of Vienna)"], "app": 1, "yr1": 2020, "yr2": 2020, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Correspondences between Paz Encina’s and Yasujiro Ozu’s Poetic Films", "y": 2020, "r": "presenter", "i": "Universität Wien (University of Vienna)"}], "copanelists": [{"name": "Karen Thornber", "cnt": 1}], "topics": [{"term": "Ozu Yasujirō", "cat": "literary_figure", "cnt": 1}]}, {"id": 54, "name": "Karen Thornber", "pid": 4426, "inst": "Harvard University", "insts": ["Harvard University"], "app": 2, "yr1": 2015, "yr2": 2020, "uyr": 2, "deg": 2, "roles": ["presenter"], "papers": [{"t": "Defying Expectations: Gendered Bodies as Patients and Practitioners in Egyptian and Japanese Literatures", "y": 2015, "r": "presenter", "i": "Harvard University"}, {"t": "Transculturating Modernism in East Asia and Beyond - Reconceptualizing “the West” and “the Rest”", "y": 2020, "r": "presenter", "i": "Harvard University"}], "copanelists": [{"name": "Giovanni Borriello", "cnt": 1}, {"name": "Julia González de Canales", "cnt": 1}], "topics": [{"term": "Modernity & Modernism", "cat": "theme", "cnt": 1}]}, {"id": 55, "name": "Kate Holland", "pid": 674693, "inst": "University of Toronto", "insts": ["University of Toronto"], "app": 1, "yr1": 2015, "yr2": 2015, "uyr": 1, "deg": 5, "roles": ["presenter"], "papers": [{"t": "The Novel in the Longue-Durée: Veselovsky and Bakhtin’s Competing Origin Stories", "y": 2015, "r": "presenter", "i": "University of Toronto"}], "copanelists": [{"name": "David Kurnick", "cnt": 1}, {"name": "Joel Calahan", "cnt": 1}, {"name": "Jonah Siegel", "cnt": 1}, {"name": "Number in the Novel", "cnt": 1}, {"name": "Yoon Sun Lee", "cnt": 1}], "topics": [{"term": "Novel/Fiction", "cat": "genre", "cnt": 1}]}, {"id": 56, "name": "Keijiro Suga", "pid": 504900, "inst": "Meiji University", "insts": ["Meiji University"], "app": 4, "yr1": 2015, "yr2": 2018, "uyr": 3, "deg": 23, "roles": ["presenter"], "papers": [{"t": "Looking at Photographs After 11 March 2011", "y": 2015, "r": "presenter", "i": "Meiji University"}, {"t": "", "y": 2016, "r": "presenter", "i": "Meiji University"}, {"t": "Radiation Crisis", "y": 2016, "r": "presenter", "i": "Meiji University"}, {"t": "Walking Cities Walking", "y": 2018, "r": "presenter", "i": "Meiji University"}], "copanelists": [{"name": "Masami Yuki", "cnt": 4}, {"name": "Alex Bates", "cnt": 2}, {"name": "Christine Marran", "cnt": 2}, {"name": "Douglas Slaymaker", "cnt": 2}, {"name": "Hisaaki Wake", "cnt": 2}, {"name": "Keijiro Suga", "cnt": 2}, {"name": "Keitaro Morita", "cnt": 2}, {"name": "Livia Monnet", "cnt": 2}, {"name": "Margherita Long", "cnt": 2}, {"name": "Marjorie Rhine", "cnt": 2}], "topics": []}, {"id": 57, "name": "Keiko Nakano", "pid": 254135, "inst": "John Carroll U", "insts": ["John Carroll U"], "app": 2, "yr1": 2010, "yr2": 2011, "uyr": 2, "deg": 5, "roles": ["presenter"], "papers": [{"t": "Ekkyoo (Transgressing the Border) Writer in Japan", "y": 2010, "r": "presenter", "i": "John Carroll U"}, {"t": "Mother Tongue and Other Tongue: Strategies of Linguistic", "y": 2011, "r": "presenter", "i": "JCU"}], "copanelists": [{"name": "Annette Vilslev", "cnt": 1}, {"name": "Jonathan Abel", "cnt": 1}, {"name": "Shion Kono", "cnt": 1}, {"name": "Takushi Odagiri", "cnt": 1}, {"name": "William Bridges", "cnt": 1}], "topics": []}, {"id": 58, "name": "Keita Hatooka", "pid": 551142, "inst": "Meiji University", "insts": ["Meiji University"], "app": 1, "yr1": 2017, "yr2": 2017, "uyr": 1, "deg": 5, "roles": ["presenter"], "papers": [{"t": "Naturally Selected by Humans: Furukawa Hideo and Jonathan Safran Foer", "y": 2017, "r": "presenter", "i": "Meiji University"}], "copanelists": [{"name": "Akiko Takenaka", "cnt": 1}, {"name": "Douglas Slaymaker", "cnt": 1}, {"name": "Hisaaki Wake", "cnt": 1}, {"name": "Rei Magosaki", "cnt": 1}, {"name": "Toshiya Ueno", "cnt": 1}], "topics": [{"term": "Furukawa Hideo", "cat": "literary_figure", "cnt": 1}]}, {"id": 59, "name": "Keitaro Morita", "pid": 636385, "inst": "", "insts": [], "app": 1, "yr1": 2016, "yr2": 2016, "uyr": 1, "deg": 12, "roles": ["presenter"], "papers": [{"t": "Post-Fukushima Japanese Environmental Literature: Radiation, Nuclear Utopia, and", "y": 2016, "r": "presenter", "i": "Independent Scholar"}], "copanelists": [{"name": "Keijiro Suga", "cnt": 2}, {"name": "Masami Yuki", "cnt": 2}, {"name": "Alex Bates", "cnt": 1}, {"name": "Christine Marran", "cnt": 1}, {"name": "Douglas Slaymaker", "cnt": 1}, {"name": "Hisaaki Wake", "cnt": 1}, {"name": "Livia Monnet", "cnt": 1}, {"name": "Margherita Long", "cnt": 1}, {"name": "Marjorie Rhine", "cnt": 1}, {"name": "Rei Magosaki", "cnt": 1}], "topics": [{"term": "Contemporary", "cat": "period", "cnt": 1}, {"term": "Nature & Environment", "cat": "theme", "cnt": 1}]}, {"id": 60, "name": "Kevin Singleton", "pid": 4081, "inst": "Stanford University", "insts": ["Stanford University"], "app": 1, "yr1": 2014, "yr2": 2014, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "The Science Fictional Literary History of Japanese Science Fiction", "y": 2014, "r": "presenter", "i": "Stanford University"}], "copanelists": [{"name": "Mingwei Song", "cnt": 1}], "topics": [{"term": "Novel/Fiction", "cat": "genre", "cnt": 1}]}, {"id": 61, "name": "Kimberly M. Chung", "pid": 711, "inst": "Korea Institute, Harvard University", "insts": ["Korea Institute, Harvard University"], "app": 2, "yr1": 2012, "yr2": 2012, "uyr": 1, "deg": 4, "roles": ["presenter"], "papers": [{"t": "", "y": 2012, "r": "presenter", "i": "Korea Institute, Harvard University"}, {"t": "Affective Politics and Proletarian Aesthetics During 1920s Colonial Korea", "y": 2012, "r": "presenter", "i": "Korea Institute, Harvard University"}], "copanelists": [{"name": "Janet A. Walker", "cnt": 2}, {"name": "Kimberly M. Chung", "cnt": 2}, {"name": "Wenjin Cui", "cnt": 2}], "topics": [{"term": "Empire & Colonialism", "cat": "theme", "cnt": 1}]}, {"id": 62, "name": "Kota Inoue", "pid": 1858, "inst": "Washington State University", "insts": ["Washington State University"], "app": 1, "yr1": 2016, "yr2": 2016, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Nationalism and Money in Swallowtail Butterfly", "y": 2016, "r": "presenter", "i": "Washington State University"}], "copanelists": [{"name": "Mitsuhiro Yoshimoto", "cnt": 1}], "topics": [{"term": "Nation & Identity", "cat": "theme", "cnt": 1}]}, {"id": 63, "name": "Kumiko Saito", "pid": 29071, "inst": "Clemson University", "insts": ["Clemson University"], "app": 1, "yr1": 2019, "yr2": 2019, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "Mapping the History of the Future: Politics of Enlightenment in Translated Works of Science Fiction in", "y": 2019, "r": "presenter", "i": "Clemson University"}], "copanelists": [{"name": "Matthew Mewhinney", "cnt": 2}, {"name": "Luciana Sanga", "cnt": 1}], "topics": [{"term": "Novel/Fiction", "cat": "genre", "cnt": 1}, {"term": "Translation", "cat": "genre", "cnt": 1}]}, {"id": 64, "name": "Kyoko Omori", "pid": 3328, "inst": "Hamilton College", "insts": ["Hamilton College"], "app": 1, "yr1": 2014, "yr2": 2014, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Reinvesting Nuclear Capital: Hiroshima, Cinema, and Global Circulation of", "y": 2014, "r": "presenter", "i": "Hamilton College"}], "copanelists": [{"name": "Yu Min Claire Chen", "cnt": 1}], "topics": [{"term": "Film/Cinema", "cat": "genre", "cnt": 1}, {"term": "Nature & Environment", "cat": "theme", "cnt": 1}, {"term": "Translation & World Lit", "cat": "theme", "cnt": 1}, {"term": "War & Memory", "cat": "theme", "cnt": 1}]}, {"id": 65, "name": "Lanjun Xu", "pid": 4877, "inst": "Princeton University", "insts": ["Princeton University"], "app": 1, "yr1": 2006, "yr2": 2006, "uyr": 1, "deg": 4, "roles": ["presenter"], "papers": [{"t": "Revolution and Narrative Politics in the 1940s:", "y": 2006, "r": "presenter", "i": "Princeton University"}], "copanelists": [{"name": "Enhua Zhang", "cnt": 1}, {"name": "Jing Tsu", "cnt": 1}, {"name": "Liang Luo", "cnt": 1}, {"name": "Yoshihiro Yasuhara", "cnt": 1}], "topics": []}, {"id": 66, "name": "Les Solitudes dans les cangas", "pid": null, "inst": "", "insts": [], "app": 1, "yr1": 2022, "yr2": 2022, "uyr": 1, "deg": 4, "roles": ["presenter"], "papers": [{"t": "", "y": 2022, "r": "presenter", "i": ""}], "copanelists": [{"name": "Jean Sébastien", "cnt": 1}, {"name": "Ryan Clement", "cnt": 1}, {"name": "Sylvain Rheault", "cnt": 1}, {"name": "Tsugumi (Mimi) Okabe", "cnt": 1}], "topics": []}, {"id": 67, "name": "Liang Luo", "pid": 2682, "inst": "Harvard University", "insts": ["Harvard University", "University of Kentucky"], "app": 2, "yr1": 2006, "yr2": 2016, "uyr": 2, "deg": 6, "roles": ["presenter"], "papers": [{"t": "The Opera Question in Modern Chinese", "y": 2006, "r": "presenter", "i": "Harvard University"}, {"t": "From Folk Tales to Popular Cultures--Centered on The Legend of the White Snake", "y": 2016, "r": "presenter", "i": "University of Kentucky"}], "copanelists": [{"name": "Daisy Yan Du", "cnt": 1}, {"name": "Enhua Zhang", "cnt": 1}, {"name": "Jing Tsu", "cnt": 1}, {"name": "Lanjun Xu", "cnt": 1}, {"name": "Sean Macdonald", "cnt": 1}, {"name": "Yoshihiro Yasuhara", "cnt": 1}], "topics": [{"term": "Modernity & Modernism", "cat": "theme", "cnt": 1}]}, {"id": 68, "name": "Linda Galvane", "pid": 1330, "inst": "University of Kansas", "insts": ["University of Kansas"], "app": 1, "yr1": 2024, "yr2": 2024, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Beyond Utility: Toilet Paper Literature and Marketing Strategies within Japan and Across Borders", "y": 2024, "r": "presenter", "i": "University of Kansas"}], "copanelists": [{"name": "Yoshihiro Yasuhara", "cnt": 1}], "topics": []}, {"id": 69, "name": "Livia Monnet", "pid": 3033, "inst": "University of Montreal", "insts": ["University of Montreal"], "app": 1, "yr1": 2016, "yr2": 2016, "uyr": 1, "deg": 12, "roles": ["presenter"], "papers": [{"t": "The Nuclear Uncanny and the Toxic Image in the TV Anime Series Coppelion (2013)", "y": 2016, "r": "presenter", "i": "University of Montreal"}], "copanelists": [{"name": "Keijiro Suga", "cnt": 2}, {"name": "Masami Yuki", "cnt": 2}, {"name": "Alex Bates", "cnt": 1}, {"name": "Christine Marran", "cnt": 1}, {"name": "Douglas Slaymaker", "cnt": 1}, {"name": "Hisaaki Wake", "cnt": 1}, {"name": "Keitaro Morita", "cnt": 1}, {"name": "Margherita Long", "cnt": 1}, {"name": "Marjorie Rhine", "cnt": 1}, {"name": "Rei Magosaki", "cnt": 1}], "topics": [{"term": "Anime/Manga", "cat": "genre", "cnt": 1}, {"term": "Nature & Environment", "cat": "theme", "cnt": 1}, {"term": "Technology & Media", "cat": "theme", "cnt": 1}]}, {"id": 70, "name": "Luciana Sanga", "pid": 11968, "inst": "Stanford University", "insts": ["Stanford University"], "app": 1, "yr1": 2019, "yr2": 2019, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "", "y": 2019, "r": "presenter", "i": "Stanford University"}], "copanelists": [{"name": "Matthew Mewhinney", "cnt": 2}, {"name": "Kumiko Saito", "cnt": 1}], "topics": []}, {"id": 71, "name": "Madalina Meirosu", "pid": null, "inst": "Swarthmore College", "insts": ["Swarthmore College"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 6, "roles": ["presenter"], "papers": [{"t": "Womanhandling Language: Feminist Translational Identity in Yoko Tawada’s Überseezungen", "y": 2018, "r": "presenter", "i": "Swarthmore College"}], "copanelists": [{"name": "Gizem Arslan", "cnt": 1}, {"name": "John Kim", "cnt": 1}, {"name": "Keijiro Suga", "cnt": 1}, {"name": "Suzuko Mousel Knott", "cnt": 1}, {"name": "Tomoko Slutsky", "cnt": 1}, {"name": "Victoria Young", "cnt": 1}], "topics": [{"term": "Gender & Sexuality", "cat": "theme", "cnt": 1}, {"term": "Nation & Identity", "cat": "theme", "cnt": 1}, {"term": "Tawada Yōko", "cat": "literary_figure", "cnt": 1}]}, {"id": 72, "name": "Makiko Mori", "pid": 3057, "inst": "Auburn University", "insts": ["Auburn University"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "Late Qing Revolution and Emotive Invocation of the Past: On Justification of Violence and Racial Rage", "y": 2018, "r": "presenter", "i": "Auburn University"}], "copanelists": [{"name": "Hannah Airriess", "cnt": 1}, {"name": "Shengqing Wu", "cnt": 1}], "topics": [{"term": "Race & Ethnicity", "cat": "theme", "cnt": 1}, {"term": "War & Memory", "cat": "theme", "cnt": 1}]}, {"id": 73, "name": "Margherita Long", "pid": 2651, "inst": "University of California, Irvine", "insts": ["University of California, Irvine"], "app": 1, "yr1": 2016, "yr2": 2016, "uyr": 1, "deg": 12, "roles": ["presenter"], "papers": [{"t": "Tone Deaf: On Ōe’s Ecocritical Remainder", "y": 2016, "r": "presenter", "i": "University of California, Irvine"}], "copanelists": [{"name": "Keijiro Suga", "cnt": 2}, {"name": "Masami Yuki", "cnt": 2}, {"name": "Alex Bates", "cnt": 1}, {"name": "Christine Marran", "cnt": 1}, {"name": "Douglas Slaymaker", "cnt": 1}, {"name": "Hisaaki Wake", "cnt": 1}, {"name": "Keitaro Morita", "cnt": 1}, {"name": "Livia Monnet", "cnt": 1}, {"name": "Marjorie Rhine", "cnt": 1}, {"name": "Rei Magosaki", "cnt": 1}], "topics": [{"term": "Ōe Kenzaburō", "cat": "literary_figure", "cnt": 1}]}, {"id": 74, "name": "Marjorie Rhine", "pid": 3657, "inst": "University of Wisconsin-Madison", "insts": ["University of Wisconsin-Madison"], "app": 1, "yr1": 2016, "yr2": 2016, "uyr": 1, "deg": 12, "roles": ["presenter"], "papers": [{"t": "The Tale of Genji.", "y": 2016, "r": "presenter", "i": "University of Wisconsin-Madison"}], "copanelists": [{"name": "Keijiro Suga", "cnt": 2}, {"name": "Masami Yuki", "cnt": 2}, {"name": "Alex Bates", "cnt": 1}, {"name": "Christine Marran", "cnt": 1}, {"name": "Douglas Slaymaker", "cnt": 1}, {"name": "Hisaaki Wake", "cnt": 1}, {"name": "Keitaro Morita", "cnt": 1}, {"name": "Livia Monnet", "cnt": 1}, {"name": "Margherita Long", "cnt": 1}, {"name": "Rei Magosaki", "cnt": 1}], "topics": [{"term": "Genji monogatari", "cat": "literary_figure", "cnt": 1}]}, {"id": 75, "name": "Masami Yuki", "pid": 168203, "inst": "Kanazawa University", "insts": ["Kanazawa University"], "app": 3, "yr1": 2015, "yr2": 2016, "uyr": 2, "deg": 16, "roles": ["presenter"], "papers": [{"t": "From “Ecocriticism in Japan” to “Japanese Ecocriticism”", "y": 2015, "r": "presenter", "i": "Kanazawa University"}, {"t": "", "y": 2016, "r": "presenter", "i": "Kanazawa University"}, {"t": "American Impact on Japanese Literary Environmentalism", "y": 2016, "r": "presenter", "i": "Kanazawa University"}], "copanelists": [{"name": "Keijiro Suga", "cnt": 4}, {"name": "Alex Bates", "cnt": 3}, {"name": "Christine Marran", "cnt": 2}, {"name": "Douglas Slaymaker", "cnt": 2}, {"name": "Hisaaki Wake", "cnt": 2}, {"name": "Keitaro Morita", "cnt": 2}, {"name": "Livia Monnet", "cnt": 2}, {"name": "Margherita Long", "cnt": 2}, {"name": "Marjorie Rhine", "cnt": 2}, {"name": "Masami Yuki", "cnt": 2}], "topics": [{"term": "Nature & Environment", "cat": "theme", "cnt": 1}]}, {"id": 76, "name": "Matthew Mewhinney", "pid": 2945, "inst": "Boston University", "insts": ["Boston University"], "app": 2, "yr1": 2019, "yr2": 2019, "uyr": 1, "deg": 4, "roles": ["presenter"], "papers": [{"t": "", "y": 2019, "r": "presenter", "i": "Boston University"}, {"t": "Toward a Theory of the Global: Intertextuality in the Works of Natsume Sōseki", "y": 2019, "r": "presenter", "i": "Boston University"}], "copanelists": [{"name": "Kumiko Saito", "cnt": 2}, {"name": "Luciana Sanga", "cnt": 2}, {"name": "Matthew Mewhinney", "cnt": 2}], "topics": [{"term": "Natsume Sōseki", "cat": "literary_figure", "cnt": 1}, {"term": "Translation & World Lit", "cat": "theme", "cnt": 1}]}, {"id": 77, "name": "Matthew Stanhope Mewhinney", "pid": 2945, "inst": "University of California, Santa Barbara", "insts": ["University of California, Santa Barbara"], "app": 1, "yr1": 2009, "yr2": 2009, "uyr": 1, "deg": 8, "roles": ["presenter"], "papers": [{"t": "Ambivalent Japanese Modernity in Taiwanese Narratives", "y": 2009, "r": "presenter", "i": "University of California, Santa Barbara"}], "copanelists": [{"name": "Christopher Lowy", "cnt": 1}, {"name": "Devon A. Cahill", "cnt": 1}, {"name": "Ikuho Amano", "cnt": 1}, {"name": "Janice Yolanda Zehentbauer", "cnt": 1}, {"name": "Raechel L. Dumas", "cnt": 1}, {"name": "Satoko Kakihara", "cnt": 1}, {"name": "Yoshihiro Yasuhara", "cnt": 1}, {"name": "Young J. Yi", "cnt": 1}], "topics": [{"term": "Modernity & Modernism", "cat": "theme", "cnt": 1}]}, {"id": 78, "name": "Mayumi Toyosato", "pid": null, "inst": "Sapporo University", "insts": ["Sapporo University"], "app": 1, "yr1": 2015, "yr2": 2015, "uyr": 1, "deg": 3, "roles": ["presenter"], "papers": [{"t": "The Practice of the World", "y": 2015, "r": "presenter", "i": "Sapporo University"}], "copanelists": [{"name": "Alex Bates", "cnt": 1}, {"name": "Daisuke Higuchi", "cnt": 1}, {"name": "Masami Yuki", "cnt": 1}], "topics": []}, {"id": 79, "name": "Michelle Ho", "pid": 171670, "inst": "Stony Brook University", "insts": ["Stony Brook University", "National University of Singapore"], "app": 2, "yr1": 2016, "yr2": 2022, "uyr": 2, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Consuming Female Masculinity: Affective Labor in Japan’s Drag Cafes", "y": 2016, "r": "presenter", "i": "Stony Brook University"}, {"t": "Queer and the Material: Innovating Gender and Sexual Cultures in Late Capitalist Tokyo", "y": 2022, "r": "presenter", "i": "National University of Singapore"}], "copanelists": [{"name": "Amanda Robinson", "cnt": 1}], "topics": [{"term": "Gender & Sexuality", "cat": "theme", "cnt": 2}, {"term": "Space & Place", "cat": "theme", "cnt": 1}]}, {"id": 80, "name": "Mingwei Song", "pid": 4150, "inst": "Wellesley College", "insts": ["Wellesley College"], "app": 1, "yr1": 2014, "yr2": 2014, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Representations of the Post-Humanity in the New Wave of Chinese Science Fiction", "y": 2014, "r": "presenter", "i": "Wellesley College"}], "copanelists": [{"name": "Kevin Singleton", "cnt": 1}], "topics": [{"term": "Novel/Fiction", "cat": "genre", "cnt": 1}]}, {"id": 81, "name": "Mitsuhiro Yoshimoto", "pid": 4985, "inst": "Waseda University", "insts": ["Waseda University"], "app": 1, "yr1": 2016, "yr2": 2016, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Otaku and the Cultural Logic of Neoliberalism", "y": 2016, "r": "presenter", "i": "Waseda University"}], "copanelists": [{"name": "Kota Inoue", "cnt": 1}], "topics": [{"term": "Anime/Manga", "cat": "genre", "cnt": 1}]}, {"id": 82, "name": "Nobuko Toyosawa", "pid": 4477, "inst": "Akademie věd České republiky (Czech Academy of Sciences)", "insts": ["Akademie věd České republiky (Czech Academy of Sciences)"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "Imagining Japan’s Asia: Miyake Setsurei, a Philosopher of the Empire", "y": 2018, "r": "presenter", "i": "Akademie věd České republiky (Czech Academy of Sciences)"}], "copanelists": [{"name": "Faye Kleeman", "cnt": 1}, {"name": "Satoru Hashimoto", "cnt": 1}], "topics": [{"term": "Empire & Colonialism", "cat": "theme", "cnt": 1}]}, {"id": 83, "name": "Nobuko Yamasaki", "pid": 4903, "inst": "Lehigh University", "insts": ["Lehigh University"], "app": 1, "yr1": 2022, "yr2": 2022, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Unethical Metamorphism of Yamaguchi Yoshiko/Ri Kōran/Li Xianglan", "y": 2022, "r": "presenter", "i": "Lehigh University"}], "copanelists": [{"name": "Christine Marran", "cnt": 1}], "topics": []}, {"id": 84, "name": "Number in the Novel", "pid": null, "inst": "or, Do Novels Count? (Group 2)", "insts": ["or, Do Novels Count? (Group 2)"], "app": 1, "yr1": 2015, "yr2": 2015, "uyr": 1, "deg": 5, "roles": ["presenter"], "papers": [{"t": "", "y": 2015, "r": "presenter", "i": "or, Do Novels Count? (Group 2)"}], "copanelists": [{"name": "David Kurnick", "cnt": 1}, {"name": "Joel Calahan", "cnt": 1}, {"name": "Jonah Siegel", "cnt": 1}, {"name": "Kate Holland", "cnt": 1}, {"name": "Yoon Sun Lee", "cnt": 1}], "topics": []}, {"id": 85, "name": "Pu Wang", "pid": 4679, "inst": "Brandeis University", "insts": ["Brandeis University"], "app": 1, "yr1": 2016, "yr2": 2016, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Antiquity in Socialist China", "y": 2016, "r": "presenter", "i": "Brandeis University"}], "copanelists": [{"name": "Satoru Hashimoto", "cnt": 2}], "topics": []}, {"id": 86, "name": "Raechel Dumas", "pid": 1028, "inst": "UC Boulder", "insts": ["UC Boulder"], "app": 1, "yr1": 2010, "yr2": 2010, "uyr": 1, "deg": 6, "roles": ["presenter"], "papers": [{"t": "Intersecting Injustices: Rethinking the Borders of Victimhood in Kuroshima Denji’s", "y": 2010, "r": "presenter", "i": "UC Boulder"}], "copanelists": [{"name": "Christopher Lowy", "cnt": 1}, {"name": "Devon Cahill", "cnt": 1}, {"name": "Ikuho Amano", "cnt": 1}, {"name": "Reiko Tachibana", "cnt": 1}, {"name": "Yoshihiro Yasuhara", "cnt": 1}, {"name": "Yumi Tanaka", "cnt": 1}], "topics": []}, {"id": 87, "name": "Raechel L. Dumas", "pid": 1028, "inst": "Florida State University", "insts": ["Florida State University"], "app": 1, "yr1": 2009, "yr2": 2009, "uyr": 1, "deg": 8, "roles": ["presenter"], "papers": [{"t": "Burai-ha Renewed: Re-thinking Postwar Japaneseness Through Abe Kobo’s", "y": 2009, "r": "presenter", "i": "Florida State University"}], "copanelists": [{"name": "Christopher Lowy", "cnt": 1}, {"name": "Devon A. Cahill", "cnt": 1}, {"name": "Ikuho Amano", "cnt": 1}, {"name": "Janice Yolanda Zehentbauer", "cnt": 1}, {"name": "Matthew Stanhope Mewhinney", "cnt": 1}, {"name": "Satoko Kakihara", "cnt": 1}, {"name": "Yoshihiro Yasuhara", "cnt": 1}, {"name": "Young J. Yi", "cnt": 1}], "topics": [{"term": "Abe Kōbō", "cat": "literary_figure", "cnt": 1}, {"term": "Nation & Identity", "cat": "theme", "cnt": 1}, {"term": "Postwar", "cat": "period", "cnt": 1}]}, {"id": 88, "name": "Rei Magosaki", "pid": 2730, "inst": "Chapman University", "insts": ["Chapman University"], "app": 3, "yr1": 2016, "yr2": 2024, "uyr": 3, "deg": 14, "roles": ["presenter"], "papers": [{"t": "Creative Reconstructions:  Hiromi Kawakami’s Kamisama 2011 and Timothy Morton’s", "y": 2016, "r": "presenter", "i": "Chapman University"}, {"t": "Japanese Narrative Fiction", "y": 2017, "r": "presenter", "i": "Chapman University"}, {"t": "The Desert Biosphere in Brandon Shimoda’s Hydra Medusa (2023)", "y": 2024, "r": "presenter", "i": "Chapman University"}], "copanelists": [{"name": "Douglas Slaymaker", "cnt": 2}, {"name": "Hisaaki Wake", "cnt": 2}, {"name": "Keijiro Suga", "cnt": 2}, {"name": "Masami Yuki", "cnt": 2}, {"name": "Toshiya Ueno", "cnt": 2}, {"name": "Akiko Takenaka", "cnt": 1}, {"name": "Alex Bates", "cnt": 1}, {"name": "Christine Marran", "cnt": 1}, {"name": "Keita Hatooka", "cnt": 1}, {"name": "Keitaro Morita", "cnt": 1}], "topics": [{"term": "Novel/Fiction", "cat": "genre", "cnt": 1}]}, {"id": 89, "name": "Reiko Abe Auestad", "pid": 6204, "inst": "Universitetet i Oslo (University of Oslo)", "insts": ["Universitetet i Oslo (University of Oslo)"], "app": 1, "yr1": 2017, "yr2": 2017, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "Emotional Politics in Meiji-Taishô Japan, Natsume Sôseki (1867-1916) and Shiga Naoya", "y": 2017, "r": "presenter", "i": "Universitetet i Oslo (University of Oslo)"}], "copanelists": [{"name": "Arthur Mitchell", "cnt": 1}, {"name": "Sarah Frederick", "cnt": 1}], "topics": [{"term": "Meiji/Taishō", "cat": "period", "cnt": 1}, {"term": "Natsume Sōseki", "cat": "literary_figure", "cnt": 1}]}, {"id": 90, "name": "Reiko Tachibana", "pid": 4316, "inst": "Pennsylvania State University", "insts": ["Pennsylvania State University"], "app": 5, "yr1": 2008, "yr2": 2014, "uyr": 5, "deg": 7, "roles": ["presenter"], "papers": [{"t": "Diasporic Writers and Landscapes of Japan", "y": 2008, "r": "presenter", "i": "Pennsylvania State University"}, {"t": "Heterogeneity in Contemporary Japanese Literature", "y": 2010, "r": "presenter", "i": "Pennsylvania State University"}, {"t": "Exophonic Writings of Japan: Stepping Outside of Mother", "y": 2011, "r": "presenter", "i": "Pennsylvania State University"}, {"t": "Nikkei Brazilians: A Diasporic Journey between Japan and Brazil", "y": 2012, "r": "presenter", "i": "Pennsylvania State University"}, {"t": "Transnational Writers of Japan: Living in Zwishenraum", "y": 2014, "r": "presenter", "i": "Pennsylvania State University"}], "copanelists": [{"name": "Yoshihiro Yasuhara", "cnt": 2}, {"name": "Christopher Lowy", "cnt": 1}, {"name": "Devon Cahill", "cnt": 1}, {"name": "Ikuho Amano", "cnt": 1}, {"name": "Raechel Dumas", "cnt": 1}, {"name": "William Bridges", "cnt": 1}, {"name": "Yumi Tanaka", "cnt": 1}], "topics": [{"term": "Contemporary", "cat": "period", "cnt": 1}, {"term": "Translation & World Lit", "cat": "theme", "cnt": 1}]}, {"id": 91, "name": "Richard Iadonisi", "pid": 1827, "inst": "Grand Valley State University", "insts": ["Grand Valley State University"], "app": 1, "yr1": 2004, "yr2": 2004, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Violent Haiku:  Richard Wright and the ‘Whatness’ of Race", "y": 2004, "r": "presenter", "i": "Grand Valley State University"}], "copanelists": [{"name": "Tamara H. Bentley", "cnt": 1}], "topics": [{"term": "Poetry", "cat": "genre", "cnt": 1}, {"term": "Race & Ethnicity", "cat": "theme", "cnt": 1}]}, {"id": 92, "name": "Ryan Clement", "pid": 124233, "inst": "University of Winnipeg", "insts": ["University of Winnipeg"], "app": 1, "yr1": 2022, "yr2": 2022, "uyr": 1, "deg": 4, "roles": ["presenter"], "papers": [{"t": "Is “Can-ga” the Next Scott Pilgrim?: How Canada can draw on Japanese manga and its own diverse communities to celebrate ", "y": 2022, "r": "presenter", "i": "University of Winnipeg"}], "copanelists": [{"name": "Jean Sébastien", "cnt": 1}, {"name": "Les Solitudes dans les cangas", "cnt": 1}, {"name": "Sylvain Rheault", "cnt": 1}, {"name": "Tsugumi (Mimi) Okabe", "cnt": 1}], "topics": [{"term": "Anime/Manga", "cat": "genre", "cnt": 1}]}, {"id": 93, "name": "Sabrina Jaromin", "pid": null, "inst": "Northwestern University", "insts": ["Northwestern University"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 8, "roles": ["presenter"], "papers": [{"t": "Between Nutrition and Appropriation. The Poetics of Food in Yoko Tawada", "y": 2018, "r": "presenter", "i": "Northwestern University"}], "copanelists": [{"name": "Annegret Marten", "cnt": 1}, {"name": "Bettina  Brandt", "cnt": 1}, {"name": "Brett de Bary", "cnt": 1}, {"name": "Dan Fujiwara", "cnt": 1}, {"name": "Douglas Slaymaker", "cnt": 1}, {"name": "Hiltrud Arens", "cnt": 1}, {"name": "Sigrid Weigel", "cnt": 1}, {"name": "Tingting Hui", "cnt": 1}], "topics": [{"term": "Food & Material Culture", "cat": "theme", "cnt": 1}, {"term": "Poetry", "cat": "genre", "cnt": 1}, {"term": "Tawada Yōko", "cat": "literary_figure", "cnt": 1}]}, {"id": 94, "name": "Sarah Frederick", "pid": 1268, "inst": "Boston University", "insts": ["Boston University"], "app": 1, "yr1": 2017, "yr2": 2017, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "The Emotional as Literary Style: Bibun and Yoshiya Nobuko", "y": 2017, "r": "presenter", "i": "Boston University"}], "copanelists": [{"name": "Arthur Mitchell", "cnt": 1}, {"name": "Reiko Abe Auestad", "cnt": 1}], "topics": []}, {"id": 95, "name": "Satoko Kakihara", "pid": 2023, "inst": "University of California, San Diego", "insts": ["University of California, San Diego"], "app": 3, "yr1": 2009, "yr2": 2011, "uyr": 3, "deg": 8, "roles": ["presenter"], "papers": [{"t": "Portrayals of Women in Transition by Mishima and Wharton", "y": 2009, "r": "presenter", "i": "University of California, San Diego"}, {"t": "Need and Desire for Kinship in Transnational Japanese Immigrant Communities", "y": 2010, "r": "presenter", "i": "University of California, San Diego"}, {"t": "Hiroshima Timespaces: Trauma and Paralysis in Resnais and", "y": 2011, "r": "presenter", "i": "University of California, San Diego"}], "copanelists": [{"name": "Christopher Lowy", "cnt": 1}, {"name": "Devon A. Cahill", "cnt": 1}, {"name": "Ikuho Amano", "cnt": 1}, {"name": "Janice Yolanda Zehentbauer", "cnt": 1}, {"name": "Matthew Stanhope Mewhinney", "cnt": 1}, {"name": "Raechel L. Dumas", "cnt": 1}, {"name": "Yoshihiro Yasuhara", "cnt": 1}, {"name": "Young J. Yi", "cnt": 1}], "topics": [{"term": "Gender & Sexuality", "cat": "theme", "cnt": 1}, {"term": "Mishima Yukio", "cat": "literary_figure", "cnt": 1}, {"term": "Translation & World Lit", "cat": "theme", "cnt": 1}, {"term": "War & Memory", "cat": "theme", "cnt": 1}]}, {"id": 96, "name": "Satoru Hashimoto", "pid": 1606, "inst": "University of Maryland", "insts": ["University of Maryland", "University of Maryland, College Park", "Johns Hopkins University"], "app": 4, "yr1": 2016, "yr2": 2026, "uyr": 3, "deg": 5, "roles": ["presenter"], "papers": [{"t": "", "y": 2016, "r": "presenter", "i": "University of Maryland"}, {"t": "", "y": 2016, "r": "presenter", "i": "University of Maryland"}, {"t": "Asia as Supplement: Zhou Zuoren’s Critical Engagement with Japanese Discourse on “East Asia”", "y": 2018, "r": "presenter", "i": "University of Maryland, College Park"}, {"t": "Another Beginning of Comparative Literature in Postwar East Asia", "y": 2026, "r": "presenter", "i": "Johns Hopkins University"}], "copanelists": [{"name": "Pu Wang", "cnt": 2}, {"name": "Satoru Hashimoto", "cnt": 2}, {"name": "Faye Kleeman", "cnt": 1}, {"name": "Nobuko Toyosawa", "cnt": 1}], "topics": [{"term": "Postwar", "cat": "period", "cnt": 1}, {"term": "Translation & World Lit", "cat": "theme", "cnt": 1}]}, {"id": 97, "name": "Sean Macdonald", "pid": 2714, "inst": "University of Florida", "insts": ["University of Florida"], "app": 1, "yr1": 2016, "yr2": 2016, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "A Short History of the Fantastic Cinema in China", "y": 2016, "r": "presenter", "i": "University of Florida"}], "copanelists": [{"name": "Daisy Yan Du", "cnt": 1}, {"name": "Liang Luo", "cnt": 1}], "topics": [{"term": "Film/Cinema", "cat": "genre", "cnt": 1}]}, {"id": 98, "name": "Seigo Nakao", "pid": 3155, "inst": "Oakland U", "insts": ["Oakland U", "Oakland University"], "app": 4, "yr1": 2010, "yr2": 2015, "uyr": 4, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Protean Gender: Masculinity in Female Impersonation in Kabuki", "y": 2010, "r": "presenter", "i": "Oakland U"}, {"t": "Living with the Atomic Aftermath in Hiroshima and Nagasaki", "y": 2011, "r": "presenter", "i": "Oakland U"}, {"t": "Counter Orientalism: Japanese Westernism through Ballroom Dancing in", "y": 2012, "r": "presenter", "i": "Oakland University"}, {"t": "Brother-Sister Attraction: Man’s Sister Soul in Kabuki Plays", "y": 2015, "r": "presenter", "i": "Oakland University"}], "copanelists": [{"name": "Alicia Gibson", "cnt": 1}], "topics": [{"term": "Drama/Theater", "cat": "genre", "cnt": 2}, {"term": "Gender & Sexuality", "cat": "theme", "cnt": 1}, {"term": "War & Memory", "cat": "theme", "cnt": 1}]}, {"id": 99, "name": "Shelley Chan", "pid": 575, "inst": "Wittenberg University", "insts": ["Wittenberg University"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Disabilities: The Displayability of Deformity--On Yan Lianke's Pleasure", "y": 2018, "r": "presenter", "i": "Wittenberg University"}], "copanelists": [{"name": "Steven Riep", "cnt": 1}], "topics": []}, {"id": 100, "name": "Shengqing Wu", "pid": 4859, "inst": "Hong Kong University of Science and Technology", "insts": ["Hong Kong University of Science and Technology"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "The Emotional Life of Photographic Images: Circulating Poetic and Visual Tropes of Gender in Republican China", "y": 2018, "r": "presenter", "i": "Hong Kong University of Science and Technology"}], "copanelists": [{"name": "Hannah Airriess", "cnt": 1}, {"name": "Makiko Mori", "cnt": 1}], "topics": [{"term": "Gender & Sexuality", "cat": "theme", "cnt": 1}]}, {"id": 101, "name": "Shion Kono", "pid": 2278, "inst": "Sophia U", "insts": ["Sophia U"], "app": 1, "yr1": 2011, "yr2": 2011, "uyr": 1, "deg": 5, "roles": ["presenter"], "papers": [{"t": "The Consequences of the ‘Sociological’ in the 1990s hihyô", "y": 2011, "r": "presenter", "i": "Sophia U"}], "copanelists": [{"name": "Annette Vilslev", "cnt": 1}, {"name": "Jonathan Abel", "cnt": 1}, {"name": "Keiko Nakano", "cnt": 1}, {"name": "Takushi Odagiri", "cnt": 1}, {"name": "William Bridges", "cnt": 1}], "topics": []}, {"id": 102, "name": "Sigrid Weigel", "pid": 477972, "inst": "Zentrum für Literatur- und Kulturforschung Berlin (ZfL Berlin)", "insts": ["Zentrum für Literatur- und Kulturforschung Berlin (ZfL Berlin)"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 8, "roles": ["presenter"], "papers": [{"t": "Yoko Tawada's Poetics on the Threshold of Different Writing Systems", "y": 2018, "r": "presenter", "i": "Zentrum für Literatur- und Kulturforschung Berlin (ZfL Berlin)"}], "copanelists": [{"name": "Annegret Marten", "cnt": 1}, {"name": "Bettina  Brandt", "cnt": 1}, {"name": "Brett de Bary", "cnt": 1}, {"name": "Dan Fujiwara", "cnt": 1}, {"name": "Douglas Slaymaker", "cnt": 1}, {"name": "Hiltrud Arens", "cnt": 1}, {"name": "Sabrina Jaromin", "cnt": 1}, {"name": "Tingting Hui", "cnt": 1}], "topics": [{"term": "Poetry", "cat": "genre", "cnt": 1}, {"term": "Tawada Yōko", "cat": "literary_figure", "cnt": 1}]}, {"id": 103, "name": "Sophia Sherry", "pid": 219551, "inst": "University of Chicago", "insts": ["University of Chicago"], "app": 3, "yr1": 2020, "yr2": 2024, "uyr": 3, "deg": 2, "roles": ["presenter"], "papers": [{"t": "Ukigumo Redux: Anarcho-realist modanizumu in Hayashi Fumiko (1903-1951) and Futabatei Shimei", "y": 2020, "r": "presenter", "i": "University of Chicago"}, {"t": "Watakushi, Citizen Subject, Self: Some Dimensions of Ideological Debate in Postwar Japan", "y": 2023, "r": "presenter", "i": "University of Chicago"}, {"t": "Some Dimensions of Ideological Debate in and across Postwar Japan", "y": 2024, "r": "presenter", "i": "University of Chicago"}], "copanelists": [{"name": "George Sipos", "cnt": 1}, {"name": "Janice Brown", "cnt": 1}], "topics": [{"term": "Postwar", "cat": "period", "cnt": 2}, {"term": "Hayashi Fumiko", "cat": "literary_figure", "cnt": 1}, {"term": "Nation & Identity", "cat": "theme", "cnt": 1}]}, {"id": 104, "name": "Steven Riep", "pid": 3669, "inst": "Brigham Young University", "insts": ["Brigham Young University"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "", "y": 2018, "r": "presenter", "i": "Brigham Young University"}], "copanelists": [{"name": "Shelley Chan", "cnt": 1}], "topics": []}, {"id": 105, "name": "Suzuko Mousel Knott", "pid": 105260, "inst": "Connecticut College", "insts": ["Connecticut College"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 6, "roles": ["presenter"], "papers": [{"t": "The Music of Transmigration in Yoko Tawada’s Etüden im Schnee", "y": 2018, "r": "presenter", "i": "Connecticut College"}], "copanelists": [{"name": "Gizem Arslan", "cnt": 1}, {"name": "John Kim", "cnt": 1}, {"name": "Keijiro Suga", "cnt": 1}, {"name": "Madalina Meirosu", "cnt": 1}, {"name": "Tomoko Slutsky", "cnt": 1}, {"name": "Victoria Young", "cnt": 1}], "topics": [{"term": "Sound & Music", "cat": "theme", "cnt": 1}, {"term": "Tawada Yōko", "cat": "literary_figure", "cnt": 1}]}, {"id": 106, "name": "Sylvain Rheault", "pid": null, "inst": "University of Regina", "insts": ["University of Regina"], "app": 1, "yr1": 2022, "yr2": 2022, "uyr": 1, "deg": 4, "roles": ["presenter"], "papers": [{"t": "", "y": 2022, "r": "presenter", "i": "University of Regina"}], "copanelists": [{"name": "Jean Sébastien", "cnt": 1}, {"name": "Les Solitudes dans les cangas", "cnt": 1}, {"name": "Ryan Clement", "cnt": 1}, {"name": "Tsugumi (Mimi) Okabe", "cnt": 1}], "topics": []}, {"id": 107, "name": "Takashi Inoue", "pid": 216941, "inst": "Shirayuri University", "insts": ["Shirayuri University"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "Crisis and the Total Novel in Japan", "y": 2018, "r": "presenter", "i": "Shirayuri University"}], "copanelists": [{"name": "Alexander Lin", "cnt": 1}, {"name": "Yoshiki Tajiri", "cnt": 1}], "topics": [{"term": "Novel/Fiction", "cat": "genre", "cnt": 1}]}, {"id": 108, "name": "Takushi Odagiri", "pid": 578863, "inst": "Stanford University", "insts": ["Stanford University"], "app": 2, "yr1": 2011, "yr2": 2012, "uyr": 2, "deg": 9, "roles": ["presenter"], "papers": [{"t": "Nakazawa Shinichi and his Baroque in the Forest (1992)", "y": 2011, "r": "presenter", "i": "Stanford University"}, {"t": "An Action Research as Social Phenomenology: A Post-Earthquake Study", "y": 2012, "r": "presenter", "i": "Stanford University"}], "copanelists": [{"name": "Jonathan Abel", "cnt": 2}, {"name": "Annette Vilslev", "cnt": 1}, {"name": "Gerry Yokota", "cnt": 1}, {"name": "Ikuho Amano", "cnt": 1}, {"name": "Jonathan E. Abel", "cnt": 1}, {"name": "Keiko Nakano", "cnt": 1}, {"name": "Shion Kono", "cnt": 1}, {"name": "William Bridges", "cnt": 1}, {"name": "William O. Gardner", "cnt": 1}], "topics": [{"term": "Nature & Environment", "cat": "theme", "cnt": 1}]}, {"id": 109, "name": "Tamara H. Bentley", "pid": 268, "inst": "Colorado College", "insts": ["Colorado College"], "app": 1, "yr1": 2004, "yr2": 2004, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Otherness and Authority: Visual Strategies for Co-opting ‘Others’ in 17th-Century Japan, France, and China", "y": 2004, "r": "presenter", "i": "Colorado College"}], "copanelists": [{"name": "Richard Iadonisi", "cnt": 1}], "topics": []}, {"id": 110, "name": "Timothy P. Gaster", "pid": 584464, "inst": "University of Chicago", "insts": ["University of Chicago"], "app": 1, "yr1": 2009, "yr2": 2009, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Rethinking the East-West Axis: The Contribution of Japan to the", "y": 2009, "r": "presenter", "i": "University of Chicago"}], "copanelists": [{"name": "Catherine M. Miskow", "cnt": 1}], "topics": []}, {"id": 111, "name": "Tingting Hui", "pid": 354589, "inst": "Universiteit Leiden (Leiden University)", "insts": ["Universiteit Leiden (Leiden University)"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 8, "roles": ["presenter"], "papers": [{"t": "Words That I Swallowed Whole: The Linguistic Edibility of Tawada's Writings", "y": 2018, "r": "presenter", "i": "Universiteit Leiden (Leiden University)"}], "copanelists": [{"name": "Annegret Marten", "cnt": 1}, {"name": "Bettina  Brandt", "cnt": 1}, {"name": "Brett de Bary", "cnt": 1}, {"name": "Dan Fujiwara", "cnt": 1}, {"name": "Douglas Slaymaker", "cnt": 1}, {"name": "Hiltrud Arens", "cnt": 1}, {"name": "Sabrina Jaromin", "cnt": 1}, {"name": "Sigrid Weigel", "cnt": 1}], "topics": [{"term": "Tawada Yōko", "cat": "literary_figure", "cnt": 1}]}, {"id": 112, "name": "Tomoko Slutsky", "pid": 145983, "inst": "Princeton University", "insts": ["Princeton University"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 6, "roles": ["presenter"], "papers": [{"t": "Inside-out: language, body, and narrative perspective  in Tawada Yoko’s two novels", "y": 2018, "r": "presenter", "i": "Princeton University"}], "copanelists": [{"name": "Gizem Arslan", "cnt": 1}, {"name": "John Kim", "cnt": 1}, {"name": "Keijiro Suga", "cnt": 1}, {"name": "Madalina Meirosu", "cnt": 1}, {"name": "Suzuko Mousel Knott", "cnt": 1}, {"name": "Victoria Young", "cnt": 1}], "topics": [{"term": "Body & Affect", "cat": "theme", "cnt": 1}, {"term": "Tawada Yōko", "cat": "literary_figure", "cnt": 1}]}, {"id": 113, "name": "Toshiya Ueno", "pid": 459912, "inst": "Wako University", "insts": ["Wako University"], "app": 3, "yr1": 2016, "yr2": 2022, "uyr": 3, "deg": 16, "roles": ["presenter"], "papers": [{"t": "Abe Kobo in Ecosophy", "y": 2016, "r": "presenter", "i": "Wako University"}, {"t": "Aqua Arachnean Politics in Abe Kobo’s Novel and Guattarian Ecosophy", "y": 2017, "r": "presenter", "i": "Wako University"}, {"t": "On the tonality of anthropomorphism and panpsychism in Japanese Cultural Expressions", "y": 2022, "r": "presenter", "i": "Wako University"}], "copanelists": [{"name": "Douglas Slaymaker", "cnt": 2}, {"name": "Hisaaki Wake", "cnt": 2}, {"name": "Keijiro Suga", "cnt": 2}, {"name": "Masami Yuki", "cnt": 2}, {"name": "Rei Magosaki", "cnt": 2}, {"name": "Akiko Takenaka", "cnt": 1}, {"name": "Alex Bates", "cnt": 1}, {"name": "Brett de Bary", "cnt": 1}, {"name": "Christine Marran", "cnt": 1}, {"name": "Dean Anthony Brink", "cnt": 1}], "topics": [{"term": "Abe Kōbō", "cat": "literary_figure", "cnt": 2}, {"term": "Novel/Fiction", "cat": "genre", "cnt": 1}]}, {"id": 114, "name": "Tracie Matysik", "pid": 641072, "inst": "University of Texas at Austin", "insts": ["University of Texas at Austin"], "app": 1, "yr1": 2024, "yr2": 2024, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Bare Life / Bear Life: On Rights and Translation in Yoko Tawada’s Etuden im Schnee", "y": 2024, "r": "presenter", "i": "University of Texas at Austin"}], "copanelists": [{"name": "Hisaaki Wake", "cnt": 1}], "topics": [{"term": "Tawada Yōko", "cat": "literary_figure", "cnt": 1}, {"term": "Translation", "cat": "genre", "cnt": 1}, {"term": "Translation & World Lit", "cat": "theme", "cnt": 1}]}, {"id": 115, "name": "Tsugumi (Mimi) Okabe", "pid": 675327, "inst": "University of Alberta", "insts": ["University of Alberta"], "app": 1, "yr1": 2022, "yr2": 2022, "uyr": 1, "deg": 4, "roles": ["presenter"], "papers": [{"t": "", "y": 2022, "r": "presenter", "i": "University of Alberta"}], "copanelists": [{"name": "Jean Sébastien", "cnt": 1}, {"name": "Les Solitudes dans les cangas", "cnt": 1}, {"name": "Ryan Clement", "cnt": 1}, {"name": "Sylvain Rheault", "cnt": 1}], "topics": []}, {"id": 116, "name": "Victoria Young", "pid": 6127, "inst": "University of Cambridge", "insts": ["University of Cambridge"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 6, "roles": ["presenter"], "papers": [{"t": "", "y": 2018, "r": "presenter", "i": "University of Cambridge"}], "copanelists": [{"name": "Gizem Arslan", "cnt": 1}, {"name": "John Kim", "cnt": 1}, {"name": "Keijiro Suga", "cnt": 1}, {"name": "Madalina Meirosu", "cnt": 1}, {"name": "Suzuko Mousel Knott", "cnt": 1}, {"name": "Tomoko Slutsky", "cnt": 1}], "topics": []}, {"id": 117, "name": "Wenjin Cui", "pid": 860, "inst": "New York University", "insts": ["New York University"], "app": 1, "yr1": 2012, "yr2": 2012, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "Symbolism and Marxism: The Question of Representation", "y": 2012, "r": "presenter", "i": "New York University"}], "copanelists": [{"name": "Kimberly M. Chung", "cnt": 2}, {"name": "Janet A. Walker", "cnt": 1}], "topics": []}, {"id": 118, "name": "William Bridges", "pid": 627141, "inst": "Princeton University", "insts": ["Princeton University", "St. Olaf College"], "app": 2, "yr1": 2011, "yr2": 2014, "uyr": 2, "deg": 6, "roles": ["presenter"], "papers": [{"t": "Japanese Literature Undressed: The Naked Body and Japanese", "y": 2011, "r": "presenter", "i": "Princeton University"}, {"t": "Blackness in Japanese Literature in the Age of Hip Hop", "y": 2014, "r": "presenter", "i": "St. Olaf College"}], "copanelists": [{"name": "Annette Vilslev", "cnt": 1}, {"name": "Jonathan Abel", "cnt": 1}, {"name": "Keiko Nakano", "cnt": 1}, {"name": "Reiko Tachibana", "cnt": 1}, {"name": "Shion Kono", "cnt": 1}, {"name": "Takushi Odagiri", "cnt": 1}], "topics": [{"term": "Body & Affect", "cat": "theme", "cnt": 1}]}, {"id": 119, "name": "William O. Gardner", "pid": 1339, "inst": "Swarthmore College", "insts": ["Swarthmore College"], "app": 1, "yr1": 2012, "yr2": 2012, "uyr": 1, "deg": 5, "roles": ["presenter"], "papers": [{"t": "Narratives of Collapse and Generation: Komatsu Sakyô’s Disaster Novels and", "y": 2012, "r": "presenter", "i": "Swarthmore College"}], "copanelists": [{"name": "Gerry Yokota", "cnt": 1}, {"name": "Ikuho Amano", "cnt": 1}, {"name": "Jonathan Abel", "cnt": 1}, {"name": "Jonathan E. Abel", "cnt": 1}, {"name": "Takushi Odagiri", "cnt": 1}], "topics": [{"term": "Nature & Environment", "cat": "theme", "cnt": 1}]}, {"id": 120, "name": "Yoon Sun Lee", "pid": 561955, "inst": "Wellesley College", "insts": ["Wellesley College"], "app": 1, "yr1": 2015, "yr2": 2015, "uyr": 1, "deg": 5, "roles": ["presenter"], "papers": [{"t": "", "y": 2015, "r": "presenter", "i": "Wellesley College"}], "copanelists": [{"name": "David Kurnick", "cnt": 1}, {"name": "Joel Calahan", "cnt": 1}, {"name": "Jonah Siegel", "cnt": 1}, {"name": "Kate Holland", "cnt": 1}, {"name": "Number in the Novel", "cnt": 1}], "topics": []}, {"id": 121, "name": "Yoshihiro Yasuhara", "pid": 4938, "inst": "Florida State University", "insts": ["Florida State University", "Carnegie Mellon U", "Carnegie Mellon University"], "app": 8, "yr1": 2004, "yr2": 2024, "uyr": 8, "deg": 17, "roles": ["presenter"], "papers": [{"t": "The Cultural Translation of Dandyism and Japanese Modernity: Kuki Sh-uzo’s Iki as Counter-discourse to European Dandyism", "y": 2004, "r": "presenter", "i": "Florida State University"}, {"t": "Permanent Revolution as an Alternative to", "y": 2006, "r": "presenter", "i": "Florida State University"}, {"t": "The Potential of the Reemerging Avant-garde in Postwar Japan", "y": 2008, "r": "presenter", "i": "Florida State University"}, {"t": "People (Jinmin) as the Subject of the Postwar Japanese Literature", "y": 2009, "r": "presenter", "i": "Florida State University"}, {"t": "Internationalism Revisited: Oshima Nagisa and Terayama Shuj", "y": 2010, "r": "presenter", "i": "Florida State University"}, {"t": "The Kafkaesque as a Currency in Postwar Japanese Novels", "y": 2014, "r": "presenter", "i": "Carnegie Mellon U"}, {"t": "The Poetics at Crossroads: Yukichi Amano’s Theorization of Advertising in Japan’s 1980s", "y": 2019, "r": "presenter", "i": "Carnegie Mellon University"}, {"t": "Readers of Poetry as Creative Consumers: the Intersection of Advertisements, Poetry and Media in the 1980s Japan", "y": 2024, "r": "presenter", "i": "Carnegie Mellon University"}], "copanelists": [{"name": "Ikuho Amano", "cnt": 3}, {"name": "Christopher Lowy", "cnt": 2}, {"name": "Reiko Tachibana", "cnt": 2}, {"name": "Devon A. Cahill", "cnt": 1}, {"name": "Devon Cahill", "cnt": 1}, {"name": "Enhua Zhang", "cnt": 1}, {"name": "Janice Yolanda Zehentbauer", "cnt": 1}, {"name": "Jing Tsu", "cnt": 1}, {"name": "Lanjun Xu", "cnt": 1}, {"name": "Liang Luo", "cnt": 1}], "topics": [{"term": "Postwar", "cat": "period", "cnt": 3}, {"term": "Poetry", "cat": "genre", "cnt": 2}, {"term": "Digital/New Media", "cat": "genre", "cnt": 1}, {"term": "Modernity & Modernism", "cat": "theme", "cnt": 1}, {"term": "Technology & Media", "cat": "theme", "cnt": 1}, {"term": "Translation", "cat": "genre", "cnt": 1}, {"term": "Translation & World Lit", "cat": "theme", "cnt": 1}]}, {"id": 122, "name": "Yoshiki Tajiri", "pid": 47998, "inst": "University of Tokyo", "insts": ["University of Tokyo"], "app": 1, "yr1": 2018, "yr2": 2018, "uyr": 1, "deg": 2, "roles": ["presenter"], "papers": [{"t": "The Totality in Yukio Mishima's Novels", "y": 2018, "r": "presenter", "i": "University of Tokyo"}], "copanelists": [{"name": "Alexander Lin", "cnt": 1}, {"name": "Takashi Inoue", "cnt": 1}], "topics": [{"term": "Mishima Yukio", "cat": "literary_figure", "cnt": 1}]}, {"id": 123, "name": "Young J. Yi", "pid": 4952, "inst": "Florida State University", "insts": ["Florida State University"], "app": 1, "yr1": 2009, "yr2": 2009, "uyr": 1, "deg": 8, "roles": ["presenter"], "papers": [{"t": "Keitai Shosetsu: The Text between Localized and Globalized Identity", "y": 2009, "r": "presenter", "i": "Florida State University"}], "copanelists": [{"name": "Christopher Lowy", "cnt": 1}, {"name": "Devon A. Cahill", "cnt": 1}, {"name": "Ikuho Amano", "cnt": 1}, {"name": "Janice Yolanda Zehentbauer", "cnt": 1}, {"name": "Matthew Stanhope Mewhinney", "cnt": 1}, {"name": "Raechel L. Dumas", "cnt": 1}, {"name": "Satoko Kakihara", "cnt": 1}, {"name": "Yoshihiro Yasuhara", "cnt": 1}], "topics": [{"term": "Nation & Identity", "cat": "theme", "cnt": 1}, {"term": "Novel/Fiction", "cat": "genre", "cnt": 1}]}, {"id": 124, "name": "Yu Min Claire Chen", "pid": 75809, "inst": "St Mary’s College of Maryland", "insts": ["St Mary’s College of Maryland"], "app": 1, "yr1": 2014, "yr2": 2014, "uyr": 1, "deg": 1, "roles": ["presenter"], "papers": [{"t": "Whose Memory Counts? Yasunari Kawabata’s Kyoto and Chu T’ien Hsin’s A Novel", "y": 2014, "r": "presenter", "i": "St Mary’s College of Maryland"}], "copanelists": [{"name": "Kyoko Omori", "cnt": 1}], "topics": [{"term": "Kawabata Yasunari", "cat": "literary_figure", "cnt": 1}, {"term": "Novel/Fiction", "cat": "genre", "cnt": 1}, {"term": "War & Memory", "cat": "theme", "cnt": 1}]}, {"id": 125, "name": "Yukihiro Tsukada", "pid": 475286, "inst": "Kwansei Gakuin University", "insts": ["Kwansei Gakuin University"], "app": 1, "yr1": 2016, "yr2": 2016, "uyr": 1, "deg": 12, "roles": ["presenter"], "papers": [{"t": "Catastrophic Tokyo: Re-thinking the Nuclear Walking Dead in Japanese Comics", "y": 2016, "r": "presenter", "i": "Kwansei Gakuin University"}], "copanelists": [{"name": "Keijiro Suga", "cnt": 2}, {"name": "Masami Yuki", "cnt": 2}, {"name": "Alex Bates", "cnt": 1}, {"name": "Christine Marran", "cnt": 1}, {"name": "Douglas Slaymaker", "cnt": 1}, {"name": "Hisaaki Wake", "cnt": 1}, {"name": "Keitaro Morita", "cnt": 1}, {"name": "Livia Monnet", "cnt": 1}, {"name": "Margherita Long", "cnt": 1}, {"name": "Marjorie Rhine", "cnt": 1}], "topics": [{"term": "Nature & Environment", "cat": "theme", "cnt": 1}, {"term": "Space & Place", "cat": "theme", "cnt": 1}]}, {"id": 126, "name": "Yumi Tanaka", "pid": 532739, "inst": "University of Tokyo", "insts": ["University of Tokyo"], "app": 1, "yr1": 2010, "yr2": 2010, "uyr": 1, "deg": 6, "roles": ["presenter"], "papers": [{"t": "A Quixotic Ending to Japanese Modernity: Reading OE Kenzaburo’s Boy of the", "y": 2010, "r": "presenter", "i": "University of Tokyo"}], "copanelists": [{"name": "Christopher Lowy", "cnt": 1}, {"name": "Devon Cahill", "cnt": 1}, {"name": "Ikuho Amano", "cnt": 1}, {"name": "Raechel Dumas", "cnt": 1}, {"name": "Reiko Tachibana", "cnt": 1}, {"name": "Yoshihiro Yasuhara", "cnt": 1}], "topics": [{"term": "Modernity & Modernism", "cat": "theme", "cnt": 1}, {"term": "Technology & Media", "cat": "theme", "cnt": 1}, {"term": "Ōe Kenzaburō", "cat": "literary_figure", "cnt": 1}]}], "edges": [{"s": 0, "t": 42, "w": 1, "yrs": [1992]}, {"s": 0, "t": 48, "w": 1, "yrs": [1992]}, {"s": 1, "t": 27, "w": 1, "yrs": [2017]}, {"s": 1, "t": 38, "w": 1, "yrs": [2017]}, {"s": 1, "t": 58, "w": 1, "yrs": [2017]}, {"s": 1, "t": 88, "w": 1, "yrs": [2017]}, {"s": 1, "t": 113, "w": 1, "yrs": [2017]}, {"s": 2, "t": 15, "w": 1, "yrs": [2016]}, {"s": 2, "t": 17, "w": 1, "yrs": [2015]}, {"s": 2, "t": 27, "w": 1, "yrs": [2016]}, {"s": 2, "t": 38, "w": 1, "yrs": [2016]}, {"s": 2, "t": 56, "w": 2, "yrs": [2016]}, {"s": 2, "t": 59, "w": 1, "yrs": [2016]}, {"s": 2, "t": 69, "w": 1, "yrs": [2016]}, {"s": 2, "t": 73, "w": 1, "yrs": [2016]}, {"s": 2, "t": 74, "w": 1, "yrs": [2016]}, {"s": 2, "t": 75, "w": 3, "yrs": [2015, 2016]}, {"s": 2, "t": 78, "w": 1, "yrs": [2015]}, {"s": 2, "t": 88, "w": 1, "yrs": [2016]}, {"s": 2, "t": 113, "w": 1, "yrs": [2016]}, {"s": 2, "t": 125, "w": 1, "yrs": [2016]}, {"s": 3, "t": 107, "w": 1, "yrs": [2018]}, {"s": 3, "t": 122, "w": 1, "yrs": [2018]}, {"s": 4, "t": 98, "w": 1, "yrs": [2011]}, {"s": 5, "t": 79, "w": 1, "yrs": [2016]}, {"s": 6, "t": 10, "w": 1, "yrs": [2018]}, {"s": 6, "t": 11, "w": 1, "yrs": [2018]}, {"s": 6, "t": 19, "w": 1, "yrs": [2018]}, {"s": 6, "t": 27, "w": 1, "yrs": [2018]}, {"s": 6, "t": 37, "w": 1, "yrs": [2018]}, {"s": 6, "t": 93, "w": 1, "yrs": [2018]}, {"s": 6, "t": 102, "w": 1, "yrs": [2018]}, {"s": 6, "t": 111, "w": 1, "yrs": [2018]}, {"s": 7, "t": 51, "w": 1, "yrs": [2011]}, {"s": 7, "t": 57, "w": 1, "yrs": [2011]}, {"s": 7, "t": 101, "w": 1, "yrs": [2011]}, {"s": 7, "t": 108, "w": 1, "yrs": [2011]}, {"s": 7, "t": 118, "w": 1, "yrs": [2011]}, {"s": 8, "t": 89, "w": 1, "yrs": [2017]}, {"s": 8, "t": 94, "w": 1, "yrs": [2017]}, {"s": 9, "t": 23, "w": 1, "yrs": [2015]}, {"s": 9, "t": 35, "w": 1, "yrs": [2015]}, {"s": 9, "t": 56, "w": 1, "yrs": [2015]}, {"s": 10, "t": 11, "w": 1, "yrs": [2018]}, {"s": 10, "t": 19, "w": 1, "yrs": [2018]}, {"s": 10, "t": 27, "w": 1, "yrs": [2018]}, {"s": 10, "t": 37, "w": 1, "yrs": [2018]}, {"s": 10, "t": 93, "w": 1, "yrs": [2018]}, {"s": 10, "t": 102, "w": 1, "yrs": [2018]}, {"s": 10, "t": 111, "w": 1, "yrs": [2018]}, {"s": 11, "t": 19, "w": 1, "yrs": [2018]}, {"s": 11, "t": 22, "w": 1, "yrs": [2022]}, {"s": 11, "t": 27, "w": 1, "yrs": [2018]}, {"s": 11, "t": 37, "w": 1, "yrs": [2018]}, {"s": 11, "t": 93, "w": 1, "yrs": [2018]}, {"s": 11, "t": 102, "w": 1, "yrs": [2018]}, {"s": 11, "t": 111, "w": 1, "yrs": [2018]}, {"s": 11, "t": 113, "w": 1, "yrs": [2022]}, {"s": 12, "t": 24, "w": 1, "yrs": [2015]}, {"s": 13, "t": 110, "w": 1, "yrs": [2009]}, {"s": 14, "t": 29, "w": 1, "yrs": [2013]}, {"s": 15, "t": 27, "w": 1, "yrs": [2016]}, {"s": 15, "t": 38, "w": 1, "yrs": [2016]}, {"s": 15, "t": 56, "w": 2, "yrs": [2016]}, {"s": 15, "t": 59, "w": 1, "yrs": [2016]}, {"s": 15, "t": 69, "w": 1, "yrs": [2016]}, {"s": 15, "t": 73, "w": 1, "yrs": [2016]}, {"s": 15, "t": 74, "w": 1, "yrs": [2016]}, {"s": 15, "t": 75, "w": 2, "yrs": [2016]}, {"s": 15, "t": 83, "w": 1, "yrs": [2022]}, {"s": 15, "t": 88, "w": 1, "yrs": [2016]}, {"s": 15, "t": 113, "w": 1, "yrs": [2016]}, {"s": 15, "t": 125, "w": 1, "yrs": [2016]}, {"s": 16, "t": 25, "w": 1, "yrs": [2009]}, {"s": 16, "t": 26, "w": 1, "yrs": [2010]}, {"s": 16, "t": 39, "w": 2, "yrs": [2009, 2010]}, {"s": 16, "t": 44, "w": 1, "yrs": [2009]}, {"s": 16, "t": 77, "w": 1, "yrs": [2009]}, {"s": 16, "t": 86, "w": 1, "yrs": [2010]}, {"s": 16, "t": 87, "w": 1, "yrs": [2009]}, {"s": 16, "t": 90, "w": 1, "yrs": [2010]}, {"s": 16, "t": 95, "w": 1, "yrs": [2009]}, {"s": 16, "t": 121, "w": 2, "yrs": [2009, 2010]}, {"s": 16, "t": 123, "w": 1, "yrs": [2009]}, {"s": 16, "t": 126, "w": 1, "yrs": [2010]}, {"s": 17, "t": 75, "w": 1, "yrs": [2015]}, {"s": 17, "t": 78, "w": 1, "yrs": [2015]}, {"s": 18, "t": 67, "w": 1, "yrs": [2016]}, {"s": 18, "t": 97, "w": 1, "yrs": [2016]}, {"s": 19, "t": 27, "w": 1, "yrs": [2018]}, {"s": 19, "t": 37, "w": 1, "yrs": [2018]}, {"s": 19, "t": 93, "w": 1, "yrs": [2018]}, {"s": 19, "t": 102, "w": 1, "yrs": [2018]}, {"s": 19, "t": 111, "w": 1, "yrs": [2018]}, {"s": 20, "t": 40, "w": 1, "yrs": [2008]}, {"s": 21, "t": 47, "w": 1, "yrs": [2015]}, {"s": 21, "t": 50, "w": 1, "yrs": [2015]}, {"s": 21, "t": 55, "w": 1, "yrs": [2015]}, {"s": 21, "t": 84, "w": 1, "yrs": [2015]}, {"s": 21, "t": 120, "w": 1, "yrs": [2015]}, {"s": 22, "t": 113, "w": 1, "yrs": [2022]}, {"s": 23, "t": 35, "w": 1, "yrs": [2015]}, {"s": 23, "t": 56, "w": 1, "yrs": [2015]}, {"s": 25, "t": 39, "w": 1, "yrs": [2009]}, {"s": 25, "t": 44, "w": 1, "yrs": [2009]}, {"s": 25, "t": 77, "w": 1, "yrs": [2009]}, {"s": 25, "t": 87, "w": 1, "yrs": [2009]}, {"s": 25, "t": 95, "w": 1, "yrs": [2009]}, {"s": 25, "t": 121, "w": 1, "yrs": [2009]}, {"s": 25, "t": 123, "w": 1, "yrs": [2009]}, {"s": 26, "t": 39, "w": 1, "yrs": [2010]}, {"s": 26, "t": 86, "w": 1, "yrs": [2010]}, {"s": 26, "t": 90, "w": 1, "yrs": [2010]}, {"s": 26, "t": 121, "w": 1, "yrs": [2010]}, {"s": 26, "t": 126, "w": 1, "yrs": [2010]}, {"s": 27, "t": 37, "w": 1, "yrs": [2018]}, {"s": 27, "t": 38, "w": 2, "yrs": [2016, 2017]}, {"s": 27, "t": 56, "w": 2, "yrs": [2016]}, {"s": 27, "t": 58, "w": 1, "yrs": [2017]}, {"s": 27, "t": 59, "w": 1, "yrs": [2016]}, {"s": 27, "t": 69, "w": 1, "yrs": [2016]}, {"s": 27, "t": 73, "w": 1, "yrs": [2016]}, {"s": 27, "t": 74, "w": 1, "yrs": [2016]}, {"s": 27, "t": 75, "w": 2, "yrs": [2016]}, {"s": 27, "t": 88, "w": 2, "yrs": [2016, 2017]}, {"s": 27, "t": 93, "w": 1, "yrs": [2018]}, {"s": 27, "t": 102, "w": 1, "yrs": [2018]}, {"s": 27, "t": 111, "w": 1, "yrs": [2018]}, {"s": 27, "t": 113, "w": 2, "yrs": [2016, 2017]}, {"s": 27, "t": 125, "w": 1, "yrs": [2016]}, {"s": 28, "t": 46, "w": 1, "yrs": [2006]}, {"s": 28, "t": 65, "w": 1, "yrs": [2006]}, {"s": 28, "t": 67, "w": 1, "yrs": [2006]}, {"s": 28, "t": 121, "w": 1, "yrs": [2006]}, {"s": 30, "t": 82, "w": 1, "yrs": [2018]}, {"s": 30, "t": 96, "w": 1, "yrs": [2018]}, {"s": 31, "t": 43, "w": 1, "yrs": [2020]}, {"s": 31, "t": 103, "w": 1, "yrs": [2020]}, {"s": 32, "t": 39, "w": 1, "yrs": [2012]}, {"s": 32, "t": 51, "w": 1, "yrs": [2012]}, {"s": 32, "t": 52, "w": 1, "yrs": [2012]}, {"s": 32, "t": 108, "w": 1, "yrs": [2012]}, {"s": 32, "t": 119, "w": 1, "yrs": [2012]}, {"s": 33, "t": 54, "w": 1, "yrs": [2015]}, {"s": 34, "t": 49, "w": 1, "yrs": [2018]}, {"s": 34, "t": 56, "w": 1, "yrs": [2018]}, {"s": 34, "t": 71, "w": 1, "yrs": [2018]}, {"s": 34, "t": 105, "w": 1, "yrs": [2018]}, {"s": 34, "t": 112, "w": 1, "yrs": [2018]}, {"s": 34, "t": 116, "w": 1, "yrs": [2018]}, {"s": 35, "t": 56, "w": 1, "yrs": [2015]}, {"s": 36, "t": 72, "w": 1, "yrs": [2018]}, {"s": 36, "t": 100, "w": 1, "yrs": [2018]}, {"s": 37, "t": 93, "w": 1, "yrs": [2018]}, {"s": 37, "t": 102, "w": 1, "yrs": [2018]}, {"s": 37, "t": 111, "w": 1, "yrs": [2018]}, {"s": 38, "t": 56, "w": 2, "yrs": [2016]}, {"s": 38, "t": 58, "w": 1, "yrs": [2017]}, {"s": 38, "t": 59, "w": 1, "yrs": [2016]}, {"s": 38, "t": 69, "w": 1, "yrs": [2016]}, {"s": 38, "t": 73, "w": 1, "yrs": [2016]}, {"s": 38, "t": 74, "w": 1, "yrs": [2016]}, {"s": 38, "t": 75, "w": 2, "yrs": [2016]}, {"s": 38, "t": 88, "w": 2, "yrs": [2016, 2017]}, {"s": 38, "t": 113, "w": 2, "yrs": [2016, 2017]}, {"s": 38, "t": 114, "w": 1, "yrs": [2024]}, {"s": 38, "t": 125, "w": 1, "yrs": [2016]}, {"s": 39, "t": 44, "w": 1, "yrs": [2009]}, {"s": 39, "t": 51, "w": 1, "yrs": [2012]}, {"s": 39, "t": 52, "w": 1, "yrs": [2012]}, {"s": 39, "t": 77, "w": 1, "yrs": [2009]}, {"s": 39, "t": 86, "w": 1, "yrs": [2010]}, {"s": 39, "t": 87, "w": 1, "yrs": [2009]}, {"s": 39, "t": 90, "w": 1, "yrs": [2010]}, {"s": 39, "t": 95, "w": 1, "yrs": [2009]}, {"s": 39, "t": 108, "w": 1, "yrs": [2012]}, {"s": 39, "t": 119, "w": 1, "yrs": [2012]}, {"s": 39, "t": 121, "w": 3, "yrs": [2004, 2009, 2010]}, {"s": 39, "t": 123, "w": 1, "yrs": [2009]}, {"s": 39, "t": 126, "w": 1, "yrs": [2010]}, {"s": 41, "t": 61, "w": 2, "yrs": [2012]}, {"s": 41, "t": 117, "w": 1, "yrs": [2012]}, {"s": 42, "t": 48, "w": 1, "yrs": [1992]}, {"s": 43, "t": 103, "w": 1, "yrs": [2020]}, {"s": 44, "t": 77, "w": 1, "yrs": [2009]}, {"s": 44, "t": 87, "w": 1, "yrs": [2009]}, {"s": 44, "t": 95, "w": 1, "yrs": [2009]}, {"s": 44, "t": 121, "w": 1, "yrs": [2009]}, {"s": 44, "t": 123, "w": 1, "yrs": [2009]}, {"s": 45, "t": 66, "w": 1, "yrs": [2022]}, {"s": 45, "t": 92, "w": 1, "yrs": [2022]}, {"s": 45, "t": 106, "w": 1, "yrs": [2022]}, {"s": 45, "t": 115, "w": 1, "yrs": [2022]}, {"s": 46, "t": 65, "w": 1, "yrs": [2006]}, {"s": 46, "t": 67, "w": 1, "yrs": [2006]}, {"s": 46, "t": 121, "w": 1, "yrs": [2006]}, {"s": 47, "t": 50, "w": 1, "yrs": [2015]}, {"s": 47, "t": 55, "w": 1, "yrs": [2015]}, {"s": 47, "t": 84, "w": 1, "yrs": [2015]}, {"s": 47, "t": 120, "w": 1, "yrs": [2015]}, {"s": 49, "t": 56, "w": 1, "yrs": [2018]}, {"s": 49, "t": 71, "w": 1, "yrs": [2018]}, {"s": 49, "t": 105, "w": 1, "yrs": [2018]}, {"s": 49, "t": 112, "w": 1, "yrs": [2018]}, {"s": 49, "t": 116, "w": 1, "yrs": [2018]}, {"s": 50, "t": 55, "w": 1, "yrs": [2015]}, {"s": 50, "t": 84, "w": 1, "yrs": [2015]}, {"s": 50, "t": 120, "w": 1, "yrs": [2015]}, {"s": 51, "t": 52, "w": 1, "yrs": [2012]}, {"s": 51, "t": 57, "w": 1, "yrs": [2011]}, {"s": 51, "t": 101, "w": 1, "yrs": [2011]}, {"s": 51, "t": 108, "w": 2, "yrs": [2011, 2012]}, {"s": 51, "t": 118, "w": 1, "yrs": [2011]}, {"s": 51, "t": 119, "w": 1, "yrs": [2012]}, {"s": 52, "t": 108, "w": 1, "yrs": [2012]}, {"s": 52, "t": 119, "w": 1, "yrs": [2012]}, {"s": 53, "t": 54, "w": 1, "yrs": [2020]}, {"s": 55, "t": 84, "w": 1, "yrs": [2015]}, {"s": 55, "t": 120, "w": 1, "yrs": [2015]}, {"s": 56, "t": 56, "w": 1, "yrs": [2016]}, {"s": 56, "t": 59, "w": 2, "yrs": [2016]}, {"s": 56, "t": 69, "w": 2, "yrs": [2016]}, {"s": 56, "t": 71, "w": 1, "yrs": [2018]}, {"s": 56, "t": 73, "w": 2, "yrs": [2016]}, {"s": 56, "t": 74, "w": 2, "yrs": [2016]}, {"s": 56, "t": 75, "w": 4, "yrs": [2016]}, {"s": 56, "t": 88, "w": 2, "yrs": [2016]}, {"s": 56, "t": 105, "w": 1, "yrs": [2018]}, {"s": 56, "t": 112, "w": 1, "yrs": [2018]}, {"s": 56, "t": 113, "w": 2, "yrs": [2016]}, {"s": 56, "t": 116, "w": 1, "yrs": [2018]}, {"s": 56, "t": 125, "w": 2, "yrs": [2016]}, {"s": 57, "t": 101, "w": 1, "yrs": [2011]}, {"s": 57, "t": 108, "w": 1, "yrs": [2011]}, {"s": 57, "t": 118, "w": 1, "yrs": [2011]}, {"s": 58, "t": 88, "w": 1, "yrs": [2017]}, {"s": 58, "t": 113, "w": 1, "yrs": [2017]}, {"s": 59, "t": 69, "w": 1, "yrs": [2016]}, {"s": 59, "t": 73, "w": 1, "yrs": [2016]}, {"s": 59, "t": 74, "w": 1, "yrs": [2016]}, {"s": 59, "t": 75, "w": 2, "yrs": [2016]}, {"s": 59, "t": 88, "w": 1, "yrs": [2016]}, {"s": 59, "t": 113, "w": 1, "yrs": [2016]}, {"s": 59, "t": 125, "w": 1, "yrs": [2016]}, {"s": 60, "t": 80, "w": 1, "yrs": [2014]}, {"s": 61, "t": 61, "w": 1, "yrs": [2012]}, {"s": 61, "t": 117, "w": 2, "yrs": [2012]}, {"s": 62, "t": 81, "w": 1, "yrs": [2016]}, {"s": 63, "t": 70, "w": 1, "yrs": [2019]}, {"s": 63, "t": 76, "w": 2, "yrs": [2019]}, {"s": 64, "t": 124, "w": 1, "yrs": [2014]}, {"s": 65, "t": 67, "w": 1, "yrs": [2006]}, {"s": 65, "t": 121, "w": 1, "yrs": [2006]}, {"s": 66, "t": 92, "w": 1, "yrs": [2022]}, {"s": 66, "t": 106, "w": 1, "yrs": [2022]}, {"s": 66, "t": 115, "w": 1, "yrs": [2022]}, {"s": 67, "t": 97, "w": 1, "yrs": [2016]}, {"s": 67, "t": 121, "w": 1, "yrs": [2006]}, {"s": 68, "t": 121, "w": 1, "yrs": [2024]}, {"s": 69, "t": 73, "w": 1, "yrs": [2016]}, {"s": 69, "t": 74, "w": 1, "yrs": [2016]}, {"s": 69, "t": 75, "w": 2, "yrs": [2016]}, {"s": 69, "t": 88, "w": 1, "yrs": [2016]}, {"s": 69, "t": 113, "w": 1, "yrs": [2016]}, {"s": 69, "t": 125, "w": 1, "yrs": [2016]}, {"s": 70, "t": 76, "w": 2, "yrs": [2019]}, {"s": 71, "t": 105, "w": 1, "yrs": [2018]}, {"s": 71, "t": 112, "w": 1, "yrs": [2018]}, {"s": 71, "t": 116, "w": 1, "yrs": [2018]}, {"s": 72, "t": 100, "w": 1, "yrs": [2018]}, {"s": 73, "t": 74, "w": 1, "yrs": [2016]}, {"s": 73, "t": 75, "w": 2, "yrs": [2016]}, {"s": 73, "t": 88, "w": 1, "yrs": [2016]}, {"s": 73, "t": 113, "w": 1, "yrs": [2016]}, {"s": 73, "t": 125, "w": 1, "yrs": [2016]}, {"s": 74, "t": 75, "w": 2, "yrs": [2016]}, {"s": 74, "t": 88, "w": 1, "yrs": [2016]}, {"s": 74, "t": 113, "w": 1, "yrs": [2016]}, {"s": 74, "t": 125, "w": 1, "yrs": [2016]}, {"s": 75, "t": 75, "w": 1, "yrs": [2016]}, {"s": 75, "t": 78, "w": 1, "yrs": [2015]}, {"s": 75, "t": 88, "w": 2, "yrs": [2016]}, {"s": 75, "t": 113, "w": 2, "yrs": [2016]}, {"s": 75, "t": 125, "w": 2, "yrs": [2016]}, {"s": 76, "t": 76, "w": 1, "yrs": [2019]}, {"s": 77, "t": 87, "w": 1, "yrs": [2009]}, {"s": 77, "t": 95, "w": 1, "yrs": [2009]}, {"s": 77, "t": 121, "w": 1, "yrs": [2009]}, {"s": 77, "t": 123, "w": 1, "yrs": [2009]}, {"s": 82, "t": 96, "w": 1, "yrs": [2018]}, {"s": 84, "t": 120, "w": 1, "yrs": [2015]}, {"s": 85, "t": 96, "w": 2, "yrs": [2016]}, {"s": 86, "t": 90, "w": 1, "yrs": [2010]}, {"s": 86, "t": 121, "w": 1, "yrs": [2010]}, {"s": 86, "t": 126, "w": 1, "yrs": [2010]}, {"s": 87, "t": 95, "w": 1, "yrs": [2009]}, {"s": 87, "t": 121, "w": 1, "yrs": [2009]}, {"s": 87, "t": 123, "w": 1, "yrs": [2009]}, {"s": 88, "t": 113, "w": 2, "yrs": [2016, 2017]}, {"s": 88, "t": 125, "w": 1, "yrs": [2016]}, {"s": 89, "t": 94, "w": 1, "yrs": [2017]}, {"s": 90, "t": 118, "w": 1, "yrs": [2014]}, {"s": 90, "t": 121, "w": 2, "yrs": [2008, 2010]}, {"s": 90, "t": 126, "w": 1, "yrs": [2010]}, {"s": 91, "t": 109, "w": 1, "yrs": [2004]}, {"s": 92, "t": 106, "w": 1, "yrs": [2022]}, {"s": 92, "t": 115, "w": 1, "yrs": [2022]}, {"s": 93, "t": 102, "w": 1, "yrs": [2018]}, {"s": 93, "t": 111, "w": 1, "yrs": [2018]}, {"s": 95, "t": 121, "w": 1, "yrs": [2009]}, {"s": 95, "t": 123, "w": 1, "yrs": [2009]}, {"s": 96, "t": 96, "w": 1, "yrs": [2016]}, {"s": 99, "t": 104, "w": 1, "yrs": [2018]}, {"s": 101, "t": 108, "w": 1, "yrs": [2011]}, {"s": 101, "t": 118, "w": 1, "yrs": [2011]}, {"s": 102, "t": 111, "w": 1, "yrs": [2018]}, {"s": 105, "t": 112, "w": 1, "yrs": [2018]}, {"s": 105, "t": 116, "w": 1, "yrs": [2018]}, {"s": 106, "t": 115, "w": 1, "yrs": [2022]}, {"s": 107, "t": 122, "w": 1, "yrs": [2018]}, {"s": 108, "t": 118, "w": 1, "yrs": [2011]}, {"s": 108, "t": 119, "w": 1, "yrs": [2012]}, {"s": 112, "t": 116, "w": 1, "yrs": [2018]}, {"s": 113, "t": 125, "w": 1, "yrs": [2016]}, {"s": 121, "t": 123, "w": 1, "yrs": [2009]}, {"s": 121, "t": 126, "w": 1, "yrs": [2010]}], "years": [1992, 2004, 2006, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2022, 2023, 2024, 2026], "topInsts": ["Rutgers University", "Princeton University", "Florida State University", "Stanford University", "University of Minnesota", "Pennsylvania State University", "Wellesley College", "University of Chicago", "University of Kentucky", "University of California, Santa Barbara", "Hong Kong University of Science and Technology", "University of Colorado Boulder", "Harvard University", "Meiji University", "Swarthmore College"]};
+const CONF_KEY = 'acla';
+
+
+const tooltip = document.getElementById('tooltip');
+function showTooltip(evt, html) {
+    tooltip.innerHTML = html;
+    tooltip.classList.add('show');
+    const r = tooltip.getBoundingClientRect();
+    let tx = evt.clientX + 14, ty = evt.clientY + 14;
+    if (tx + r.width > window.innerWidth) tx = evt.clientX - r.width - 10;
+    if (ty + r.height > window.innerHeight) ty = evt.clientY - r.height - 10;
+    tooltip.style.left = tx + 'px';
+    tooltip.style.top = ty + 'px';
+}
+function hideTooltip() { tooltip.classList.remove('show'); }
+
+
+
+let isDark = false;
+function toggleTheme() {
+    isDark = !isDark;
+    document.body.classList.toggle('dark-mode', isDark);
+    document.getElementById('themeBtn').textContent = isDark ? '☀ Light' : '☾ Dark';
+    if (typeof onThemeChange === 'function') onThemeChange();
+}
+function cssVar(v) { return getComputedStyle(document.body).getPropertyValue(v).trim(); }
+
+
+
+function exportPng() {
+    const svgEl = document.querySelector('.chart-area svg');
+    if (!svgEl) { alert('No chart to export'); return; }
+    const serializer = new XMLSerializer();
+    const svgStr = serializer.serializeToString(svgEl);
+    const canvas = document.createElement('canvas');
+    const bb = svgEl.getBoundingClientRect();
+    canvas.width = bb.width * 2; canvas.height = bb.height * 2;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(2, 2);
+    ctx.fillStyle = cssVar('--bg');
+    ctx.fillRect(0, 0, bb.width, bb.height);
+    const img = new Image();
+    const blob = new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+        ctx.drawImage(img, 0, 0, bb.width, bb.height);
+        URL.revokeObjectURL(url);
+        const link = document.createElement('a');
+        link.download = 'acla_' + (activeTab || 'chart') + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    };
+    img.src = url;
+}
+function exportCsv() {
+    if (typeof buildCsvContent !== 'function') { alert('No CSV export defined'); return; }
+    const csvContent = buildCsvContent();
+    const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = 'acla_' + (activeTab || 'data') + '.csv';
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+}
+
+
+
+
+
+    const DATA = ALL_DATA;
+    const allNodes = DATA.nodes;
+    const allEdges = DATA.edges;
+    const confYears = DATA.years;
+    const topInsts = DATA.topInsts;
+    const SCHOOL_COLORS = {"Columbia University": "#B9D9EB", "Yale University": "#00356B", "Duke University": "#003087", "Harvard University": "#A51C30", "Cornell University": "#B31B1B", "Stanford University": "#8C1515", "Dartmouth College": "#00693E", "Northwestern University": "#4E2A84", "New York University": "#57068C", "Princeton University": "#E77500", "University of Michigan": "#FFCB05", "University of Chicago": "#800000", "University of California, Los Angeles": "#2774AE", "University of California, Berkeley": "#003262", "University of Pennsylvania": "#011F5B", "University of Minnesota": "#7A0019", "University of Washington": "#4B2E83", "University of Hawai'i": "#024731", "Pennsylvania State University": "#041E42", "University of Illinois at Urbana-Champaign": "#E84A27", "Emory University": "#012169", "University of Pittsburgh": "#003594", "Oberlin College": "#A6192E", "The Ohio State University": "#BB0000", "Rutgers University": "#CC0033", "Indiana University": "#990000", "Purdue University": "#CEB888", "University of British Columbia": "#002145", "Tufts University": "#3E8EDE", "University of Oregon": "#154733", "University of Colorado Boulder": "#CFB87C", "Boston University": "#CC0000", "University of Toronto": "#002A5C", "University of Massachusetts Amherst": "#881C1C", "Washington University in St. Louis": "#A51417", "University of Tokyo": "#2A5CAA", "Kyoto University": "#1B3A5C", "Waseda University": "#8B0000", "Keio University": "#C8102E", "Osaka University": "#00567B"};
+    const SCHOOL_COLORS_DARK = {"Columbia University": "#B9D9EB", "Yale University": "#3377AA", "Duke University": "#3366BB", "Harvard University": "#A51C30", "Cornell University": "#B31B1B", "Stanford University": "#8C1515", "Dartmouth College": "#00693E", "Northwestern University": "#4E2A84", "New York University": "#57068C", "Princeton University": "#E77500", "University of Michigan": "#FFCB05", "University of Chicago": "#800000", "University of California, Los Angeles": "#2774AE", "University of California, Berkeley": "#3366AA", "University of Pennsylvania": "#3355AA", "University of Minnesota": "#7A0019", "University of Washington": "#4B2E83", "University of Hawai'i": "#024731", "Pennsylvania State University": "#334488", "University of Illinois at Urbana-Champaign": "#E84A27", "Emory University": "#3355AA", "University of Pittsburgh": "#003594", "Oberlin College": "#A6192E", "The Ohio State University": "#BB0000", "Rutgers University": "#CC0033", "Indiana University": "#990000", "Purdue University": "#CEB888", "University of British Columbia": "#3366AA", "Tufts University": "#3E8EDE", "University of Oregon": "#154733", "University of Colorado Boulder": "#CFB87C", "Boston University": "#CC0000", "University of Toronto": "#3366AA", "University of Massachusetts Amherst": "#881C1C", "Washington University in St. Louis": "#A51417", "University of Tokyo": "#2A5CAA", "Kyoto University": "#4477AA", "Waseda University": "#8B0000", "Keio University": "#C8102E", "Osaka University": "#00567B"};
+    const TOPIC_CAT_COLORS = {"literary_figure": "#e6194b", "theme": "#3cb44b", "genre": "#4363d8", "period": "#f58231"};
+    const OTHER_COLOR = '#888';
+
+    // --- State ---
+    let yearMin = confYears[0] || 1992, yearMax = confYears[confYears.length - 1] || 2026;
+    let topN = Math.min(300, allNodes.length);
+    let minEdgeWeight = 1;
+    let selectedNode = null, hoveredNode = null, searchHighlight = null;
+    let layoutMode = 'force';
+    let instFilterActive = false;
+    let instFilter = new Set(topInsts);
+    let visibleNodes = new Set();
+    let visibleEdges = [];
+    let visAdj = new Map();
+    let sim = null;
+    let transform = d3.zoomIdentity;
+    let darkMode = false;
+
+    // --- Canvas setup ---
+    const wrap = document.getElementById('canvas-wrap');
+    const canvas = document.getElementById('graph');
+    const ctx = canvas.getContext('2d');
+    let dpr = window.devicePixelRatio || 1;
+    let width, height;
+
+    function resize() {
+        dpr = window.devicePixelRatio || 1;
+        width = wrap.clientWidth * dpr;
+        height = wrap.clientHeight * dpr;
+        canvas.width = width;
+        canvas.height = height;
+        canvas.style.width = wrap.clientWidth + 'px';
+        canvas.style.height = wrap.clientHeight + 'px';
+        draw();
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // --- Color helpers ---
+    function instColor(inst) {
+        const colors = darkMode ? SCHOOL_COLORS_DARK : SCHOOL_COLORS;
+        return colors[inst] || OTHER_COLOR;
+    }
+    function nodeRadius(n) {
+        const d = n._visDeg !== undefined ? n._visDeg : n.deg;
+        return Math.max(3, Math.min(20, 2 + Math.sqrt(d) * 1.6));
+    }
+    function edgeWidth(w) { return Math.min(3, Math.max(1, w)); }
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // --- Adjacency ---
+    const adj = new Map();
+    allNodes.forEach(n => adj.set(n.id, new Set()));
+    allEdges.forEach(e => { adj.get(e.s).add(e.t); adj.get(e.t).add(e.s); });
+
+    // --- Filtering ---
+    function applyFilters() {
+        const yearDegree = new Map();
+        const yearEdges = [];
+        allEdges.forEach(e => {
+            const fy = e.yrs.filter(y => y >= yearMin && y <= yearMax);
+            if (fy.length === 0) return;
+            const fw = fy.length;
+            if (fw < minEdgeWeight) return;
+            if (instFilterActive) {
+                const ns = allNodes[e.s], nt = allNodes[e.t];
+                if (!instFilter.has(ns.inst) && !instFilter.has(nt.inst)) return;
+            }
+            yearDegree.set(e.s, (yearDegree.get(e.s) || 0) + 1);
+            yearDegree.set(e.t, (yearDegree.get(e.t) || 0) + 1);
+            yearEdges.push({s: e.s, t: e.t, w: e.w, fw: fw, yrs: fy});
+        });
+        allNodes.forEach(n => { n._visDeg = yearDegree.get(n.id) || 0; });
+
+        // Top-N by degree
+        const sorted = [...yearDegree.entries()].sort((a, b) => b[1] - a[1]);
+        const activeSet = new Set();
+        for (let i = 0; i < Math.min(topN, sorted.length); i++) activeSet.add(sorted[i][0]);
+        // Always include selected/search
+        if (selectedNode) activeSet.add(selectedNode.id);
+        if (searchHighlight) activeSet.add(searchHighlight.id);
+
+        visibleNodes = new Set();
+        visibleEdges = [];
+        visAdj = new Map();
+        allNodes.forEach(n => visAdj.set(n.id, new Set()));
+
+        yearEdges.forEach(e => {
+            if (!activeSet.has(e.s) && !activeSet.has(e.t)) return;
+            visibleEdges.push(e);
+            visibleNodes.add(e.s);
+            visibleNodes.add(e.t);
+            visAdj.get(e.s).add(e.t);
+            visAdj.get(e.t).add(e.s);
+        });
+
+        document.getElementById('stats-bar').textContent =
+            visibleNodes.size + ' nodes, ' + visibleEdges.length + ' edges (top ' + topN + ')';
+    }
+
+    // --- Force simulation ---
+    function buildSim() {
+        applyFilters();
+        const simNodes = allNodes.filter(n => visibleNodes.has(n.id));
+        const simEdges = visibleEdges.map(e => ({source: e.s, target: e.t, weight: e.fw}));
+
+        if (sim) sim.stop();
+        const nCount = simNodes.length;
+        const chargeStr = nCount > 500 ? -8 : nCount > 200 ? -12 : -15;
+        const linkDist = nCount > 500 ? 30 : nCount > 200 ? 40 : 50;
+
+        sim = d3.forceSimulation(simNodes)
+            .force('link', d3.forceLink(simEdges).id(d => d.id)
+                .distance(d => linkDist + 20 / (d.weight || 1))
+                .strength(d => 0.3 * Math.min(d.weight, 3) / 3))
+            .force('charge', d3.forceManyBody().strength(chargeStr))
+            .force('collision', d3.forceCollide(d => nodeRadius(d) + 1))
+            .force('center', d3.forceCenter(width / (2 * dpr), height / (2 * dpr)))
+            .alphaDecay(0.02)
+            .on('tick', draw);
+
+        if (layoutMode === 'timeline') applyTimelineLayout(simNodes);
+    }
+
+    function applyTimelineLayout(simNodes) {
+        const minYr = confYears[0] || yearMin;
+        const maxYr = confYears[confYears.length - 1] || yearMax;
+        const pad = 100, w = width / dpr;
+        simNodes.forEach(n => {
+            const yr = n.yr1 || minYr;
+            n.fx = pad + ((yr - minYr) / Math.max(1, maxYr - minYr)) * (w - 2 * pad);
+            n.fy = undefined;
+        });
+        sim.force('center', null);
+        sim.alpha(0.5).restart();
+    }
+
+    // --- Drawing ---
+    function draw() {
+        ctx.save();
+        ctx.clearRect(0, 0, width, height);
+        ctx.translate(transform.x * dpr, transform.y * dpr);
+        ctx.scale(transform.k * dpr, transform.k * dpr);
+
+        const isLight = !darkMode;
+        const edgeBase = isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)';
+        const edgeHi = isLight ? 'rgba(37,99,235,0.5)' : 'rgba(74,158,255,0.5)';
+        const hasSel = selectedNode !== null || searchHighlight !== null;
+        const focusId = selectedNode ? selectedNode.id : (searchHighlight ? searchHighlight.id : null);
+        const neighborSet = focusId !== null ? visAdj.get(focusId) : null;
+
+        // Timeline axis
+        if (layoutMode === 'timeline' && transform.k > 0.3) {
+            ctx.strokeStyle = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
+            ctx.lineWidth = 1 / transform.k;
+            const minYr = confYears[0] || yearMin, maxYr = confYears[confYears.length - 1] || yearMax;
+            const pad = 100, w = width / dpr;
+            confYears.forEach(yr => {
+                const x = pad + ((yr - minYr) / Math.max(1, maxYr - minYr)) * (w - 2 * pad);
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height / dpr); ctx.stroke();
+                if (transform.k > 0.5) {
+                    ctx.fillStyle = isLight ? '#888' : '#666';
+                    ctx.font = Math.round(10 / transform.k) + 'px sans-serif';
+                    ctx.fillText(yr, x - 12, 20 / transform.k);
+                }
+            });
+        }
+
+        // Edges
+        visibleEdges.forEach(e => {
+            const s = allNodes[e.s], t = allNodes[e.t];
+            if (s.x === undefined || t.x === undefined) return;
+            let color, alpha = 1;
+            if (hasSel) {
+                if (focusId === e.s || focusId === e.t) { color = edgeHi; }
+                else { color = edgeBase; alpha = 0.15; }
+            } else { color = edgeBase; }
+            ctx.globalAlpha = alpha;
+            ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(t.x, t.y);
+            ctx.strokeStyle = color; ctx.lineWidth = edgeWidth(e.fw) / transform.k;
+            ctx.stroke();
+        });
+
+        // Nodes
+        allNodes.forEach(n => {
+            if (!visibleNodes.has(n.id) || n.x === undefined) return;
+            const r = nodeRadius(n);
+            let alpha = 1;
+            if (hasSel) {
+                if (n.id === focusId || (neighborSet && neighborSet.has(n.id))) alpha = 1;
+                else alpha = 0.12;
+            }
+            ctx.globalAlpha = alpha;
+            ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+            ctx.fillStyle = instColor(n.inst); ctx.fill();
+            if (n === selectedNode || n === hoveredNode || n === searchHighlight) {
+                ctx.lineWidth = 2.5 / transform.k;
+                ctx.strokeStyle = isLight ? '#1a1a2e' : '#ffffff';
+                ctx.stroke();
+            }
+        });
+
+        // Labels for high-degree nodes when zoomed
+        if (transform.k > 0.7) {
+            const thresh = transform.k > 2.5 ? 2 : transform.k > 1.5 ? 5 : transform.k > 1.0 ? 10 : 15;
+            ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            ctx.font = Math.round(10 / transform.k) + 'px sans-serif';
+            allNodes.forEach(n => {
+                if (!visibleNodes.has(n.id) || n.x === undefined) return;
+                const show = n === selectedNode || n === hoveredNode || n === searchHighlight;
+                const d = n._visDeg !== undefined ? n._visDeg : n.deg;
+                if (!show && d < thresh) return;
+                const r = nodeRadius(n);
+                let alpha = 1;
+                if (hasSel && n.id !== focusId && !(neighborSet && neighborSet.has(n.id))) alpha = 0.12;
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = isLight ? '#1a1a2e' : '#e0e0e0';
+                ctx.fillText(n.name, n.x + r + 3, n.y);
+            });
+        }
+        ctx.globalAlpha = 1;
+        ctx.restore();
+    }
+
+    // --- Hit testing ---
+    function findNode(mx, my) {
+        const sx = (mx - transform.x) / transform.k;
+        const sy = (my - transform.y) / transform.k;
+        let closest = null, closestDist = Infinity;
+        allNodes.forEach(n => {
+            if (!visibleNodes.has(n.id) || n.x === undefined) return;
+            const r = nodeRadius(n) + 3;
+            const dx = n.x - sx, dy = n.y - sy;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < r && dist < closestDist) { closest = n; closestDist = dist; }
+        });
+        return closest;
+    }
+
+    // --- Sidebar ---
+    function openSidebar(n) {
+        if (!n) return;
+        selectedNode = n;
+        const roleCounts = {};
+        n.papers.forEach(p => { roleCounts[p.r] = (roleCounts[p.r] || 0) + 1; });
+        const roleStr = Object.entries(roleCounts).map(([r, c]) => esc(r) + ' x' + c).join(', ');
+        const sorted = [...n.papers].sort((a, b) => a.y - b.y);
+        let papersHtml = '<div class="sb-papers">';
+        sorted.slice(0, 30).forEach(p => {
+            papersHtml += '<div class="sb-paper"><span class="yr">' + p.y + '</span> ' + esc(p.t);
+            if (p.i) papersHtml += ' <span style="color:var(--fg3)">(' + esc(p.i) + ')</span>';
+            papersHtml += '</div>';
+        });
+        if (sorted.length > 30) papersHtml += '<div style="color:var(--fg3)">... and ' + (sorted.length - 30) + ' more</div>';
+        papersHtml += '</div>';
+
+        let cpHtml = '';
+        if (n.copanelists.length) {
+            cpHtml = '<h4 style="margin-top:10px">Top Co-Panelists</h4>';
+            n.copanelists.forEach(cp => {
+                cpHtml += '<div style="padding:2px 0">' + esc(cp.name) + ' <span style="color:var(--fg3)">(' + cp.cnt + ')</span></div>';
+            });
+        }
+
+        let topicHtml = '';
+        if (n.topics.length) {
+            const maxC = n.topics[0].cnt;
+            topicHtml = '<h4 style="margin-top:10px">Topic Profile</h4>';
+            n.topics.slice(0, 12).forEach(t => {
+                const w = Math.max(8, (t.cnt / maxC) * 120);
+                const color = TOPIC_CAT_COLORS[t.cat] || '#999';
+                topicHtml += '<div class="sb-bar-wrap"><div class="sb-bar" style="width:' + w + 'px;background:' + color + '"></div>' +
+                    '<span class="sb-bar-label">' + esc(t.term) + '</span><span class="sb-bar-cnt">' + t.cnt + '</span></div>';
+            });
+        }
+
+        document.getElementById('sb-content').innerHTML =
+            '<h3>' + esc(n.name) + '</h3>' +
+            '<div style="color:var(--fg2);margin-bottom:8px">' + n.insts.map(i => esc(i)).join('; ') + '</div>' +
+            '<div class="sb-stat"><span class="lbl">Presentations:</span> ' + n.app + '</div>' +
+            '<div class="sb-stat"><span class="lbl">Years:</span> ' + n.yr1 + ' \u2013 ' + n.yr2 + ' (' + n.uyr + ' unique)</div>' +
+            '<div class="sb-stat"><span class="lbl">Co-panelists:</span> ' + n.deg + '</div>' +
+            '<div class="sb-stat"><span class="lbl">Roles:</span> ' + roleStr + '</div>' +
+            '<h4 style="margin-top:10px">Presentations</h4>' + papersHtml + cpHtml + topicHtml;
+        document.getElementById('sidebar').classList.add('open');
+        draw();
+    }
+
+    function closeSidebar() {
+        selectedNode = null;
+        document.getElementById('sidebar').classList.remove('open');
+        draw();
+    }
+
+    // --- Search ---
+    const searchBox = document.createElement('input');
+    searchBox.type = 'text'; searchBox.placeholder = 'Search person...';
+    searchBox.className = 'search-box';
+    document.getElementById('toolbar').insertBefore(searchBox, document.querySelector('.spacer').nextSibling);
+    const sr = document.getElementById('search-results');
+
+    searchBox.addEventListener('input', () => {
+        const val = searchBox.value.trim();
+        if (val.length < 2) { sr.style.display = 'none'; searchHighlight = null; draw(); return; }
+        const lower = val.toLowerCase();
+        const vis = [], other = [];
+        allNodes.forEach(n => {
+            if (!n.name.toLowerCase().includes(lower)) return;
+            if (visibleNodes.has(n.id)) vis.push(n); else other.push(n);
+        });
+        const matches = [...vis, ...other].slice(0, 15);
+        if (!matches.length) { sr.style.display = 'none'; return; }
+        sr.innerHTML = '';
+        matches.forEach(n => {
+            const d = document.createElement('div');
+            d.textContent = n.name + (n.inst ? ' (' + n.inst + ')' : '');
+            d.addEventListener('click', () => {
+                searchHighlight = n; searchBox.value = n.name; sr.style.display = 'none';
+                if (!visibleNodes.has(n.id)) buildSim();
+                openSidebar(n);
+                if (n.x !== undefined) {
+                    const cx = width / (2 * dpr), cy = height / (2 * dpr);
+                    const newK = Math.max(transform.k, 1.2);
+                    const nt = d3.zoomIdentity.translate(cx - n.x * newK, cy - n.y * newK).scale(newK);
+                    d3.select(canvas).transition().duration(500).call(zoom.transform, nt);
+                }
+            });
+            sr.appendChild(d);
+        });
+        const box = searchBox.getBoundingClientRect();
+        sr.style.left = box.left + 'px'; sr.style.top = box.bottom + 2 + 'px';
+        sr.style.width = Math.max(250, box.width) + 'px';
+        sr.style.display = 'block';
+    });
+    document.addEventListener('click', e => {
+        if (!sr.contains(e.target) && e.target !== searchBox) sr.style.display = 'none';
+    });
+
+    // --- Zoom + Drag ---
+    let dragNode = null, dragStartX = 0, dragStartY = 0, isDragging = false;
+    const zoom = d3.zoom().scaleExtent([0.05, 25]).on('zoom', e => {
+        transform = e.transform; draw();
+    });
+    d3.select(canvas).call(zoom);
+
+    canvas.addEventListener('mousedown', e => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+        dragStartX = e.clientX; dragStartY = e.clientY; isDragging = false;
+        const n = findNode(mx, my);
+        if (n) { dragNode = n; n.fx = n.x; n.fy = n.y; sim.alphaTarget(0.1).restart(); }
+    });
+    canvas.addEventListener('mousemove', e => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+        if (dragNode) {
+            isDragging = true;
+            const sx = (mx - transform.x) / transform.k, sy = (my - transform.y) / transform.k;
+            dragNode.fx = sx; dragNode.fy = sy;
+            return;
+        }
+        const n = findNode(mx, my);
+        if (n !== hoveredNode) {
+            hoveredNode = n;
+            canvas.style.cursor = n ? 'pointer' : 'grab';
+            draw();
+            if (n) {
+                showTooltip(e, '<strong>' + esc(n.name) + '</strong><br>' +
+                    (n.inst || '') + '<br>Presentations: ' + n.app + ', Co-panelists: ' + n.deg);
+            } else hideTooltip();
+        } else if (n) {
+            const tip = document.getElementById('tooltip');
+            tip.style.left = (e.clientX + 14) + 'px'; tip.style.top = (e.clientY + 14) + 'px';
+        }
+    });
+    canvas.addEventListener('mouseup', e => {
+        if (dragNode) {
+            const dx = e.clientX - dragStartX, dy = e.clientY - dragStartY;
+            if (Math.abs(dx) < 4 && Math.abs(dy) < 4) openSidebar(dragNode);
+            dragNode.fx = null; dragNode.fy = null; dragNode = null;
+            sim.alphaTarget(0);
+        }
+    });
+    canvas.addEventListener('mouseleave', () => { hoveredNode = null; hideTooltip(); draw(); });
+
+    // --- Institution filter panel ---
+    function buildInstPanel() {
+        const checks = document.getElementById('inst-checks');
+        checks.innerHTML = '';
+        topInsts.forEach((inst, i) => {
+            const div = document.createElement('div'); div.className = 'inst-cb';
+            const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = instFilter.has(inst);
+            cb.addEventListener('change', () => {
+                if (cb.checked) instFilter.add(inst); else instFilter.delete(inst);
+                instFilterActive = instFilter.size < topInsts.length;
+                buildSim();
+            });
+            const dot = document.createElement('span'); dot.className = 'inst-dot';
+            dot.style.background = instColor(inst);
+            const lbl = document.createElement('span'); lbl.textContent = inst;
+            div.appendChild(cb); div.appendChild(dot); div.appendChild(lbl);
+            checks.appendChild(div);
+        });
+    }
+    buildInstPanel();
+    window.instSelectAll = () => { instFilter = new Set(topInsts); instFilterActive = false; buildInstPanel(); buildSim(); };
+    window.instClearAll = () => { instFilter.clear(); instFilterActive = true; buildInstPanel(); buildSim(); };
+
+    // --- Toolbar controls ---
+    // Year range
+    const yrGroup = document.createElement('div'); yrGroup.className = 'tb-group';
+    yrGroup.innerHTML = '<label>Years:</label><input type="range" id="yr-min" min="' + confYears[0] + '" max="' + confYears[confYears.length - 1] + '" value="' + confYears[0] + '">' +
+        '<span class="range-display" id="yr-display">' + confYears[0] + ' \u2013 ' + confYears[confYears.length - 1] + '</span>' +
+        '<input type="range" id="yr-max" min="' + confYears[0] + '" max="' + confYears[confYears.length - 1] + '" value="' + confYears[confYears.length - 1] + '">';
+    document.getElementById('toolbar').insertBefore(yrGroup, document.querySelector('.spacer'));
+
+    document.getElementById('yr-min').addEventListener('input', function() {
+        yearMin = +this.value; if (yearMin > yearMax) { yearMax = yearMin; document.getElementById('yr-max').value = yearMax; }
+        document.getElementById('yr-display').textContent = yearMin + ' \u2013 ' + yearMax; buildSim();
+    });
+    document.getElementById('yr-max').addEventListener('input', function() {
+        yearMax = +this.value; if (yearMax < yearMin) { yearMin = yearMax; document.getElementById('yr-min').value = yearMin; }
+        document.getElementById('yr-display').textContent = yearMin + ' \u2013 ' + yearMax; buildSim();
+    });
+
+    // Top-N slider
+    const tnGroup = document.createElement('div'); tnGroup.className = 'tb-group';
+    tnGroup.innerHTML = '<label>Show top</label><input type="range" id="top-n" min="50" max="' + Math.min(2000, allNodes.length) + '" value="' + topN + '" step="10"><span class="range-display" id="tn-display">' + topN + '</span>';
+    document.getElementById('toolbar').insertBefore(tnGroup, document.querySelector('.spacer'));
+    document.getElementById('top-n').addEventListener('input', function() {
+        topN = +this.value; document.getElementById('tn-display').textContent = topN; buildSim();
+    });
+
+    // Min edge weight
+    const ewGroup = document.createElement('div'); ewGroup.className = 'tb-group';
+    ewGroup.innerHTML = '<label>Min weight</label><input type="range" id="edge-wt" min="1" max="5" value="1"><span class="range-display" id="ew-display">1</span>';
+    document.getElementById('toolbar').insertBefore(ewGroup, document.querySelector('.spacer'));
+    document.getElementById('edge-wt').addEventListener('input', function() {
+        minEdgeWeight = +this.value; document.getElementById('ew-display').textContent = minEdgeWeight; buildSim();
+    });
+
+    // Layout buttons
+    const layGroup = document.createElement('div'); layGroup.className = 'tb-group';
+    layGroup.innerHTML = '<button id="btn-force" class="active" style="padding:3px 8px;font-size:11px;border:1px solid var(--border);border-radius:3px;cursor:pointer;">Force</button>' +
+        '<button id="btn-timeline" style="padding:3px 8px;font-size:11px;border:1px solid var(--border);border-radius:3px;cursor:pointer;">Timeline</button>';
+    document.getElementById('toolbar').insertBefore(layGroup, document.querySelector('.spacer'));
+    document.getElementById('btn-force').addEventListener('click', () => {
+        layoutMode = 'force'; document.getElementById('btn-force').classList.add('active');
+        document.getElementById('btn-timeline').classList.remove('active');
+        allNodes.forEach(n => { n.fx = null; n.fy = null; });
+        buildSim();
+    });
+    document.getElementById('btn-timeline').addEventListener('click', () => {
+        layoutMode = 'timeline'; document.getElementById('btn-timeline').classList.add('active');
+        document.getElementById('btn-force').classList.remove('active');
+        buildSim();
+    });
+
+    // Institution panel toggle
+    const ipBtn = document.createElement('button');
+    ipBtn.textContent = 'Institutions'; ipBtn.style.cssText = 'padding:3px 8px;font-size:11px;border:1px solid var(--border);border-radius:3px;cursor:pointer;';
+    ipBtn.addEventListener('click', () => document.getElementById('inst-panel').classList.toggle('open'));
+    document.getElementById('toolbar').insertBefore(ipBtn, document.querySelector('.spacer'));
+
+    // Theme toggle override
+    function onThemeChange() {
+        darkMode = isDark; buildInstPanel(); draw();
+    }
+
+    // PNG export for canvas
+    function exportPng() {
+        const link = document.createElement('a');
+        link.download = 'acla_copanel_network.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+
+    // CSV export
+    function buildCsvContent() {
+        let csv = 'name,institution,appearances,unique_years,first_year,last_year,copanelists\n';
+        allNodes.filter(n => visibleNodes.has(n.id)).forEach(n => {
+            csv += '"' + n.name.replace(/"/g,'""') + '","' + (n.inst || '').replace(/"/g,'""') + '",' +
+                n.app + ',' + n.uyr + ',' + n.yr1 + ',' + n.yr2 + ',' + n.deg + '\n';
+        });
+        return csv;
+    }
+
+    // Init
+    buildSim();
+    
+
+</script>
+
+
+<style>
+.info-btn { font-size:16px; font-weight:bold; min-width:32px; cursor:pointer; }
+#info-overlay {
+  display:none; position:fixed; inset:0; z-index:9999;
+  background:rgba(0,0,0,.55); justify-content:center; align-items:center;
+}
+#info-overlay.show { display:flex; }
+#info-box {
+  background:var(--bg,#fff); color:var(--fg,#222); border:1px solid var(--border,#ccc);
+  border-radius:10px; max-width:720px; width:92vw; max-height:85vh;
+  display:flex; flex-direction:column; box-shadow:0 8px 32px rgba(0,0,0,.3);
+}
+#info-header {
+  display:flex; align-items:center; padding:14px 20px 0; gap:12px;
+}
+#info-header .info-tab {
+  padding:8px 18px; cursor:pointer; border-radius:6px 6px 0 0;
+  border:1px solid var(--border,#ccc); border-bottom:none;
+  background:var(--bg2,#f5f5f5); font-size:13px; font-weight:600;
+}
+#info-header .info-tab.active {
+  background:var(--bg,#fff); border-bottom:1px solid var(--bg,#fff);
+  margin-bottom:-1px; position:relative; z-index:1;
+}
+#info-close {
+  margin-left:auto; background:none; border:none; font-size:22px;
+  cursor:pointer; color:var(--fg,#222); padding:4px 8px; line-height:1;
+}
+#info-body {
+  padding:20px 24px; overflow-y:auto; border-top:1px solid var(--border,#ccc);
+  font-size:14px; line-height:1.65;
+}
+#info-body h3 { margin:16px 0 8px; font-size:15px; }
+#info-body p { margin:0 0 10px; }
+#info-body ul { margin:4px 0 10px 20px; }
+#info-body li { margin:0 0 4px; }
+.info-pane { display:none; }
+.info-pane.active { display:block; }
+</style>
+<div id="info-overlay" onclick="if(event.target===this)toggleInfoModal()">
+  <div id="info-box">
+    <div id="info-header">
+      <div class="info-tab active" data-pane="about" onclick="switchInfoTab(this)">About This Visualization</div>
+      <div class="info-tab" data-pane="method" onclick="switchInfoTab(this)">Methodology</div>
+      <button id="info-close" onclick="toggleInfoModal()">&times;</button>
+    </div>
+    <div id="info-body">
+      <div class="info-pane active" id="info-about">
+    <p>This visualization shows the <strong>co-paneling network</strong> at
+    American Comparative Literature Association (ACLA) conferences. Nodes represent scholars; edges connect
+    people who have appeared on the same panel or session. Node size reflects
+    degree (number of unique co-panelists), and color indicates primary
+    institutional affiliation.</p>
+    <p>Use the year slider to focus on specific time periods. The Top-N slider
+    controls how many nodes are displayed (by degree). The edge weight filter
+    removes weak connections.</p>
+    </div>
+      <div class="info-pane" id="info-method">
+    <h3>Data Sources</h3>
+    <p>Co-paneling edges are computed from ACLA presentation records in the
+    project database. Two scholars share an edge if they appeared on the same
+    session/panel in at least one year.</p>
+    <h3>Network Layout</h3>
+    <p><strong>Force:</strong> D3.js v7 force simulation with adaptive parameters
+    (weaker charge for larger networks). <strong>Timeline:</strong> X-axis fixed
+    to first-appearance year.</p>
+    <h3>Filtering</h3>
+    <p>The Top-N slider selects the N highest-degree nodes in the year-filtered
+    network. The institution filter can restrict to specific institutions.</p>
+    </div>
+    </div>
+  </div>
+</div>
+<script>
+function toggleInfoModal(){
+  document.getElementById('info-overlay').classList.toggle('show');
+}
+function switchInfoTab(el){
+  document.querySelectorAll('#info-header .info-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#info-body .info-pane').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('info-'+el.dataset.pane).classList.add('active');
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.getElementById('info-overlay').classList.remove('show'); });
+</script>
+
+</body>
+</html>

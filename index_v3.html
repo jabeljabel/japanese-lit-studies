@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Japanese Literary Studies — Digital Humanities Project</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #f6f3ee;
+    --bg-card: #ffffff;
+    --bg-tag: #f0ebe5;
+    --bg-tag-active: #8b3a3a;
+    --bg-child-tag: #e8e3dc;
+    --bg-child-active: #a85a52;
+    --text: #2c2826;
+    --text-muted: #6b6460;
+    --text-light: #9e9590;
+    --accent: #8b3a3a;
+    --accent-light: #c4847a;
+    --accent-pale: #e8d5d0;
+    --border: #e0dbd5;
+    --border-hover: #c4b8ae;
+    --shadow: rgba(44, 40, 38, 0.06);
+    --shadow-hover: rgba(44, 40, 38, 0.14);
+    --serif: 'Cormorant Garamond', 'Georgia', serif;
+    --sans: 'Source Sans 3', 'Segoe UI', sans-serif;
+  }
+  [data-theme="dark"] {
+    --bg: #1a1816;
+    --bg-card: #242120;
+    --bg-tag: #2e2a27;
+    --bg-tag-active: #c4847a;
+    --bg-child-tag: #363230;
+    --bg-child-active: #d4a69e;
+    --text: #e8e2da;
+    --text-muted: #9e9590;
+    --text-light: #6b6460;
+    --accent: #c4847a;
+    --accent-light: #d4a69e;
+    --accent-pale: #3a2e2b;
+    --border: #3a3533;
+    --border-hover: #5a524d;
+    --shadow: rgba(0,0,0,0.2);
+    --shadow-hover: rgba(0,0,0,0.4);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+    transition: background 0.4s, color 0.4s;
+  }
+  body::before {
+    content: '';
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
+  }
+
+  .theme-toggle {
+    position: fixed; top: 1.25rem; right: 1.25rem; z-index: 100;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 50%;
+    width: 36px; height: 36px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; color: var(--text-muted); transition: all 0.3s;
+  }
+  .theme-toggle:hover { border-color: var(--border-hover); box-shadow: 0 2px 8px var(--shadow); }
+
+  .container { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 0 2rem; }
+
+  /* ══════ HEADER ══════ */
+  header { padding: 4.5rem 0 2rem; text-align: center; }
+  header .ja { font-family: var(--serif); font-size: 1.05rem; font-weight: 300; color: var(--accent); letter-spacing: 0.3em; margin-bottom: 0.5rem; }
+  header h1 { font-family: var(--serif); font-size: clamp(1.9rem, 4.5vw, 3rem); font-weight: 300; line-height: 1.25; margin-bottom: 0.7rem; }
+  header .sub { font-size: 0.95rem; font-weight: 300; color: var(--text-muted); max-width: 560px; margin: 0 auto; line-height: 1.7; }
+
+  .stats {
+    display: flex; justify-content: center; gap: 2rem; padding: 1.5rem 0 2.5rem; flex-wrap: wrap;
+  }
+  .stat { text-align: center; }
+  .stat-n { font-family: var(--serif); font-size: 1.5rem; font-weight: 600; color: var(--accent); line-height: 1.2; }
+  .stat-l { font-size: 0.7rem; font-weight: 400; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 0.15rem; }
+
+  /* ══════ NAV TABS ══════ */
+  .nav-tabs {
+    display: flex; justify-content: center; gap: 0;
+    border-bottom: 1px solid var(--border); margin-bottom: 2.5rem;
+  }
+  .nav-tab {
+    padding: 0.6rem 1.4rem; font-size: 0.82rem; font-weight: 500;
+    letter-spacing: 0.04em; color: var(--text-muted); background: none;
+    border: none; cursor: pointer; position: relative; transition: color 0.2s;
+    font-family: var(--sans);
+  }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active { color: var(--accent); }
+  .nav-tab.active::after {
+    content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+    height: 2px; background: var(--accent);
+  }
+
+  /* ══════ PANELS ══════ */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── BROWSE: branch cards ── */
+  .branches {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1.15rem;
+  }
+  .branch {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 5px;
+    padding: 1.75rem 1.75rem 1.5rem; text-decoration: none; color: var(--text);
+    transition: all 0.3s; position: relative; overflow: hidden;
+  }
+  .branch:hover { border-color: var(--border-hover); box-shadow: 0 4px 20px var(--shadow-hover); transform: translateY(-2px); }
+  .branch::after {
+    content: '→'; position: absolute; top: 1.75rem; right: 1.75rem;
+    font-size: 1rem; color: var(--accent-light); opacity: 0;
+    transform: translateX(-6px); transition: all 0.3s;
+  }
+  .branch:hover::after { opacity: 1; transform: translateX(0); }
+  .branch-num { font-family: var(--serif); font-size: 0.82rem; color: var(--accent-light); margin-bottom: 0.4rem; letter-spacing: 0.05em; }
+  .branch h2 { font-family: var(--serif); font-size: 1.35rem; font-weight: 400; margin-bottom: 0.45rem; line-height: 1.3; }
+  .branch p { font-size: 0.85rem; color: var(--text-muted); font-weight: 300; line-height: 1.6; margin-bottom: 0.75rem; }
+  .branch-meta { font-size: 0.72rem; color: var(--accent-light); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 500; }
+
+  /* ── FILTER: hierarchical tags ── */
+  .tag-group { margin-bottom: 1.5rem; }
+  .tag-group-label {
+    font-family: var(--serif); font-size: 1rem; font-weight: 400;
+    color: var(--text-muted); margin-bottom: 0.5rem; display: flex;
+    align-items: center; gap: 0.5rem; cursor: pointer; user-select: none;
+  }
+  .tag-group-label .chevron {
+    font-size: 0.65rem; transition: transform 0.2s; display: inline-block;
+  }
+  .tag-group-label:hover { color: var(--text); }
+  .tag-group.expanded .chevron { transform: rotate(90deg); }
+  .parent-tag {
+    display: inline-flex; align-items: center; padding: 0.35rem 0.85rem;
+    font-family: var(--sans); font-size: 0.78rem; font-weight: 500;
+    letter-spacing: 0.03em; background: var(--bg-tag); color: var(--text-muted);
+    border: 1px solid transparent; border-radius: 3px; cursor: pointer;
+    transition: all 0.2s; user-select: none;
+  }
+  .parent-tag:hover { border-color: var(--border-hover); color: var(--text); }
+  .parent-tag.active { background: var(--bg-tag-active); color: #fff; border-color: transparent; }
+  [data-theme="dark"] .parent-tag.active { color: #1a1816; }
+
+  .child-tags {
+    display: none; flex-wrap: wrap; gap: 0.35rem;
+    margin: 0.5rem 0 0 0; padding-left: 0;
+  }
+  .tag-group.expanded .child-tags { display: flex; }
+  .child-tag {
+    padding: 0.25rem 0.6rem; font-family: var(--sans); font-size: 0.7rem;
+    font-weight: 400; background: var(--bg-child-tag); color: var(--text-muted);
+    border: 1px solid transparent; border-radius: 2px; cursor: pointer;
+    transition: all 0.2s; user-select: none;
+  }
+  .child-tag:hover { border-color: var(--border-hover); color: var(--text); }
+  .child-tag.active { background: var(--bg-child-active); color: #fff; border-color: transparent; }
+  [data-theme="dark"] .child-tag.active { color: #1a1816; }
+
+  .filter-results {
+    margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border);
+  }
+  .filter-status {
+    font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; text-align: center;
+    min-height: 1.2em;
+  }
+  .filter-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+  }
+  .filter-card {
+    display: block; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 4px; padding: 0.9rem 1rem; text-decoration: none;
+    color: var(--text); transition: all 0.25s; position: relative;
+  }
+  .filter-card:hover { border-color: var(--border-hover); box-shadow: 0 2px 12px var(--shadow-hover); transform: translateY(-1px); }
+  .filter-card h3 {
+    font-family: var(--serif); font-size: 0.95rem; font-weight: 400;
+    line-height: 1.3; margin-bottom: 0.2rem; padding-right: 1.2rem;
+  }
+  .filter-card .fc-desc { font-size: 0.75rem; color: var(--text-muted); font-weight: 300; line-height: 1.5; }
+  .filter-card .fc-tags { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.4rem; }
+  .filter-card .fc-tag {
+    font-size: 0.6rem; font-weight: 500; text-transform: uppercase;
+    letter-spacing: 0.04em; padding: 0.1rem 0.35rem; background: var(--bg-tag);
+    color: var(--text-light); border-radius: 2px;
+  }
+  .filter-card .fc-tag.matched { background: var(--accent-pale); color: var(--accent); }
+  .filter-card .arrow {
+    position: absolute; top: 0.9rem; right: 0.9rem; font-size: 0.8rem;
+    color: var(--accent-light); opacity: 0; transform: translateX(-4px); transition: all 0.25s;
+  }
+  .filter-card:hover .arrow { opacity: 1; transform: translateX(0); }
+  .no-results { text-align: center; padding: 2rem; color: var(--text-muted); font-style: italic; font-size: 0.88rem; display: none; }
+  .no-results.visible { display: block; }
+
+  /* ── TOURS ── */
+  .tours-intro {
+    text-align: center; font-size: 0.9rem; color: var(--text-muted); font-weight: 300;
+    margin-bottom: 1.5rem; line-height: 1.6;
+  }
+  .tour-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+  .tour-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 5px;
+    padding: 1.25rem 1.3rem; text-decoration: none; color: var(--text);
+    transition: all 0.25s; cursor: pointer; display: block;
+  }
+  .tour-card:hover { border-color: var(--border-hover); box-shadow: 0 3px 14px var(--shadow-hover); transform: translateY(-1px); }
+  .tour-q {
+    font-family: var(--serif); font-size: 1.05rem; font-weight: 400;
+    font-style: italic; line-height: 1.35; margin-bottom: 0.4rem;
+  }
+  .tour-what {
+    font-size: 0.78rem; color: var(--text-muted); font-weight: 300; line-height: 1.55;
+  }
+  .tour-count {
+    font-size: 0.65rem; color: var(--accent-light); text-transform: uppercase;
+    letter-spacing: 0.07em; font-weight: 500; margin-top: 0.5rem;
+  }
+
+  /* ══════ FOOTER ══════ */
+  footer {
+    padding: 2.5rem 0; text-align: center;
+    border-top: 1px solid var(--border); margin-top: 3rem;
+  }
+  footer p { font-size: 0.8rem; color: var(--text-muted); font-weight: 300; line-height: 1.8; }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ══════ ANIMATIONS ══════ */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  header { animation: fadeUp 0.6s ease both; }
+  .stats { animation: fadeUp 0.6s ease 0.1s both; }
+  .nav-tabs { animation: fadeUp 0.5s ease 0.18s both; }
+
+  @media (max-width: 680px) {
+    .branches { grid-template-columns: 1fr; }
+    .filter-grid { grid-template-columns: 1fr; }
+    .tour-grid { grid-template-columns: 1fr; }
+    .stats { gap: 1.2rem; }
+    .nav-tab { padding: 0.55rem 0.9rem; font-size: 0.78rem; }
+  }
+</style>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">◑</button>
+
+<div class="container">
+
+  <header>
+    <div class="ja">日本文学研究</div>
+    <h1>Japanese Literary Studies</h1>
+    <p class="sub">Mapping an academic field through network analysis, content mining, and interactive visualization — 1915 to the present</p>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-n">7,922</div><div class="stat-l">Dissertations</div></div>
+    <div class="stat"><div class="stat-n">13,592</div><div class="stat-l">Conference Papers</div></div>
+    <div class="stat"><div class="stat-n">81,203</div><div class="stat-l">Citations</div></div>
+    <div class="stat"><div class="stat-n">36,767</div><div class="stat-l">Translations</div></div>
+    <div class="stat"><div class="stat-n">75</div><div class="stat-l">Visualizations</div></div>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" data-mode="browse" onclick="setMode('browse')">Browse</button>
+    <button class="nav-tab" data-mode="filter" onclick="setMode('filter')">Filter by Topic</button>
+    <button class="nav-tab" data-mode="tours" onclick="setMode('tours')">Guided Tours</button>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- BROWSE PANEL -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="panel active" id="panel-browse">
+    <div class="branches">
+
+      <a class="branch" href="networks.html">
+        <div class="branch-num">I</div>
+        <h2>Scholarly Networks</h2>
+        <p>Advisor–advisee lineages, citation flows, book review relationships, and cross-source authority metrics.</p>
+        <div class="branch-meta">5,133 scholars · 3,871 edges · 14 visualizations</div>
+      </a>
+
+      <a class="branch" href="conferences.html">
+        <div class="branch-num">II</div>
+        <h2>Conferences</h2>
+        <p>Participation networks and topic trends at AJLS, AAS, MLA, ACLA, and SCMS.</p>
+        <div class="branch-meta">5 venues · 13,592 papers · 43 visualizations</div>
+      </a>
+
+      <a class="branch" href="content.html">
+        <div class="branch-num">III</div>
+        <h2>Content Analysis</h2>
+        <p>Dissertation topic clustering, journal term evolution, and field-wide intellectual trends.</p>
+        <div class="branch-meta">Dissertations · Journals · 10 visualizations</div>
+      </a>
+
+      <a class="branch" href="career.html">
+        <div class="branch-num">IV</div>
+        <h2>Career &amp; Job Market</h2>
+        <p>PhD-to-employment flows, placement outcomes, and sixty years of job listing data.</p>
+        <div class="branch-meta">4,280 listings · 1966–2025 · 3 visualizations</div>
+      </a>
+
+      <a class="branch" href="encyclopedia.html">
+        <div class="branch-num">V</div>
+        <h2>Japanese Literature Encyclopedia</h2>
+        <p>Canonicity analysis, author geography, translation flows, literary movements, and 17,000+ works.</p>
+        <div class="branch-meta">6,913 authors · 66 languages · 10 visualizations</div>
+      </a>
+
+      <a class="branch" href="about.html">
+        <div class="branch-num">VI</div>
+        <h2>About &amp; Methods</h2>
+        <p>Data sources, methodology, coverage caveats, and technical documentation.</p>
+        <div class="branch-meta">Provenance · Methods · Attribution</div>
+      </a>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- FILTER PANEL -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="panel" id="panel-filter">
+
+    <div id="tag-groups"></div>
+
+    <div class="filter-results" id="filter-results" style="display:none;">
+      <div class="filter-status" id="filter-status"></div>
+      <div class="filter-grid" id="filter-grid"></div>
+      <div class="no-results" id="no-results">No visualizations match this combination.</div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- TOURS PANEL -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="panel" id="panel-tours">
+
+    <p class="tours-intro">Each tour collects the visualizations that best answer a research question, cutting across the branches above.</p>
+
+    <div class="tour-grid">
+
+      <a class="tour-card" href="tour_field_change.html">
+        <div class="tour-q">"How has the field changed since 1990?"</div>
+        <div class="tour-what">Field evolution, topic diffusion, generation flow, journal term trends, genre streams</div>
+        <div class="tour-count">8 visualizations</div>
+      </a>
+
+      <a class="tour-card" href="tour_institutions.html">
+        <div class="tour-q">"Which institutions dominate?"</div>
+        <div class="tour-what">Institutional signatures, placement matrix, authority rankings, conference presence</div>
+        <div class="tour-count">7 visualizations</div>
+      </a>
+
+      <a class="tour-card" href="tour_canon.html">
+        <div class="tour-q">"What counts as canonical?"</div>
+        <div class="tour-what">Three-axis canonicity, translation flows, collected works, academic vs. global reception</div>
+        <div class="tour-count">5 visualizations</div>
+      </a>
+
+      <a class="tour-card" href="tour_who_studies.html">
+        <div class="tour-q">"Who studies what?"</div>
+        <div class="tour-what">Advisor lineages, topic clustering, advisee drift, cross-disciplinary connections</div>
+        <div class="tour-count">6 visualizations</div>
+      </a>
+
+      <a class="tour-card" href="tour_global.html">
+        <div class="tour-q">"How global is the field?"</div>
+        <div class="tour-what">Translation reach, author geography, international conference participation</div>
+        <div class="tour-count">5 visualizations</div>
+      </a>
+
+      <a class="tour-card" href="tour_job_market.html">
+        <div class="tour-q">"History of the job market"</div>
+        <div class="tour-what">Sixty years of listings, supply vs. demand, the 2024 structural shift, MLA content analysis</div>
+        <div class="tour-count">3 visualizations</div>
+      </a>
+
+    </div>
+
+  </div>
+
+  <footer>
+    <p>
+      A digital humanities project by Jonathan Abel · Pennsylvania State University<br>
+      Data: ProQuest · Academic Family Tree · CiNii · JSTOR · OpenAlex · Japan Foundation · Wikidata<br>
+      Built with D3.js v7 and Python 3.13
+    </p>
+  </footer>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// HIERARCHICAL TAG DEFINITIONS
+// ══════════════════════════════════════════════
+const TAG_HIERARCHY = [
+  {
+    label: 'Conferences',
+    key: 'conferences',
+    children: ['ajls','aas','mla','acla','scms']
+  },
+  {
+    label: 'Networks',
+    key: 'networks',
+    children: ['genealogy','citation','reviewers','co-presentation','mentorship']
+  },
+  {
+    label: 'Content',
+    key: 'content',
+    children: ['conferences','dissertations','journals','canon','job listings']
+  },
+  {
+    label: 'Timeline',
+    key: 'timeline',
+    children: ['networks','conferences','dissertations','journals','job market','canon']
+  },
+  {
+    label: 'Canon',
+    key: 'canon',
+    children: ['encyclopedia','translations','authors','works','movements']
+  },
+  {
+    label: 'Institutions',
+    key: 'institutions',
+    children: ['placement','signatures','rankings','conference presence']
+  },
+];
+
+// ══════════════════════════════════════════════
+// VISUALIZATION CATALOG (tags match hierarchy)
+// ══════════════════════════════════════════════
+const VIZS = [
+  // Networks
+  { title:'Flagship Interactive Network', desc:'5,125 nodes, five layouts, three color modes', href:'visualizations/networks/core/japanese_lit_network_visualization.html', tags:['networks','genealogy','institutions','timeline'] },
+  { title:'Core Network', desc:'Triple-overlap: advisor, review, citation layers', href:'visualizations/networks/core/core_network_visualization.html', tags:['networks','genealogy','citation','reviewers'] },
+  { title:'Advisor Genealogy', desc:'Lineage trees with Japan connections overlay', href:'visualizations/networks/core/advisor_genealogy.html', tags:['networks','genealogy','mentorship','conferences'] },
+  { title:'Radial Hierarchy', desc:'Concentric tree layout with search navigation', href:'visualizations/networks/authority/radial_hierarchy.html', tags:['networks','genealogy','institutions'] },
+  { title:'Authority Explorer', desc:'3,075 scholars ranked by 18 composite metrics', href:'visualizations/networks/authority/authority_explorer.html', tags:['networks','institutions','rankings'] },
+  { title:'Multiplex Network', desc:'Three-layer view with Venn overlay, five color modes', href:'visualizations/networks/authority/multiplex_network.html', tags:['networks','citation','reviewers'] },
+  { title:'Intellectual Flow', desc:'Sankey: generation, advisor→topic, institutional pipelines', href:'visualizations/networks/authority/intellectual_flow.html', tags:['networks','timeline','institutions','content'] },
+  { title:'Multilayer Analysis', desc:'Combined relationship types with layer filtering', href:'visualizations/networks/authority/multilayer.html', tags:['networks','citation','reviewers'] },
+  { title:'Field Connections Map', desc:'All 7 edge types: 1,229 nodes, 4,729 edges', href:'visualizations/networks/cross-venue/field_connections_map.html', tags:['networks','conferences','citation','reviewers','co-presentation'] },
+  { title:'Cross-Source Comparison', desc:'Scholar appearance across data sources', href:'visualizations/networks/cross-venue/cross_source_comparison.html', tags:['networks','conferences'] },
+
+  // Conference dashboards
+  { title:'Cross-Conference Dashboard', desc:'Comparative view across all five venues', href:'visualizations/networks/cross-venue/cross_venue_dashboard.html', tags:['conferences','timeline'] },
+  { title:'AJLS Dashboard', desc:'26 years, 1,116 presentations, 641 scholars', href:'visualizations/networks/ajls/ajls_dashboard.html', tags:['conferences','ajls'] },
+  { title:'AAS Dashboard', desc:'21 years, 7,204 presentations — largest venue', href:'visualizations/networks/aas/aas_dashboard.html', tags:['conferences','aas'] },
+  { title:'MLA Dashboard', desc:'59 years, 2,501 presentations — longest span', href:'visualizations/networks/mla/mla_dashboard.html', tags:['conferences','mla'] },
+  { title:'ACLA Dashboard', desc:'23 years, 861 presentations in comparative lit', href:'visualizations/networks/acla/acla_dashboard.html', tags:['conferences','acla'] },
+  { title:'SCMS Dashboard', desc:'15 years, 2,771 presentations in cinema/media', href:'visualizations/networks/scms/scms_dashboard.html', tags:['conferences','scms'] },
+
+  // Conference sub-visualizations
+  { title:'AJLS Network', desc:'Co-presentation network', href:'visualizations/networks/ajls/ajls_network.html', tags:['conferences','ajls','networks','co-presentation'] },
+  { title:'AJLS Topics', desc:'Topic trends across 26 years', href:'visualizations/networks/ajls/ajls_topics.html', tags:['conferences','ajls','content','timeline'] },
+  { title:'AJLS Institutions', desc:'Institutional presence over time', href:'visualizations/networks/ajls/ajls_institutions.html', tags:['conferences','ajls','institutions','conference presence'] },
+  { title:'AJLS Timeline', desc:'Chronological participation view', href:'visualizations/networks/ajls/ajls_timeline.html', tags:['conferences','ajls','timeline'] },
+  { title:'AJLS Participants', desc:'Scholar frequency and career spans', href:'visualizations/networks/ajls/ajls_participants.html', tags:['conferences','ajls'] },
+  { title:'AJLS Panels', desc:'Panel themes and organization', href:'visualizations/networks/ajls/ajls_panels.html', tags:['conferences','ajls','content'] },
+  { title:'AJLS Diversity', desc:'Gender and institutional diversity', href:'visualizations/networks/ajls/ajls_diversity.html', tags:['conferences','ajls'] },
+
+  { title:'AAS Network', desc:'Co-presentation network', href:'visualizations/networks/aas/aas_network.html', tags:['conferences','aas','networks','co-presentation'] },
+  { title:'AAS Topics', desc:'Topic trends across two decades', href:'visualizations/networks/aas/aas_topics.html', tags:['conferences','aas','content','timeline'] },
+  { title:'AAS Institutions', desc:'Institutional representation', href:'visualizations/networks/aas/aas_institutions.html', tags:['conferences','aas','institutions','conference presence'] },
+  { title:'AAS Timeline', desc:'Participation chronology', href:'visualizations/networks/aas/aas_timeline.html', tags:['conferences','aas','timeline'] },
+  { title:'AAS Participants', desc:'Scholar frequency and spans', href:'visualizations/networks/aas/aas_participants.html', tags:['conferences','aas'] },
+  { title:'AAS Diversity', desc:'Diversity trends', href:'visualizations/networks/aas/aas_diversity.html', tags:['conferences','aas'] },
+
+  { title:'MLA Network', desc:'Co-presentation network', href:'visualizations/networks/mla/mla_network.html', tags:['conferences','mla','networks','co-presentation'] },
+  { title:'MLA Topics', desc:'Topic evolution across six decades', href:'visualizations/networks/mla/mla_topics.html', tags:['conferences','mla','content','timeline'] },
+  { title:'MLA Institutions', desc:'Institutional presence over time', href:'visualizations/networks/mla/mla_institutions.html', tags:['conferences','mla','institutions','conference presence'] },
+  { title:'MLA Timeline', desc:'Participation chronology', href:'visualizations/networks/mla/mla_timeline.html', tags:['conferences','mla','timeline'] },
+  { title:'MLA Participants', desc:'Scholar participation patterns', href:'visualizations/networks/mla/mla_participants.html', tags:['conferences','mla'] },
+  { title:'MLA Cross-Disciplinary', desc:'Japan scholars beyond Japan sessions', href:'visualizations/networks/mla/mla_cross_disciplinary.html', tags:['conferences','mla','content'] },
+  { title:'MLA Diversity', desc:'Diversity trends', href:'visualizations/networks/mla/mla_diversity.html', tags:['conferences','mla'] },
+
+  { title:'ACLA Network', desc:'Co-presentation network', href:'visualizations/networks/acla/acla_network.html', tags:['conferences','acla','networks','co-presentation'] },
+  { title:'ACLA Topics', desc:'Topic patterns', href:'visualizations/networks/acla/acla_topics.html', tags:['conferences','acla','content'] },
+  { title:'ACLA Institutions', desc:'Institutional representation', href:'visualizations/networks/acla/acla_institutions.html', tags:['conferences','acla','institutions','conference presence'] },
+  { title:'ACLA Timeline', desc:'Participation chronology', href:'visualizations/networks/acla/acla_timeline.html', tags:['conferences','acla','timeline'] },
+  { title:'ACLA Participants', desc:'Scholar participation', href:'visualizations/networks/acla/acla_participants.html', tags:['conferences','acla'] },
+  { title:'ACLA Diversity', desc:'Diversity trends', href:'visualizations/networks/acla/acla_diversity.html', tags:['conferences','acla'] },
+
+  { title:'SCMS Network', desc:'Co-presentation network', href:'visualizations/networks/scms/scms_network.html', tags:['conferences','scms','networks','co-presentation'] },
+  { title:'SCMS Topics', desc:'Topic patterns — anime, cinema, media', href:'visualizations/networks/scms/scms_topics.html', tags:['conferences','scms','content'] },
+  { title:'SCMS Institutions', desc:'Institutional presence', href:'visualizations/networks/scms/scms_institutions.html', tags:['conferences','scms','institutions','conference presence'] },
+  { title:'SCMS Timeline', desc:'Participation chronology', href:'visualizations/networks/scms/scms_timeline.html', tags:['conferences','scms','timeline'] },
+  { title:'SCMS Participants', desc:'Scholar participation', href:'visualizations/networks/scms/scms_participants.html', tags:['conferences','scms'] },
+  { title:'SCMS Diversity', desc:'Diversity trends', href:'visualizations/networks/scms/scms_diversity.html', tags:['conferences','scms'] },
+
+  // Content: Dissertations
+  { title:'Dissertation Dashboard', desc:'Summary statistics and navigation', href:'visualizations/content/dissertations/modern_japanlit_dashboard.html', tags:['content','dissertations'] },
+  { title:'Topic Diffusion Timeline', desc:'Topics spreading across 15 institutions, 75 years', href:'visualizations/content/dissertations/topic_diffusion_timeline.html', tags:['content','dissertations','timeline','institutions','signatures'] },
+  { title:'Institutional Signatures', desc:'20 institutions × 20 topics with period breakdown', href:'visualizations/content/dissertations/institutional_signatures.html', tags:['content','dissertations','institutions','signatures'] },
+  { title:'Advisee Drift Analysis', desc:'Do students follow or diverge from advisors?', href:'visualizations/content/dissertations/advisee_drift_analysis.html', tags:['content','dissertations','networks','genealogy'] },
+  { title:'Schools & Clusters', desc:'Institutional distance heatmap + similarity network', href:'visualizations/content/dissertations/schools_and_clusters.html', tags:['content','dissertations','institutions','networks'] },
+  { title:'Field Evolution', desc:'Topics, literary figures, terms, genres by decade', href:'visualizations/content/dissertations/field_evolution.html', tags:['content','dissertations','timeline'] },
+
+  // Content: Journals
+  { title:'Journal Term Trends', desc:'Term frequencies: JAS, HJAS, JJS, MN, 1930s–2020s', href:'visualizations/content/journals/term_trends.html', tags:['content','journals','timeline'] },
+  { title:'Content Evolution', desc:'Thematic shifts across 29,311 articles', href:'visualizations/content/journals/content_evolution.html', tags:['content','journals','timeline'] },
+  { title:'Journal Wordclouds', desc:'Visual term frequency by decade and journal', href:'visualizations/content/journals/wordclouds.html', tags:['content','journals'] },
+
+  // Career
+  { title:'Career Paths Explorer', desc:'Migration flows, pipeline, timelines, placement matrix', href:'visualizations/career/career_paths.html', tags:['institutions','placement','networks','timeline'] },
+  { title:'Job Market Trends', desc:'Supply vs. demand, 1966–2025, the 2024 shift', href:'visualizations/career/job_market_trends.html', tags:['timeline','job market','job listings'] },
+  { title:'MLA Job Content Analysis', desc:'What job ads ask for and how it has changed', href:'visualizations/career/mla_job_content.html', tags:['content','job listings','mla','timeline'] },
+
+  // Encyclopedia
+  { title:'Encyclopedia Hub', desc:'Gateway to all encyclopedia visualizations', href:'visualizations/jlit/index.html', tags:['canon','encyclopedia'] },
+  { title:'Three-Axis Canonicity', desc:'6,913 authors: Japanese, Western, global scores', href:'visualizations/jlit/canon.html', tags:['canon','authors','encyclopedia'] },
+  { title:'Author & Setting Geography', desc:'Birthplace choropleth + literary setting heatmap', href:'visualizations/jlit/geography.html', tags:['canon','authors','works','encyclopedia'] },
+  { title:'Translation Flows', desc:'30 authors × 15 languages chord diagram', href:'visualizations/jlit/translations.html', tags:['canon','translations','authors','encyclopedia'] },
+  { title:'Literary Relationship Network', desc:'1,500 nodes: influence, mentorship, association', href:'visualizations/jlit/network.html', tags:['canon','networks','authors','encyclopedia'] },
+  { title:'Historical Timeline', desc:'626–2029: 17,772 lifespans across 14 centuries', href:'visualizations/jlit/timeline.html', tags:['canon','timeline','authors','encyclopedia'] },
+  { title:'Collected Works (Zenshū)', desc:'Publisher × decade heatmap, 892 collections', href:'visualizations/jlit/zenshu.html', tags:['canon','works','timeline','encyclopedia'] },
+  { title:'Literary Movements', desc:'39 movements: members, periods, key works', href:'visualizations/jlit/movements.html', tags:['canon','movements','timeline','encyclopedia'] },
+  { title:'Works Browser', desc:'17,435 works filterable by genre, era, author', href:'visualizations/jlit/works.html', tags:['canon','works','encyclopedia'] },
+  { title:'Genre Stream', desc:'42 decades, 15 genres: rise and fall of forms', href:'visualizations/jlit/genres.html', tags:['canon','works','timeline','encyclopedia'] },
+  { title:'Thematic Analysis', desc:'NLP-classified themes, five viewing modes', href:'visualizations/jlit/themes.html', tags:['canon','content','works','encyclopedia'] },
+];
+
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let activeParent = null;   // currently selected parent tag key (only one at a time)
+let activeChildren = new Set();
+
+// ══════════════════════════════════════════════
+// BUILD TAG GROUPS
+// ══════════════════════════════════════════════
+function buildTagGroups() {
+  const container = document.getElementById('tag-groups');
+  container.innerHTML = '';
+
+  TAG_HIERARCHY.forEach(group => {
+    const div = document.createElement('div');
+    div.className = 'tag-group';
+    div.dataset.key = group.key;
+
+    div.innerHTML = `
+      <div class="tag-group-label" onclick="toggleGroup('${group.key}')">
+        <span class="chevron">▸</span>
+        <span class="parent-tag" data-key="${group.key}" onclick="event.stopPropagation(); selectParent('${group.key}', this)">${group.label}</span>
+      </div>
+      <div class="child-tags">
+        ${group.children.map(c =>
+          `<span class="child-tag" data-child="${c}" onclick="toggleChild('${c}', this)">${c}</span>`
+        ).join('')}
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function toggleGroup(key) {
+  const group = document.querySelector(`.tag-group[data-key="${key}"]`);
+  group.classList.toggle('expanded');
+}
+
+function selectParent(key, el) {
+  // Deselect previous
+  document.querySelectorAll('.parent-tag').forEach(p => p.classList.remove('active'));
+  // Clear children
+  activeChildren.clear();
+  document.querySelectorAll('.child-tag').forEach(c => c.classList.remove('active'));
+
+  if (activeParent === key) {
+    activeParent = null;
+  } else {
+    activeParent = key;
+    el.classList.add('active');
+    // Auto-expand this group
+    const group = document.querySelector(`.tag-group[data-key="${key}"]`);
+    group.classList.add('expanded');
+  }
+  applyFilters();
+}
+
+function toggleChild(child, el) {
+  if (activeChildren.has(child)) {
+    activeChildren.delete(child);
+    el.classList.remove('active');
+  } else {
+    activeChildren.add(child);
+    el.classList.add('active');
+  }
+  applyFilters();
+}
+
+function applyFilters() {
+  const resultsDiv = document.getElementById('filter-results');
+  const grid = document.getElementById('filter-grid');
+  const status = document.getElementById('filter-status');
+  const noResults = document.getElementById('no-results');
+
+  if (!activeParent && activeChildren.size === 0) {
+    resultsDiv.style.display = 'none';
+    return;
+  }
+  resultsDiv.style.display = '';
+
+  // Build set of active filter terms
+  const filters = new Set();
+  if (activeParent) filters.add(activeParent);
+  activeChildren.forEach(c => filters.add(c));
+
+  // Filter: viz must match ALL active filters
+  const matched = VIZS.filter(v => {
+    return [...filters].every(f => v.tags.includes(f));
+  });
+
+  // Render
+  grid.innerHTML = '';
+  matched.forEach(v => {
+    const a = document.createElement('a');
+    a.className = 'filter-card';
+    a.href = v.href;
+    const tagHtml = v.tags.map(t =>
+      `<span class="fc-tag${filters.has(t) ? ' matched' : ''}">${t}</span>`
+    ).join('');
+    a.innerHTML = `
+      <h3>${v.title}</h3>
+      <div class="fc-desc">${v.desc}</div>
+      <div class="fc-tags">${tagHtml}</div>
+      <span class="arrow">→</span>
+    `;
+    grid.appendChild(a);
+  });
+
+  const filterList = [...filters].join(' + ');
+  status.textContent = `${matched.length} visualization${matched.length !== 1 ? 's' : ''} matching: ${filterList}`;
+  noResults.classList.toggle('visible', matched.length === 0);
+}
+
+
+// ══════════════════════════════════════════════
+// MODE SWITCHING
+// ══════════════════════════════════════════════
+function setMode(mode) {
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + mode).classList.add('active');
+}
+
+// ══════════════════════════════════════════════
+// THEME
+// ══════════════════════════════════════════════
+function toggleTheme() {
+  const isDark = document.body.getAttribute('data-theme') === 'dark';
+  document.body.setAttribute('data-theme', isDark ? '' : 'dark');
+  localStorage.setItem('theme', isDark ? 'light' : 'dark');
+}
+if (localStorage.getItem('theme') === 'dark' ||
+    (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  document.body.setAttribute('data-theme', 'dark');
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+buildTagGroups();
+</script>
+
+</body>
+</html>

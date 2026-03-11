@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCMS Geographic Footprint</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
+<style>
+
+:root {
+    --bg: #ffffff; --bg2: #f5f5f5; --bg3: #e8e8e8;
+    --fg: #1a1a2e; --fg2: #555; --fg3: #888;
+    --accent: #2563eb; --accent2: #dc2626;
+    --grid: rgba(0,0,0,0.08); --border: #ddd;
+}
+.dark-mode {
+    --bg: #0a0a1a; --bg2: #141428; --bg3: #1e1e3a;
+    --fg: #e0e0e0; --fg2: #aaa; --fg3: #777;
+    --accent: #4a9eff; --accent2: #ff6b6b;
+    --grid: rgba(255,255,255,0.05); --border: #333;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--fg);
+    overflow-x: hidden;
+}
+#toolbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px; background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap; min-height: 44px;
+}
+#toolbar h1 {
+    font-size: 16px; font-weight: 600; white-space: nowrap;
+}
+.spacer { flex: 1; }
+#toolbar button, #toolbar select {
+    padding: 5px 12px; border-radius: 4px;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--fg); cursor: pointer; font-size: 12px;
+}
+#toolbar button:hover { background: var(--bg3); }
+.info-btn {
+    width: 28px; height: 28px; border-radius: 50% !important;
+    padding: 0 !important; font-size: 14px !important;
+    display: flex; align-items: center; justify-content: center;
+}
+
+/* Tabs */
+.tabs {
+    display: flex; border-bottom: 2px solid var(--border);
+    padding: 0 16px; background: var(--bg2); gap: 2px;
+}
+.tab-btn {
+    padding: 8px 16px; border: none; background: transparent;
+    color: var(--fg2); cursor: pointer; font-size: 13px;
+    font-weight: 500; border-bottom: 2px solid transparent;
+    margin-bottom: -2px; transition: all 0.15s;
+}
+.tab-btn:hover { color: var(--fg); background: var(--bg3); }
+.tab-btn.active {
+    color: var(--accent); border-bottom-color: var(--accent);
+    font-weight: 600;
+}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Controls */
+.controls {
+    display: flex; gap: 12px; padding: 10px 16px;
+    flex-wrap: wrap; align-items: center;
+    border-bottom: 1px solid var(--border);
+}
+.btn-group {
+    display: flex; border: 1px solid var(--border); border-radius: 4px;
+    overflow: hidden;
+}
+.btn-group button {
+    padding: 4px 10px; border: none; border-right: 1px solid var(--border);
+    background: var(--bg); color: var(--fg2); cursor: pointer; font-size: 12px;
+}
+.btn-group button:last-child { border-right: none; }
+.btn-group button:hover { background: var(--bg3); }
+.btn-group button.active { background: var(--accent); color: #fff; }
+.controls label { font-size: 12px; color: var(--fg2); }
+.controls select {
+    padding: 3px 8px; font-size: 12px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--fg); border-radius: 3px;
+}
+.controls input[type="range"] { width: 120px; }
+
+/* Chart area */
+.chart-container {
+    display: flex; width: 100%; min-height: calc(100vh - 160px);
+}
+.chart-area {
+    flex: 1; overflow: hidden; position: relative;
+    padding: 16px;
+}
+.legend-panel {
+    width: 220px; min-width: 220px; padding: 10px;
+    border-left: 1px solid var(--border);
+    overflow-y: auto; font-size: 12px;
+    max-height: calc(100vh - 160px);
+}
+.legend-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3px 6px; cursor: pointer; border-radius: 3px;
+    transition: opacity 0.15s;
+}
+.legend-item:hover { background: var(--bg3); }
+.legend-item.muted { opacity: 0.25; }
+.legend-dot {
+    width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0;
+}
+.legend-label { flex: 1; }
+.legend-count { color: var(--fg3); font-size: 11px; }
+.legend-divider {
+    font-size: 10px; color: var(--fg3); text-transform: uppercase;
+    letter-spacing: 0.5px; padding: 6px 6px 2px;
+    margin-top: 4px; border-top: 1px solid var(--border);
+}
+.show-all-btn {
+    display: block; width: 100%; padding: 4px 8px; margin-top: 6px;
+    border: 1px solid var(--border); border-radius: 3px;
+    background: var(--bg2); color: var(--fg2); cursor: pointer;
+    font-size: 11px; text-align: center;
+}
+.show-all-btn:hover { background: var(--bg3); }
+
+/* Tooltip */
+#tooltip {
+    position: fixed; pointer-events: none; z-index: 1000;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 12px; font-size: 12px;
+    line-height: 1.4; max-width: 300px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: none;
+}
+#tooltip.show { display: block; }
+
+/* Sidebar (for network/presenter viz) */
+.sidebar {
+    width: 320px; min-width: 320px; padding: 12px;
+    border-left: 1px solid var(--border);
+    overflow-y: auto; font-size: 12px;
+    max-height: calc(100vh - 100px);
+}
+.sidebar h3 { font-size: 14px; margin-bottom: 8px; }
+.sidebar .stat { margin: 4px 0; }
+.sidebar .stat-label { color: var(--fg2); }
+
+/* Search */
+.search-box {
+    padding: 5px 10px; border: 1px solid var(--border);
+    border-radius: 4px; background: var(--bg); color: var(--fg);
+    font-size: 12px; width: 180px;
+}
+.search-box::placeholder { color: var(--fg3); }
+
+/* COVID annotation */
+.covid-marker {
+    font-size: 10px; color: var(--accent2); font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .chart-container { flex-direction: column; }
+    .legend-panel, .sidebar {
+        width: 100%; min-width: 100%;
+        max-height: 200px; border-left: none;
+        border-top: 1px solid var(--border);
+    }
+}
+
+
+    .geo-tabs {
+        display: flex; gap: 4px; padding: 10px 16px;
+        border-bottom: 1px solid var(--border);
+    }
+    .geo-tab {
+        padding: 5px 14px; border: 1px solid var(--border); border-radius: 16px;
+        background: var(--bg); color: var(--fg2); cursor: pointer; font-size: 12px;
+    }
+    .geo-tab:hover { background: var(--bg3); }
+    .geo-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .geo-view { display: none; }
+    .geo-view.active { display: block; }
+    .period-bar {
+        display: flex; gap: 4px; padding: 8px 16px; align-items: center;
+        border-bottom: 1px solid var(--border);
+    }
+    .period-btn {
+        padding: 3px 10px; border: 1px solid var(--border); border-radius: 12px;
+        background: var(--bg); color: var(--fg2); cursor: pointer; font-size: 11px;
+    }
+    .period-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    #pack-wrap { padding: 16px; text-align: center; }
+    #trends-wrap { padding: 16px; }
+    #pack-summary {
+        display: flex; gap: 24px; justify-content: center; margin-bottom: 12px;
+        font-size: 13px;
+    }
+    .stat-box { text-align: center; }
+    .stat-val { font-size: 22px; font-weight: 700; color: var(--accent); }
+    .stat-lbl { font-size: 11px; color: var(--fg2); }
+    .region-legend {
+        display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+        margin: 12px 0; font-size: 11px;
+    }
+    .region-legend-item { display: flex; align-items: center; gap: 4px; }
+    .region-swatch { width: 12px; height: 12px; border-radius: 2px; }
+    .trend-legend {
+        display: flex; gap: 16px; justify-content: center; margin: 8px 0;
+        font-size: 12px;
+    }
+    .trend-legend-item { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+    .trend-legend-item.dimmed { opacity: 0.3; }
+    .trend-swatch { width: 16px; height: 3px; border-radius: 1px; }
+    
+</style>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
+</head>
+<body>
+
+<div id="toolbar">
+    <h1>SCMS Geographic Footprint</h1>
+    <div class="spacer"></div>
+    <button class="info-btn" onclick="toggleInfoModal()" title="About this visualization">&#8505;</button>
+    <button onclick="exportPng()">Export PNG</button>
+    <button onclick="exportCsv()">Export CSV</button>
+    <button id="themeBtn" onclick="toggleTheme()">&#9790; Dark</button>
+</div>
+
+
+
+
+    <div class="geo-tabs">
+        <button class="geo-tab active" data-gview="pack">Institutional Footprint</button>
+        
+    </div>
+
+    <div id="gview-pack" class="geo-view active">
+        <div class="period-bar" id="period-bar"></div>
+        <div id="pack-summary"></div>
+        <div class="region-legend" id="region-legend"></div>
+        <div id="pack-wrap"><svg id="packSvg"></svg></div>
+    </div>
+
+    
+    
+
+<div id="tooltip"></div>
+
+<script>
+const ALL_DATA = {"hierarchy": {"name": "root", "children": [{"name": "US West", "children": [{"name": "University of Southern California", "region": "US West", "total": 24, "unique_presenters": 15, "periods": {"All": 24, "2008-2017": 20, "2018-2026": 4}}, {"name": "University of California, Berkeley", "region": "US West", "total": 16, "unique_presenters": 9, "periods": {"All": 16, "2008-2017": 14, "2018-2026": 2}}, {"name": "University of Oregon", "region": "US West", "total": 13, "unique_presenters": 8, "periods": {"All": 13, "2008-2017": 9, "2018-2026": 4}}, {"name": "Stanford University", "region": "US West", "total": 7, "unique_presenters": 5, "periods": {"All": 7, "2008-2017": 4, "2018-2026": 3}}, {"name": "University of Pittsburgh", "region": "US West", "total": 6, "unique_presenters": 4, "periods": {"All": 6, "2008-2017": 6, "2018-2026": 0}}, {"name": "University of California, Irvine", "region": "US West", "total": 6, "unique_presenters": 4, "periods": {"All": 6, "2008-2017": 4, "2018-2026": 2}}, {"name": "Hamilton College", "region": "US West", "total": 4, "unique_presenters": 2, "periods": {"All": 4, "2008-2017": 3, "2018-2026": 1}}, {"name": "University of California, Santa Barbara", "region": "US West", "total": 4, "unique_presenters": 3, "periods": {"All": 4, "2008-2017": 1, "2018-2026": 3}}, {"name": "Middlebury College", "region": "US West", "total": 3, "unique_presenters": 3, "periods": {"All": 3, "2008-2017": 3, "2018-2026": 0}}, {"name": "Swarthmore College", "region": "US West", "total": 3, "unique_presenters": 2, "periods": {"All": 3, "2008-2017": 3, "2018-2026": 0}}, {"name": "University of Western Ontario", "region": "US West", "total": 3, "unique_presenters": 3, "periods": {"All": 3, "2008-2017": 3, "2018-2026": 0}}, {"name": "University of East Anglia", "region": "US West", "total": 3, "unique_presenters": 1, "periods": {"All": 3, "2008-2017": 2, "2018-2026": 1}}, {"name": "University of California, Los Angeles", "region": "US West", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 1, "2018-2026": 1}}, {"name": "Occidental College", "region": "US West", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 1, "2018-2026": 1}}, {"name": "Bowling Green State University", "region": "US West", "total": 2, "unique_presenters": 1, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "Colby College", "region": "US West", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 1, "2018-2026": 1}}, {"name": "University of California, Santa Cruz", "region": "US West", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 1, "2018-2026": 1}}, {"name": "Washington and Lee University", "region": "US West", "total": 2, "unique_presenters": 1, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "University of Washington", "region": "US West", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "University of Utah", "region": "US West", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 1, "2018-2026": 1}}, {"name": "University of California, San Diego", "region": "US West", "total": 2, "unique_presenters": 1, "periods": {"All": 2, "2008-2017": 0, "2018-2026": 2}}, {"name": "University of Washington Tacoma", "region": "US West", "total": 2, "unique_presenters": 1, "periods": {"All": 2, "2008-2017": 0, "2018-2026": 2}}, {"name": "University of Ulster", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University of the West of England", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Birkbeck College, University of", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University of Nagasaki", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University of Southampton", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University of Art and Design", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Earlham College", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University of Amsterdam", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University of California, Davis", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University of Nottingham, Ningbo", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University of California-Irvine", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Ursinus College", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University of Derby", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Shizuoka University of Art and Culture", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Saint Mary’s College of California", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "College of St. Scholastica", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Palomar College", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University Of East Anglia", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University Of Glasgow", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University Of Southern California", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Washington University", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Otaru University Of Commere", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University Of Washington", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University Of Utah", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "San Francisco State University", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University of Southern", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Hunter College", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "California State University, Northridge", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University of Campinas (Unicamp)", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "Ringling College of Art and Design", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "University of Utah Film and Media Arts", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "Colorado State University", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "University of Bristol", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "University of San Diego", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "Portland State University", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "Washington University at St. Louis", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "University of Idaho", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "College of St. Benedict / St. John’s University", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "Ringling College of Art & Design and Persephone Blue Berge", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "University of Colorado Boulder", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "Randolph-Macon College", "region": "US West", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}]}, {"name": "US Midwest", "children": [{"name": "University of Chicago", "region": "US Midwest", "total": 23, "unique_presenters": 17, "periods": {"All": 23, "2008-2017": 18, "2018-2026": 5}}, {"name": "University of Kansas", "region": "US Midwest", "total": 6, "unique_presenters": 3, "periods": {"All": 6, "2008-2017": 6, "2018-2026": 0}}, {"name": "University of Wisconsin-Madison", "region": "US Midwest", "total": 5, "unique_presenters": 5, "periods": {"All": 5, "2008-2017": 4, "2018-2026": 1}}, {"name": "University of Michigan", "region": "US Midwest", "total": 5, "unique_presenters": 4, "periods": {"All": 5, "2008-2017": 3, "2018-2026": 2}}, {"name": "University of Notre Dame", "region": "US Midwest", "total": 4, "unique_presenters": 3, "periods": {"All": 4, "2008-2017": 2, "2018-2026": 2}}, {"name": "University of Iowa", "region": "US Midwest", "total": 4, "unique_presenters": 3, "periods": {"All": 4, "2008-2017": 1, "2018-2026": 3}}, {"name": "Indiana University", "region": "US Midwest", "total": 3, "unique_presenters": 3, "periods": {"All": 3, "2008-2017": 2, "2018-2026": 1}}, {"name": "University of Minnesota", "region": "US Midwest", "total": 3, "unique_presenters": 3, "periods": {"All": 3, "2008-2017": 3, "2018-2026": 0}}, {"name": "Washington University in St. Louis", "region": "US Midwest", "total": 3, "unique_presenters": 1, "periods": {"All": 3, "2008-2017": 2, "2018-2026": 1}}, {"name": "University of Illinois at Urbana-Champaign", "region": "US Midwest", "total": 2, "unique_presenters": 1, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "Carleton College", "region": "US Midwest", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 1, "2018-2026": 1}}, {"name": "University Of Wisconsin-Madison", "region": "US Midwest", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "University Of Michigan", "region": "US Midwest", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "Wayne State University", "region": "US Midwest", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University Of Notre Dame", "region": "US Midwest", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University Of Minnesota", "region": "US Midwest", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University Of Iowa", "region": "US Midwest", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University Of Kansas", "region": "US Midwest", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Macalester College", "region": "US Midwest", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Illinois College", "region": "US Midwest", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Michigan State University", "region": "US Midwest", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "University Wisconsin-Madison", "region": "US Midwest", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "Indiana University, Bloomington", "region": "US Midwest", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "University of Cincinnati", "region": "US Midwest", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}]}, {"name": "US Northeast", "children": [{"name": "Yale University", "region": "US Northeast", "total": 16, "unique_presenters": 9, "periods": {"All": 16, "2008-2017": 15, "2018-2026": 1}}, {"name": "Harvard University", "region": "US Northeast", "total": 11, "unique_presenters": 8, "periods": {"All": 11, "2008-2017": 8, "2018-2026": 3}}, {"name": "Cornell University", "region": "US Northeast", "total": 7, "unique_presenters": 6, "periods": {"All": 7, "2008-2017": 6, "2018-2026": 1}}, {"name": "University of Rochester", "region": "US Northeast", "total": 5, "unique_presenters": 4, "periods": {"All": 5, "2008-2017": 4, "2018-2026": 1}}, {"name": "Brown University", "region": "US Northeast", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "University of Massachusetts, Amherst", "region": "US Northeast", "total": 2, "unique_presenters": 1, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "Wellesley College", "region": "US Northeast", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 1, "2018-2026": 1}}, {"name": "Columbia University", "region": "US Northeast", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "Massachusetts Institute of Technology", "region": "US Northeast", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 1, "2018-2026": 1}}, {"name": "Northeastern University", "region": "US Northeast", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 1, "2018-2026": 1}}, {"name": "Georgetown University", "region": "US Northeast", "total": 2, "unique_presenters": 1, "periods": {"All": 2, "2008-2017": 0, "2018-2026": 2}}, {"name": "University of Pennsylvania", "region": "US Northeast", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 0, "2018-2026": 2}}, {"name": "Johns Hopkins University", "region": "US Northeast", "total": 2, "unique_presenters": 1, "periods": {"All": 2, "2008-2017": 0, "2018-2026": 2}}, {"name": "William & Mary", "region": "US Northeast", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 0, "2018-2026": 2}}, {"name": "Stony Brook University", "region": "US Northeast", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "New School", "region": "US Northeast", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Tufts University", "region": "US Northeast", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Boston College", "region": "US Northeast", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Queens College, City University of", "region": "US Northeast", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Baruch College, City University of New York", "region": "US Northeast", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "State University of New York, Stony Brook", "region": "US Northeast", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "State University of New York, Oswego", "region": "US Northeast", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "State University of New York, Geneseo", "region": "US Northeast", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University of Massachusetts Amherst", "region": "US Northeast", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University Of Rochester", "region": "US Northeast", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University of Massachusetts Boston", "region": "US Northeast", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Princeton University", "region": "US Northeast", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "Pennsylvania State University", "region": "US Northeast", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}]}, {"name": "Canada", "children": [{"name": "Concordia University", "region": "Canada", "total": 12, "unique_presenters": 5, "periods": {"All": 12, "2008-2017": 10, "2018-2026": 2}}, {"name": "New York University", "region": "Canada", "total": 9, "unique_presenters": 7, "periods": {"All": 9, "2008-2017": 9, "2018-2026": 0}}, {"name": "McGill University", "region": "Canada", "total": 8, "unique_presenters": 3, "periods": {"All": 8, "2008-2017": 8, "2018-2026": 0}}, {"name": "Northwestern University", "region": "Canada", "total": 6, "unique_presenters": 6, "periods": {"All": 6, "2008-2017": 4, "2018-2026": 2}}, {"name": "University of Toronto", "region": "Canada", "total": 6, "unique_presenters": 6, "periods": {"All": 6, "2008-2017": 4, "2018-2026": 2}}, {"name": "Carleton University", "region": "Canada", "total": 5, "unique_presenters": 1, "periods": {"All": 5, "2008-2017": 5, "2018-2026": 0}}, {"name": "University of Montreal", "region": "Canada", "total": 4, "unique_presenters": 2, "periods": {"All": 4, "2008-2017": 4, "2018-2026": 0}}, {"name": "Simon Fraser University", "region": "Canada", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "York University", "region": "Canada", "total": 2, "unique_presenters": 1, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "Western University, Canada", "region": "Canada", "total": 2, "unique_presenters": 1, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "Mcgill University", "region": "Canada", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University Of Manitoba", "region": "Canada", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University Of Toronto", "region": "Canada", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University Laval", "region": "Canada", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University of British Columbia", "region": "Canada", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "Concordia University, Montreal", "region": "Canada", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "University of Alberta", "region": "Canada", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}]}, {"name": "Japan", "children": [{"name": "Waseda University", "region": "Japan", "total": 16, "unique_presenters": 11, "periods": {"All": 16, "2008-2017": 11, "2018-2026": 5}}, {"name": "Kyoto University", "region": "Japan", "total": 10, "unique_presenters": 7, "periods": {"All": 10, "2008-2017": 7, "2018-2026": 3}}, {"name": "University of Tokyo", "region": "Japan", "total": 7, "unique_presenters": 6, "periods": {"All": 7, "2008-2017": 7, "2018-2026": 0}}, {"name": "Meiji Gakuin University", "region": "Japan", "total": 5, "unique_presenters": 4, "periods": {"All": 5, "2008-2017": 5, "2018-2026": 0}}, {"name": "Nagoya University", "region": "Japan", "total": 4, "unique_presenters": 2, "periods": {"All": 4, "2008-2017": 4, "2018-2026": 0}}, {"name": "Meiji-gakuin University", "region": "Japan", "total": 2, "unique_presenters": 1, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "Tokyo Institute of Technology", "region": "Japan", "total": 2, "unique_presenters": 1, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "Rikkyo University", "region": "Japan", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 1, "2018-2026": 1}}, {"name": "University of the Ryukyus", "region": "Japan", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Komazawa University", "region": "Japan", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Nihon University, College of Art", "region": "Japan", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Meiji Gakuin University, Tokyo", "region": "Japan", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Theatre Museum of Waseda University", "region": "Japan", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Kansai University", "region": "Japan", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Senshu University", "region": "Japan", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Tokyo Metropolitan University", "region": "Japan", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Hokkaido University", "region": "Japan", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Meijigakuin University", "region": "Japan", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Hitotsubashi University", "region": "Japan", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Doshisha University", "region": "Japan", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}]}, {"name": "Other", "children": [{"name": "Josai International University", "region": "Other", "total": 4, "unique_presenters": 4, "periods": {"All": 4, "2008-2017": 4, "2018-2026": 0}}, {"name": "Chapman University", "region": "Other", "total": 3, "unique_presenters": 2, "periods": {"All": 3, "2008-2017": 2, "2018-2026": 1}}, {"name": "Old Dominion University", "region": "Other", "total": 3, "unique_presenters": 1, "periods": {"All": 3, "2008-2017": 3, "2018-2026": 0}}, {"name": "Colgate University", "region": "Other", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "Director, Animator", "region": "Other", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "Daito Bunka University", "region": "Other", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "Rowan University", "region": "Other", "total": 2, "unique_presenters": 1, "periods": {"All": 2, "2008-2017": 0, "2018-2026": 2}}, {"name": "Fluminense Federal University, UFF", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Universidade Federal Fluminense", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Federal University, Rio de Janeiro", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "York St. John University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Emily Carr University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "“Bulcke’s Burden: The Figure of the Censor in early 1920s Weimar Censorship Decisions”", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "California Institute of the Arts", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Johannes Gutenberg University-", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Sundance Film Music Program", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Shobi Graduate University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Chulalongkorn University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Flinders University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "National Chiao Tung University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Director, CG Creator", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "School of Oriental and African Studies", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "York St John University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Graduate School of Art", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Southampton Solent University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Musashi University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Saint John’s University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Aberystwyth University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Chongqing University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "“Montage Theory in Postwar Japan”", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Korea Advanced Institute of Science & Technology", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "IMT Institute for Advanced Studies", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Reitaku University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "National Yang-Ming University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Terasaki Center for Japanese", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Bath Spa University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "West Chester University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "Lingnan University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "Towson University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "DePaul University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "Kanazawa University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "Clark University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "Setsunan University", "region": "Other", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}]}, {"name": "US South", "children": [{"name": "University of Florida", "region": "US South", "total": 8, "unique_presenters": 7, "periods": {"All": 8, "2008-2017": 3, "2018-2026": 5}}, {"name": "University of Oklahoma", "region": "US South", "total": 7, "unique_presenters": 4, "periods": {"All": 7, "2008-2017": 1, "2018-2026": 6}}, {"name": "Tulane University", "region": "US South", "total": 4, "unique_presenters": 4, "periods": {"All": 4, "2008-2017": 2, "2018-2026": 2}}, {"name": "Georgia Institute of Technology", "region": "US South", "total": 3, "unique_presenters": 2, "periods": {"All": 3, "2008-2017": 3, "2018-2026": 0}}, {"name": "Emory University", "region": "US South", "total": 3, "unique_presenters": 2, "periods": {"All": 3, "2008-2017": 3, "2018-2026": 0}}, {"name": "University of Texas, Austin", "region": "US South", "total": 2, "unique_presenters": 1, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "Florida State University", "region": "US South", "total": 2, "unique_presenters": 1, "periods": {"All": 2, "2008-2017": 1, "2018-2026": 1}}, {"name": "Rice University", "region": "US South", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University Of Oklahoma", "region": "US South", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University Of Florida", "region": "US South", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University of Texas at Austin", "region": "US South", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Virginia Tech University", "region": "US South", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University of North Carolina at", "region": "US South", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Vanderbilt University", "region": "US South", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University of Oklahoma (Norman)", "region": "US South", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "Texas Tech University", "region": "US South", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "University of Virginia", "region": "US South", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "Emory Univeristy", "region": "US South", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}]}, {"name": "East Asia (non-Japan)", "children": [{"name": "University of Hong Kong", "region": "East Asia (non-Japan)", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "Chinese University of Hong Kong, Shatin", "region": "East Asia (non-Japan)", "total": 2, "unique_presenters": 1, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "Seoul National University", "region": "East Asia (non-Japan)", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 1, "2018-2026": 1}}, {"name": "National University of Singapore", "region": "East Asia (non-Japan)", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 0, "2018-2026": 2}}, {"name": "Hong Kong Baptist University", "region": "East Asia (non-Japan)", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Yonsei University", "region": "East Asia (non-Japan)", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "City University of Hong Kong", "region": "East Asia (non-Japan)", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Dongguk University, Seoul", "region": "East Asia (non-Japan)", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Sungkyunkwan University", "region": "East Asia (non-Japan)", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Hong Kong University Of Science And", "region": "East Asia (non-Japan)", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Nanyang Technological University", "region": "East Asia (non-Japan)", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Hong Kong University of Science", "region": "East Asia (non-Japan)", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Hong Kong University of Science and", "region": "East Asia (non-Japan)", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Hong Kong University of Science and Technology", "region": "East Asia (non-Japan)", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "Korea University", "region": "East Asia (non-Japan)", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}]}, {"name": "UK/Europe", "children": [{"name": "Oxford Brookes University", "region": "UK/Europe", "total": 3, "unique_presenters": 2, "periods": {"All": 3, "2008-2017": 3, "2018-2026": 0}}, {"name": "University of Warwick", "region": "UK/Europe", "total": 2, "unique_presenters": 1, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "SOAS, University of London", "region": "UK/Europe", "total": 2, "unique_presenters": 2, "periods": {"All": 2, "2008-2017": 1, "2018-2026": 1}}, {"name": "University of Cambridge", "region": "UK/Europe", "total": 2, "unique_presenters": 1, "periods": {"All": 2, "2008-2017": 2, "2018-2026": 0}}, {"name": "Birkbeck College, University of London", "region": "UK/Europe", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University College, University of Oxford", "region": "UK/Europe", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Oxford Brookes University/ University of", "region": "UK/Europe", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University Of Oxford", "region": "UK/Europe", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "King’s College London", "region": "UK/Europe", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "Stockholm University", "region": "UK/Europe", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University London", "region": "UK/Europe", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}, {"name": "Oxford University", "region": "UK/Europe", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 0, "2018-2026": 1}}]}, {"name": "Oceania", "children": [{"name": "University of Melbourne", "region": "Oceania", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}, {"name": "University of Sydney", "region": "Oceania", "total": 1, "unique_presenters": 1, "periods": {"All": 1, "2008-2017": 1, "2018-2026": 0}}]}]}, "trends": [{"year": 2008, "total": 9, "unique_institutions": 9, "hhi": 0.1111, "top5_pct": 55.6, "intl_pct": 22.2}, {"year": 2009, "total": 146, "unique_institutions": 96, "hhi": 0.0157, "top5_pct": 17.1, "intl_pct": 43.2}, {"year": 2010, "total": 31, "unique_institutions": 23, "hhi": 0.0593, "top5_pct": 41.9, "intl_pct": 32.3}, {"year": 2011, "total": 29, "unique_institutions": 21, "hhi": 0.0559, "top5_pct": 37.9, "intl_pct": 31.0}, {"year": 2012, "total": 39, "unique_institutions": 32, "hhi": 0.0348, "top5_pct": 25.6, "intl_pct": 38.5}, {"year": 2013, "total": 40, "unique_institutions": 29, "hhi": 0.045, "top5_pct": 35.0, "intl_pct": 40.0}, {"year": 2014, "total": 47, "unique_institutions": 36, "hhi": 0.0376, "top5_pct": 29.8, "intl_pct": 34.0}, {"year": 2015, "total": 35, "unique_institutions": 28, "hhi": 0.0416, "top5_pct": 31.4, "intl_pct": 51.4}, {"year": 2016, "total": 23, "unique_institutions": 21, "hhi": 0.051, "top5_pct": 30.4, "intl_pct": 65.2}, {"year": 2017, "total": 21, "unique_institutions": 18, "hhi": 0.0658, "top5_pct": 38.1, "intl_pct": 66.7}, {"year": 2020, "total": 24, "unique_institutions": 23, "hhi": 0.0451, "top5_pct": 25.0, "intl_pct": 25.0}, {"year": 2023, "total": 30, "unique_institutions": 28, "hhi": 0.0378, "top5_pct": 23.3, "intl_pct": 33.3}, {"year": 2024, "total": 36, "unique_institutions": 31, "hhi": 0.037, "top5_pct": 27.8, "intl_pct": 33.3}, {"year": 2025, "total": 26, "unique_institutions": 24, "hhi": 0.0444, "top5_pct": 26.9, "intl_pct": 23.1}, {"year": 2026, "total": 20, "unique_institutions": 17, "hhi": 0.065, "top5_pct": 40.0, "intl_pct": 15.0}], "years": [2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2020, 2023, 2024, 2025, 2026], "periods": ["All", "2008-2017", "2018-2026"]};
+const CONF_KEY = 'scms';
+
+
+const tooltip = document.getElementById('tooltip');
+function showTooltip(evt, html) {
+    tooltip.innerHTML = html;
+    tooltip.classList.add('show');
+    const r = tooltip.getBoundingClientRect();
+    let tx = evt.clientX + 14, ty = evt.clientY + 14;
+    if (tx + r.width > window.innerWidth) tx = evt.clientX - r.width - 10;
+    if (ty + r.height > window.innerHeight) ty = evt.clientY - r.height - 10;
+    tooltip.style.left = tx + 'px';
+    tooltip.style.top = ty + 'px';
+}
+function hideTooltip() { tooltip.classList.remove('show'); }
+
+
+
+let isDark = false;
+function toggleTheme() {
+    isDark = !isDark;
+    document.body.classList.toggle('dark-mode', isDark);
+    document.getElementById('themeBtn').textContent = isDark ? '☀ Light' : '☾ Dark';
+    if (typeof onThemeChange === 'function') onThemeChange();
+}
+function cssVar(v) { return getComputedStyle(document.body).getPropertyValue(v).trim(); }
+
+
+
+function exportPng() {
+    const svgEl = document.querySelector('.chart-area svg');
+    if (!svgEl) { alert('No chart to export'); return; }
+    const serializer = new XMLSerializer();
+    const svgStr = serializer.serializeToString(svgEl);
+    const canvas = document.createElement('canvas');
+    const bb = svgEl.getBoundingClientRect();
+    canvas.width = bb.width * 2; canvas.height = bb.height * 2;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(2, 2);
+    ctx.fillStyle = cssVar('--bg');
+    ctx.fillRect(0, 0, bb.width, bb.height);
+    const img = new Image();
+    const blob = new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+        ctx.drawImage(img, 0, 0, bb.width, bb.height);
+        URL.revokeObjectURL(url);
+        const link = document.createElement('a');
+        link.download = 'scms_' + (activeTab || 'chart') + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    };
+    img.src = url;
+}
+function exportCsv() {
+    if (typeof buildCsvContent !== 'function') { alert('No CSV export defined'); return; }
+    const csvContent = buildCsvContent();
+    const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = 'scms_' + (activeTab || 'data') + '.csv';
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+}
+
+
+
+
+
+    const DATA = ALL_DATA;
+    const REGION_COLORS = {"US Northeast": "#4363d8", "US Midwest": "#e6194b", "US South": "#f58231", "US West": "#42d4f4", "Canada": "#3cb44b", "Japan": "#dc143c", "UK/Europe": "#469990", "East Asia (non-Japan)": "#911eb4", "Oceania": "#ffe119", "Other": "#888888"};
+    let currentGView = 'pack';
+    let currentPeriod = 'All';
+    let darkMode = false;
+    const trendVisibility = { unique_institutions: true, hhi: true, top5_pct: true, intl_pct: true };
+
+    function onThemeChange() { darkMode = isDark; if (currentGView === 'trends') drawTrends(); else drawPack(); }
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // Tab switching
+    document.querySelectorAll('.geo-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.geo-tab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentGView = btn.dataset.gview;
+            document.querySelectorAll('.geo-view').forEach(v => v.classList.remove('active'));
+            const viewEl = document.getElementById('gview-' + currentGView);
+            if (viewEl) {
+                viewEl.classList.add('active');
+                if (currentGView === 'pack') drawPack();
+                else if (currentGView === 'trends') drawTrends();
+            }
+        });
+    });
+
+    // Period buttons
+    const periodBar = document.getElementById('period-bar');
+    DATA.periods.forEach((p, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'period-btn' + (i === 0 ? ' active' : '');
+        btn.textContent = p; btn.dataset.period = p;
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentPeriod = p; drawPack();
+        });
+        periodBar.appendChild(btn);
+    });
+
+    // Region legend
+    const regLeg = document.getElementById('region-legend');
+    Object.entries(REGION_COLORS).forEach(([name, color]) => {
+        const item = document.createElement('span'); item.className = 'region-legend-item';
+        item.innerHTML = '<span class="region-swatch" style="background:' + color + '"></span>' + name;
+        regLeg.appendChild(item);
+    });
+
+    // --- Packed circles ---
+    function drawPack() {
+        const period = currentPeriod;
+        const container = document.getElementById('pack-wrap');
+        const W = container.clientWidth || 900, H = 550;
+        const svg = d3.select('#packSvg').attr('width', W).attr('height', H)
+            .attr('viewBox', '0 0 ' + W + ' ' + H);
+        svg.selectAll('*').remove();
+
+        // Deep copy + filter
+        const hData = JSON.parse(JSON.stringify(DATA.hierarchy));
+        hData.children = hData.children.map(region => {
+            region.children = (region.children || []).filter(inst => {
+                return inst.periods && inst.periods[period] > 0;
+            });
+            return region;
+        }).filter(r => r.children && r.children.length > 0);
+
+        const root = d3.hierarchy(hData)
+            .sum(d => (!d.children || d.children.length === 0) ? (d.periods ? d.periods[period] || 0 : 0) : 0)
+            .sort((a, b) => (b.value || 0) - (a.value || 0));
+
+        d3.pack().size([W - 20, H - 20]).padding(d => d.depth === 0 ? 16 : 3)(root);
+
+        const g = svg.append('g').attr('transform', 'translate(10, 10)');
+
+        // Region circles (depth 1)
+        const regionNodes = root.descendants().filter(d => d.depth === 1 && d.r > 0);
+        g.selectAll('circle.region').data(regionNodes).join('circle')
+            .attr('class', 'region')
+            .attr('cx', d => d.x).attr('cy', d => d.y).attr('r', d => d.r)
+            .attr('fill', d => (REGION_COLORS[d.data.name] || '#888') + '18')
+            .attr('stroke', d => REGION_COLORS[d.data.name] || '#888')
+            .attr('stroke-width', 1).attr('stroke-dasharray', '4,3');
+
+        // Region labels
+        g.selectAll('text.region-label').data(regionNodes.filter(d => d.r > 30)).join('text')
+            .attr('class', 'region-label')
+            .attr('x', d => d.x).attr('y', d => d.y - d.r + 14)
+            .attr('text-anchor', 'middle').attr('font-size', d => Math.max(9, Math.min(13, d.r / 6)))
+            .attr('fill', d => REGION_COLORS[d.data.name] || '#888')
+            .attr('font-weight', 600).attr('pointer-events', 'none')
+            .text(d => d.data.name);
+
+        // Institution circles (leaves)
+        const instNodes = root.leaves().filter(d => d.r > 0);
+        g.selectAll('circle.inst').data(instNodes).join('circle')
+            .attr('class', 'inst')
+            .attr('cx', d => d.x).attr('cy', d => d.y).attr('r', d => d.r)
+            .attr('fill', d => {
+                const region = d.parent ? d.parent.data.name : '';
+                return REGION_COLORS[region] || '#888';
+            })
+            .attr('fill-opacity', 0.7).attr('stroke', d => {
+                const region = d.parent ? d.parent.data.name : '';
+                return REGION_COLORS[region] || '#888';
+            })
+            .attr('stroke-width', 0.5)
+            .on('mouseover', function(event, d) {
+                d3.select(this).attr('fill-opacity', 1).attr('stroke-width', 2);
+                const region = d.parent ? d.parent.data.name : '';
+                const rc = REGION_COLORS[region] || '#888';
+                showTooltip(event, '<strong>' + esc(d.data.name) + '</strong>' +
+                    '<span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:8px;font-size:10px;color:#fff;background:' + rc + '">' + region + '</span><br>' +
+                    'Presentations: <strong>' + d.value + '</strong><br>' +
+                    'Unique presenters: <strong>' + (d.data.unique_presenters || '?') + '</strong>');
+            })
+            .on('mousemove', function(event) {
+                const tip = document.getElementById('tooltip');
+                tip.style.left = (event.clientX + 14) + 'px'; tip.style.top = (event.clientY - 10) + 'px';
+            })
+            .on('mouseout', function() {
+                d3.select(this).attr('fill-opacity', 0.7).attr('stroke-width', 0.5);
+                hideTooltip();
+            });
+
+        // Institution labels (only if circle large enough)
+        g.selectAll('text.inst-label').data(instNodes.filter(d => d.r > 12)).join('text')
+            .attr('class', 'inst-label')
+            .attr('x', d => d.x).attr('y', d => d.y)
+            .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+            .attr('font-size', d => Math.max(6, Math.min(10, d.r / 3.5)))
+            .attr('fill', cssVar('--fg')).attr('pointer-events', 'none')
+            .text(d => {
+                const name = d.data.name;
+                if (name.length > 22 && d.r < 25) return name.replace('University of ', 'U ').substring(0, Math.floor(d.r / 2.5));
+                return name;
+            });
+
+        // Summary stats
+        const totalPres = d3.sum(instNodes, d => d.value);
+        const totalInst = instNodes.length;
+        const regions = new Set(instNodes.map(d => d.parent ? d.parent.data.name : ''));
+        const usRegs = new Set(['US Northeast', 'US Midwest', 'US South', 'US West']);
+        let intlCnt = 0;
+        instNodes.forEach(d => {
+            const reg = d.parent ? d.parent.data.name : '';
+            if (!usRegs.has(reg)) intlCnt += d.value;
+        });
+        const intlPct = totalPres > 0 ? (intlCnt / totalPres * 100).toFixed(1) : 0;
+
+        document.getElementById('pack-summary').innerHTML =
+            '<div class="stat-box"><div class="stat-val">' + totalPres + '</div><div class="stat-lbl">Presentations</div></div>' +
+            '<div class="stat-box"><div class="stat-val">' + totalInst + '</div><div class="stat-lbl">Institutions</div></div>' +
+            '<div class="stat-box"><div class="stat-val">' + regions.size + '</div><div class="stat-lbl">Regions</div></div>' +
+            '<div class="stat-box"><div class="stat-val">' + intlPct + '%</div><div class="stat-lbl">International</div></div>';
+    }
+
+    // --- Trends chart ---
+    const TREND_LINES = [
+        { key: 'unique_institutions', label: 'Unique institutions', color: '#2563eb', axis: 'left' },
+        { key: 'hhi', label: 'HHI (concentration)', color: '#dc2626', axis: 'right' },
+        { key: 'top5_pct', label: '% from top 5', color: '#f59e0b', axis: 'right' },
+        { key: 'intl_pct', label: '% international', color: '#10b981', axis: 'right' },
+    ];
+
+    // Trend legend
+    const tLeg = document.getElementById('trend-legend');
+    TREND_LINES.forEach(tl => {
+        const item = document.createElement('span');
+        item.className = 'trend-legend-item';
+        item.innerHTML = '<span class="trend-swatch" style="background:' + tl.color + '"></span>' + tl.label;
+        item.addEventListener('click', () => {
+            trendVisibility[tl.key] = !trendVisibility[tl.key];
+            item.classList.toggle('dimmed', !trendVisibility[tl.key]);
+            drawTrends();
+        });
+        tLeg.appendChild(item);
+    });
+
+    function drawTrends() {
+        const trends = DATA.trends;
+        const container = document.getElementById('trends-wrap');
+        const tW = container.clientWidth || 900, tH = 420;
+        const margin = { top: 30, right: 70, bottom: 40, left: 60 };
+        const iW = tW - margin.left - margin.right;
+        const iH = tH - margin.top - margin.bottom;
+
+        const svg = d3.select('#trendsSvg').attr('width', tW).attr('height', tH)
+            .attr('viewBox', '0 0 ' + tW + ' ' + tH);
+        svg.selectAll('*').remove();
+        const g = svg.append('g').attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+        const xScale = d3.scaleLinear().domain(d3.extent(DATA.years)).range([0, iW]);
+        const yLeft = d3.scaleLinear()
+            .domain([0, d3.max(trends, d => d.unique_institutions) * 1.15 || 10])
+            .range([iH, 0]);
+
+        const rightVals = [];
+        trends.forEach(d => {
+            if (trendVisibility.hhi) rightVals.push(d.hhi * 100);
+            if (trendVisibility.top5_pct) rightVals.push(d.top5_pct);
+            if (trendVisibility.intl_pct) rightVals.push(d.intl_pct);
+        });
+        const yRight = d3.scaleLinear()
+            .domain([0, Math.max(d3.max(rightVals) || 10, 10) * 1.15])
+            .range([iH, 0]);
+
+        // Axes
+        g.append('g').attr('transform', 'translate(0,' + iH + ')')
+            .call(d3.axisBottom(xScale).tickFormat(d3.format('d')).ticks(Math.min(DATA.years.length, 15)))
+            .selectAll('text').attr('fill', cssVar('--fg2'));
+        g.append('g').call(d3.axisLeft(yLeft).ticks(6))
+            .selectAll('text').attr('fill', TREND_LINES[0].color);
+        g.append('g').attr('transform', 'translate(' + iW + ',0)')
+            .call(d3.axisRight(yRight).ticks(6).tickFormat(d => d + '%'))
+            .selectAll('text').attr('fill', cssVar('--fg2'));
+
+        // Grid
+        g.selectAll('.grid-line').data(yLeft.ticks(6)).join('line')
+            .attr('x1', 0).attr('y1', d => yLeft(d))
+            .attr('x2', iW).attr('y2', d => yLeft(d))
+            .attr('stroke', cssVar('--grid'));
+
+        // Draw lines
+        const lineData = [
+            { ...TREND_LINES[0], accessor: d => yLeft(d.unique_institutions) },
+            { ...TREND_LINES[1], accessor: d => yRight(d.hhi * 100) },
+            { ...TREND_LINES[2], accessor: d => yRight(d.top5_pct) },
+            { ...TREND_LINES[3], accessor: d => yRight(d.intl_pct) },
+        ];
+
+        lineData.forEach(ld => {
+            if (!trendVisibility[ld.key]) return;
+            const lineGen = d3.line()
+                .defined(d => ld.accessor(d) != null)
+                .x(d => xScale(d.year))
+                .y(d => ld.accessor(d))
+                .curve(d3.curveMonotoneX);
+            g.append('path').datum(trends)
+                .attr('fill', 'none').attr('stroke', ld.color)
+                .attr('stroke-width', 2.5).attr('d', lineGen);
+            g.selectAll('.dot-' + ld.key).data(trends).join('circle')
+                .attr('cx', d => xScale(d.year)).attr('cy', d => ld.accessor(d))
+                .attr('r', 3.5).attr('fill', ld.color);
+        });
+
+        // Crosshair overlay
+        const crosshair = g.append('line').attr('y1', 0).attr('y2', iH)
+            .attr('stroke', cssVar('--fg3')).attr('stroke-dasharray', '3,3').style('display', 'none');
+        g.append('rect').attr('width', iW).attr('height', iH)
+            .attr('fill', 'none').attr('pointer-events', 'all')
+            .on('mousemove', function(event) {
+                const [mx] = d3.pointer(event);
+                const yearVal = xScale.invert(mx);
+                let nearest = trends[0], minDist = Infinity;
+                trends.forEach(t => { const d = Math.abs(t.year - yearVal); if (d < minDist) { minDist = d; nearest = t; } });
+                crosshair.attr('x1', xScale(nearest.year)).attr('x2', xScale(nearest.year)).style('display', null);
+                let html = '<strong>' + nearest.year + '</strong> (' + nearest.total + ' presentations)<br>';
+                TREND_LINES.forEach(tl => {
+                    if (!trendVisibility[tl.key]) return;
+                    const val = tl.key === 'hhi' ? (nearest[tl.key] * 100).toFixed(1) + '%' :
+                        tl.key.endsWith('_pct') ? nearest[tl.key] + '%' : nearest[tl.key];
+                    html += '<span style="color:' + tl.color + '">\u25CF</span> ' + tl.label + ': <strong>' + val + '</strong><br>';
+                });
+                showTooltip(event, html);
+            })
+            .on('mouseleave', () => { crosshair.style('display', 'none'); hideTooltip(); });
+    }
+
+    let activeTab = 'pack';
+    function buildCsvContent() {
+        if (currentGView === 'pack') {
+            let csv = 'institution,region,total,unique_presenters';
+            DATA.periods.forEach(p => { if (p !== 'All') csv += ',' + p; });
+            csv += '\n';
+            const allInst = [];
+            DATA.hierarchy.children.forEach(r => { (r.children || []).forEach(i => allInst.push(i)); });
+            allInst.sort((a, b) => (b.total || 0) - (a.total || 0));
+            allInst.forEach(inst => {
+                csv += '"' + (inst.name || '').replace(/"/g,'""') + '","' + (inst.region || '') + '",' +
+                    inst.total + ',' + (inst.unique_presenters || 0);
+                DATA.periods.forEach(p => { if (p !== 'All') csv += ',' + (inst.periods[p] || 0); });
+                csv += '\n';
+            });
+            return csv;
+        } else {
+            let csv = 'year,total,unique_institutions,hhi,top5_pct,intl_pct\n';
+            DATA.trends.forEach(t => {
+                csv += t.year + ',' + t.total + ',' + t.unique_institutions + ',' + t.hhi + ',' + t.top5_pct + ',' + t.intl_pct + '\n';
+            });
+            return csv;
+        }
+    }
+
+    // Init
+    drawPack();
+    
+
+</script>
+
+
+<style>
+.info-btn { font-size:16px; font-weight:bold; min-width:32px; cursor:pointer; }
+#info-overlay {
+  display:none; position:fixed; inset:0; z-index:9999;
+  background:rgba(0,0,0,.55); justify-content:center; align-items:center;
+}
+#info-overlay.show { display:flex; }
+#info-box {
+  background:var(--bg,#fff); color:var(--fg,#222); border:1px solid var(--border,#ccc);
+  border-radius:10px; max-width:720px; width:92vw; max-height:85vh;
+  display:flex; flex-direction:column; box-shadow:0 8px 32px rgba(0,0,0,.3);
+}
+#info-header {
+  display:flex; align-items:center; padding:14px 20px 0; gap:12px;
+}
+#info-header .info-tab {
+  padding:8px 18px; cursor:pointer; border-radius:6px 6px 0 0;
+  border:1px solid var(--border,#ccc); border-bottom:none;
+  background:var(--bg2,#f5f5f5); font-size:13px; font-weight:600;
+}
+#info-header .info-tab.active {
+  background:var(--bg,#fff); border-bottom:1px solid var(--bg,#fff);
+  margin-bottom:-1px; position:relative; z-index:1;
+}
+#info-close {
+  margin-left:auto; background:none; border:none; font-size:22px;
+  cursor:pointer; color:var(--fg,#222); padding:4px 8px; line-height:1;
+}
+#info-body {
+  padding:20px 24px; overflow-y:auto; border-top:1px solid var(--border,#ccc);
+  font-size:14px; line-height:1.65;
+}
+#info-body h3 { margin:16px 0 8px; font-size:15px; }
+#info-body p { margin:0 0 10px; }
+#info-body ul { margin:4px 0 10px 20px; }
+#info-body li { margin:0 0 4px; }
+.info-pane { display:none; }
+.info-pane.active { display:block; }
+</style>
+<div id="info-overlay" onclick="if(event.target===this)toggleInfoModal()">
+  <div id="info-box">
+    <div id="info-header">
+      <div class="info-tab active" data-pane="about" onclick="switchInfoTab(this)">About This Visualization</div>
+      <div class="info-tab" data-pane="method" onclick="switchInfoTab(this)">Methodology</div>
+      <button id="info-close" onclick="toggleInfoModal()">&times;</button>
+    </div>
+    <div id="info-body">
+      <div class="info-pane active" id="info-about">
+    <p>This visualization maps the <strong>geographic distribution</strong> of
+    institutional affiliations at Society for Cinema and Media Studies (SCMS) conferences. The packed
+    circle layout groups institutions by region, with circle size proportional
+    to presentation count.</p>
+    </div>
+      <div class="info-pane" id="info-method">
+    <h3>Institution Classification</h3>
+    <p>Institutions are classified into regions (US Northeast, Midwest, South,
+    West, Canada, Japan, UK/Europe, East Asia, Oceania, Other) based on name
+    matching against a 200+ entry dictionary.</p>
+    
+    </div>
+    </div>
+  </div>
+</div>
+<script>
+function toggleInfoModal(){
+  document.getElementById('info-overlay').classList.toggle('show');
+}
+function switchInfoTab(el){
+  document.querySelectorAll('#info-header .info-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#info-body .info-pane').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('info-'+el.dataset.pane).classList.add('active');
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.getElementById('info-overlay').classList.remove('show'); });
+</script>
+
+</body>
+</html>

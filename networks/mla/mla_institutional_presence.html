@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MLA Institutional Presence</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
+<style>
+
+:root {
+    --bg: #ffffff; --bg2: #f5f5f5; --bg3: #e8e8e8;
+    --fg: #1a1a2e; --fg2: #555; --fg3: #888;
+    --accent: #2563eb; --accent2: #dc2626;
+    --grid: rgba(0,0,0,0.08); --border: #ddd;
+}
+.dark-mode {
+    --bg: #0a0a1a; --bg2: #141428; --bg3: #1e1e3a;
+    --fg: #e0e0e0; --fg2: #aaa; --fg3: #777;
+    --accent: #4a9eff; --accent2: #ff6b6b;
+    --grid: rgba(255,255,255,0.05); --border: #333;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--fg);
+    overflow-x: hidden;
+}
+#toolbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px; background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap; min-height: 44px;
+}
+#toolbar h1 {
+    font-size: 16px; font-weight: 600; white-space: nowrap;
+}
+.spacer { flex: 1; }
+#toolbar button, #toolbar select {
+    padding: 5px 12px; border-radius: 4px;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--fg); cursor: pointer; font-size: 12px;
+}
+#toolbar button:hover { background: var(--bg3); }
+.info-btn {
+    width: 28px; height: 28px; border-radius: 50% !important;
+    padding: 0 !important; font-size: 14px !important;
+    display: flex; align-items: center; justify-content: center;
+}
+
+/* Tabs */
+.tabs {
+    display: flex; border-bottom: 2px solid var(--border);
+    padding: 0 16px; background: var(--bg2); gap: 2px;
+}
+.tab-btn {
+    padding: 8px 16px; border: none; background: transparent;
+    color: var(--fg2); cursor: pointer; font-size: 13px;
+    font-weight: 500; border-bottom: 2px solid transparent;
+    margin-bottom: -2px; transition: all 0.15s;
+}
+.tab-btn:hover { color: var(--fg); background: var(--bg3); }
+.tab-btn.active {
+    color: var(--accent); border-bottom-color: var(--accent);
+    font-weight: 600;
+}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Controls */
+.controls {
+    display: flex; gap: 12px; padding: 10px 16px;
+    flex-wrap: wrap; align-items: center;
+    border-bottom: 1px solid var(--border);
+}
+.btn-group {
+    display: flex; border: 1px solid var(--border); border-radius: 4px;
+    overflow: hidden;
+}
+.btn-group button {
+    padding: 4px 10px; border: none; border-right: 1px solid var(--border);
+    background: var(--bg); color: var(--fg2); cursor: pointer; font-size: 12px;
+}
+.btn-group button:last-child { border-right: none; }
+.btn-group button:hover { background: var(--bg3); }
+.btn-group button.active { background: var(--accent); color: #fff; }
+.controls label { font-size: 12px; color: var(--fg2); }
+.controls select {
+    padding: 3px 8px; font-size: 12px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--fg); border-radius: 3px;
+}
+.controls input[type="range"] { width: 120px; }
+
+/* Chart area */
+.chart-container {
+    display: flex; width: 100%; min-height: calc(100vh - 160px);
+}
+.chart-area {
+    flex: 1; overflow: hidden; position: relative;
+    padding: 16px;
+}
+.legend-panel {
+    width: 220px; min-width: 220px; padding: 10px;
+    border-left: 1px solid var(--border);
+    overflow-y: auto; font-size: 12px;
+    max-height: calc(100vh - 160px);
+}
+.legend-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3px 6px; cursor: pointer; border-radius: 3px;
+    transition: opacity 0.15s;
+}
+.legend-item:hover { background: var(--bg3); }
+.legend-item.muted { opacity: 0.25; }
+.legend-dot {
+    width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0;
+}
+.legend-label { flex: 1; }
+.legend-count { color: var(--fg3); font-size: 11px; }
+.legend-divider {
+    font-size: 10px; color: var(--fg3); text-transform: uppercase;
+    letter-spacing: 0.5px; padding: 6px 6px 2px;
+    margin-top: 4px; border-top: 1px solid var(--border);
+}
+.show-all-btn {
+    display: block; width: 100%; padding: 4px 8px; margin-top: 6px;
+    border: 1px solid var(--border); border-radius: 3px;
+    background: var(--bg2); color: var(--fg2); cursor: pointer;
+    font-size: 11px; text-align: center;
+}
+.show-all-btn:hover { background: var(--bg3); }
+
+/* Tooltip */
+#tooltip {
+    position: fixed; pointer-events: none; z-index: 1000;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 12px; font-size: 12px;
+    line-height: 1.4; max-width: 300px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: none;
+}
+#tooltip.show { display: block; }
+
+/* Sidebar (for network/presenter viz) */
+.sidebar {
+    width: 320px; min-width: 320px; padding: 12px;
+    border-left: 1px solid var(--border);
+    overflow-y: auto; font-size: 12px;
+    max-height: calc(100vh - 100px);
+}
+.sidebar h3 { font-size: 14px; margin-bottom: 8px; }
+.sidebar .stat { margin: 4px 0; }
+.sidebar .stat-label { color: var(--fg2); }
+
+/* Search */
+.search-box {
+    padding: 5px 10px; border: 1px solid var(--border);
+    border-radius: 4px; background: var(--bg); color: var(--fg);
+    font-size: 12px; width: 180px;
+}
+.search-box::placeholder { color: var(--fg3); }
+
+/* COVID annotation */
+.covid-marker {
+    font-size: 10px; color: var(--accent2); font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .chart-container { flex-direction: column; }
+    .legend-panel, .sidebar {
+        width: 100%; min-width: 100%;
+        max-height: 200px; border-left: none;
+        border-top: 1px solid var(--border);
+    }
+}
+
+
+/* Layout: main area + sidebar */
+.inst-layout {
+    display: flex; min-height: calc(100vh - 90px);
+}
+.inst-viz-area {
+    flex: 1; min-width: 0; padding: 16px; overflow-x: auto;
+}
+.inst-sidebar {
+    width: 280px; min-width: 280px; padding: 16px;
+    border-left: 1px solid var(--border);
+    background: var(--bg2); overflow-y: auto; font-size: 12px;
+}
+.sidebar-section {
+    margin-bottom: 18px;
+}
+.sidebar-section h3 {
+    font-size: 13px; font-weight: 700; margin-bottom: 8px;
+    color: var(--fg); border-bottom: 1px solid var(--border);
+    padding-bottom: 4px;
+}
+
+/* View pill switcher */
+.pill-group {
+    display: flex; gap: 0; border: 1px solid var(--border);
+    border-radius: 6px; overflow: hidden;
+}
+.pill {
+    padding: 5px 14px; font-size: 13px; cursor: pointer;
+    background: var(--bg); color: var(--fg2); border: none;
+    border-right: 1px solid var(--border);
+    transition: background 0.15s, color 0.15s;
+}
+.pill:last-child { border-right: none; }
+.pill.active { background: #dc2626; color: #fff; }
+.pill:hover:not(.active) { background: var(--bg3); }
+
+/* Race controls */
+.race-controls {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 12px; flex-wrap: wrap;
+}
+.race-controls button {
+    font-size: 13px; padding: 4px 12px; border-radius: 4px;
+    border: 1px solid var(--border); background: var(--bg2);
+    color: var(--fg); cursor: pointer;
+}
+.race-controls button:hover { background: var(--bg3); }
+.race-controls input[type=range] { flex: 1; min-width: 120px; max-width: 300px; }
+.race-controls .year-display {
+    font-size: 22px; font-weight: 700; color: #dc2626;
+    min-width: 50px; text-align: center;
+}
+.race-controls select {
+    font-size: 12px; padding: 3px 6px; border: 1px solid var(--border);
+    border-radius: 4px; background: var(--bg); color: var(--fg);
+}
+
+@media (max-width: 900px) {
+    .inst-layout { flex-direction: column; }
+    .inst-sidebar {
+        width: 100%; min-width: 0;
+        border-left: none; border-top: 1px solid var(--border);
+    }
+}
+
+</style>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
+</head>
+<body>
+
+<div id="toolbar">
+    <h1>MLA Institutional Presence</h1>
+    <div class="spacer"></div>
+    <button class="info-btn" onclick="toggleInfoModal()" title="About this visualization">&#8505;</button>
+    <button onclick="exportPng()">Export PNG</button>
+    <button onclick="exportCsv()">Export CSV</button>
+    <button id="themeBtn" onclick="toggleTheme()">&#9790; Dark</button>
+</div>
+
+
+
+
+<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid var(--border);">
+    <div class="pill-group" id="view-pills">
+        <button class="pill active" data-view="heatmap">Heatmap</button>
+        <button class="pill" data-view="race">Bar Chart Race</button>
+        <button class="pill" data-view="bump">Bump Chart</button>
+    </div>
+    <div class="btn-group" id="inst-mode-toggle">
+        <button class="active" data-mode="count">Count</button>
+        <button data-mode="pct">%</button>
+    </div>
+</div>
+<div class="inst-layout">
+    <div class="inst-viz-area" id="viz-area">
+        <svg id="inst-chart"></svg>
+    </div>
+    <div class="inst-sidebar" id="inst-sidebar"></div>
+</div>
+
+
+<div id="tooltip"></div>
+
+<script>
+const ALL_DATA = {"years": [1965, 1967, 1968, 1970, 1971, 1972, 1973, 1975, 1976, 1977, 1978, 1979, 1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2005, 2006, 2007, 2008, 2009, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026], "yearTotals": {"1965": 1, "1967": 1, "1968": 14, "1970": 2, "1971": 6, "1972": 2, "1973": 1, "1975": 1, "1976": 4, "1977": 1, "1978": 6, "1979": 13, "1980": 2, "1981": 8, "1982": 8, "1983": 15, "1984": 13, "1985": 19, "1986": 18, "1987": 30, "1988": 23, "1989": 27, "1990": 13, "1991": 9, "1992": 22, "1993": 22, "1994": 15, "1995": 12, "1996": 17, "1997": 12, "1998": 25, "1999": 25, "2000": 13, "2001": 24, "2002": 19, "2003": 40, "2005": 50, "2006": 56, "2007": 65, "2008": 70, "2009": 70, "2012": 32, "2013": 23, "2014": 20, "2015": 72, "2016": 13, "2017": 45, "2018": 50, "2019": 40, "2020": 31, "2021": 33, "2022": 28, "2023": 48, "2024": 53, "2025": 88, "2026": 77}, "yearCoverage": {"1965": 1, "1967": 1, "1968": 9, "1970": 2, "1971": 5, "1972": 2, "1973": 1, "1975": 0, "1976": 4, "1977": 0, "1978": 3, "1979": 10, "1980": 2, "1981": 4, "1982": 4, "1983": 8, "1984": 3, "1985": 8, "1986": 12, "1987": 26, "1988": 10, "1989": 11, "1990": 5, "1991": 6, "1992": 12, "1993": 8, "1994": 6, "1995": 3, "1996": 8, "1997": 5, "1998": 12, "1999": 11, "2000": 4, "2001": 7, "2002": 7, "2003": 15, "2005": 16, "2006": 27, "2007": 27, "2008": 26, "2009": 38, "2012": 29, "2013": 23, "2014": 20, "2015": 34, "2016": 13, "2017": 41, "2018": 30, "2019": 25, "2020": 16, "2021": 21, "2022": 14, "2023": 34, "2024": 34, "2025": 63, "2026": 49}, "heatmap": [{"institution": "Harvard University", "total": 38, "geo": "US Northeast", "years": {"1988": {"count": 2, "presenters": ["Kamens, Edward"]}, "1995": {"count": 1, "presenters": ["Scalapino, Robert A."]}, "2006": {"count": 1, "presenters": ["Thornber, Karen"]}, "2007": {"count": 5, "presenters": ["Calder, Kent E.", "Thornber, Karen"]}, "2008": {"count": 4, "presenters": ["Smith, Thomas C.", "Thornber, Karen"]}, "2009": {"count": 3, "presenters": ["Thornber, Karen"]}, "2014": {"count": 1, "presenters": ["Tian, Xiaofei"]}, "2015": {"count": 3, "presenters": ["Bernard, Peter", "Bernard, Peter John"]}, "2017": {"count": 2, "presenters": ["Alekseyeva, Julia", "Thornber, Karen"]}, "2018": {"count": 1, "presenters": ["Alekseyeva, Julia"]}, "2019": {"count": 1, "presenters": ["Denecke, Wiebke"]}, "2020": {"count": 1, "presenters": ["Denecke, Wiebke"]}, "2021": {"count": 1, "presenters": ["Nazzicone, Joelle"]}, "2023": {"count": 2, "presenters": ["Thornber, Karen"]}, "2024": {"count": 2, "presenters": ["Kamens, Edward"]}, "2025": {"count": 4, "presenters": ["Bernard, Peter John", "Kamens, Edward", "Thornber, Karen"]}, "2026": {"count": 4, "presenters": ["Denecke, Wiebke", "Kamens, Edward", "Thornber, Karen"]}}}, {"institution": "Princeton University", "total": 35, "geo": "US Northeast", "years": {"1968": {"count": 1, "presenters": ["Miner, Earl"]}, "1970": {"count": 1, "presenters": ["Miner, Earl"]}, "1971": {"count": 1, "presenters": ["Miner, Earl"]}, "1972": {"count": 2, "presenters": ["Miner, Earl"]}, "1973": {"count": 1, "presenters": ["Miner, Earl"]}, "1976": {"count": 1, "presenters": ["Miner, Earl"]}, "1978": {"count": 2, "presenters": ["Miner, Earl"]}, "1979": {"count": 3, "presenters": ["Bridges, William H. IV", "Miner, Earl"]}, "1980": {"count": 1, "presenters": ["Miner, Earl"]}, "1981": {"count": 1, "presenters": ["Miner, Earl"]}, "1982": {"count": 2, "presenters": ["Miner, Earl"]}, "1983": {"count": 2, "presenters": ["Miner, Earl"]}, "1985": {"count": 2, "presenters": ["Okada, Richard H."]}, "1987": {"count": 2, "presenters": ["Miner, Earl"]}, "1990": {"count": 1, "presenters": ["Miner, Earl"]}, "1992": {"count": 1, "presenters": ["Miner, Earl"]}, "1996": {"count": 1, "presenters": ["Miner, Earl"]}, "1997": {"count": 1, "presenters": ["Miner, Earl"]}, "1998": {"count": 1, "presenters": ["Miner, Earl"]}, "1999": {"count": 1, "presenters": ["Miner, Earl"]}, "2008": {"count": 2, "presenters": ["Hare, Thomas Blenman"]}, "2017": {"count": 1, "presenters": ["Keulemans, Pieter"]}, "2019": {"count": 2, "presenters": ["Bridges, William H. IV", "Slutsky, Tomoko"]}, "2024": {"count": 2, "presenters": ["Bridges, William H. IV", "Ferré, Antonin"]}}}, {"institution": "Yale University", "total": 31, "geo": "US Northeast", "years": {"1987": {"count": 3, "presenters": ["Hill, Christopher"]}, "2002": {"count": 3, "presenters": ["Hill, Christopher", "Treat, John Whittier"]}, "2005": {"count": 1, "presenters": ["Treat, John Whittier"]}, "2006": {"count": 3, "presenters": ["Hill, Christopher", "Treat, John Whittier"]}, "2007": {"count": 1, "presenters": ["Treat, John Whittier"]}, "2008": {"count": 3, "presenters": ["Hill, Christopher", "Treat, John Whittier"]}, "2012": {"count": 1, "presenters": ["Malissa, Samuel"]}, "2013": {"count": 1, "presenters": ["Treat, John Whittier"]}, "2014": {"count": 1, "presenters": ["Malissa, Samuel"]}, "2021": {"count": 1, "presenters": ["Morisue, Noriko"]}, "2023": {"count": 1, "presenters": ["Farizova, Nina"]}, "2024": {"count": 4, "presenters": ["Hintzman, Ryan", "Kamens, Edward B."]}, "2025": {"count": 6, "presenters": ["Esteban, Eric Jose", "Farizova, Nina", "Gilstad, Mary", "Gilstad, Mary Colleen", "Kamens, Edward B."]}, "2026": {"count": 2, "presenters": ["Gilstad, Mary Colleen", "Kamens, Edward B."]}}}, {"institution": "Cornell University", "total": 22, "geo": "US Northeast", "years": {"2008": {"count": 4, "presenters": ["Bary, Brett De", "de Bary, Brett"]}, "2009": {"count": 4, "presenters": ["Bary, Brett De", "de Bary, Brett"]}, "2017": {"count": 1, "presenters": ["Sakai, Naoki"]}, "2019": {"count": 2, "presenters": ["Campana, Andrew", "Campana, Andrew Pasquale"]}, "2021": {"count": 1, "presenters": ["Campana, Andrew Pasquale"]}, "2023": {"count": 5, "presenters": ["Campana, Andrew", "Campana, Andrew Pasquale", "Mendoza, Andrea", "Pryor, Taylor"]}, "2025": {"count": 2, "presenters": ["Bary, Brett de", "de Bary, Brett"]}, "2026": {"count": 3, "presenters": ["Campana, Andrew", "Campana, Andrew Pasquale", "Oh, Yoon Jeong"]}}}, {"institution": "University of Colorado at Boulder", "total": 21, "geo": "US West", "years": {"1992": {"count": 1, "presenters": ["Kleeman, Faye"]}, "1993": {"count": 2, "presenters": ["Kleeman, Faye"]}, "2003": {"count": 2, "presenters": ["Kleeman, Faye"]}, "2005": {"count": 3, "presenters": ["Kleeman, Faye", "Sorensen, Joseph Tsuyoshi"]}, "2006": {"count": 4, "presenters": ["Kleeman, Faye", "Sorensen, Joseph Tsuyoshi"]}, "2007": {"count": 4, "presenters": ["Kleeman, Faye", "Sorensen, Joseph Tsuyoshi"]}, "2008": {"count": 2, "presenters": ["Sorensen, Joseph Tsuyoshi"]}, "2009": {"count": 3, "presenters": ["Sorensen, Joseph Tsuyoshi"]}}}, {"institution": "University of California, Los Angeles", "total": 21, "geo": "US West", "years": {"2007": {"count": 3, "presenters": ["Shih, Shu-mei"]}, "2009": {"count": 4, "presenters": ["Emmerich, Michael D.", "Shih, Shu-mei"]}, "2012": {"count": 1, "presenters": ["Shih, Shu-mei"]}, "2013": {"count": 2, "presenters": ["Hanscom, Christopher", "Thomas, Dominic R."]}, "2014": {"count": 1, "presenters": ["Emmerich, Michael"]}, "2015": {"count": 1, "presenters": ["Emmerich, Michael D."]}, "2016": {"count": 1, "presenters": ["Quintanilla, Payton Phillips"]}, "2017": {"count": 2, "presenters": ["Emmerich, Michael", "Hanscom, Christopher"]}, "2018": {"count": 2, "presenters": ["Emmerich, Michael D.", "Shih, Shu-mei"]}, "2020": {"count": 2, "presenters": ["Shih, Shu-mei"]}, "2022": {"count": 1, "presenters": ["Shih, Shu-mei"]}, "2023": {"count": 1, "presenters": ["Curtis, Paula R."]}}}, {"institution": "Pennsylvania State University", "total": 17, "geo": "US Northeast", "years": {"1968": {"count": 1, "presenters": ["Keune, Manfred E."]}, "2012": {"count": 1, "presenters": ["Eubanks, Charlotte"]}, "2013": {"count": 3, "presenters": ["Eubanks, Charlotte", "Hayot, Eric"]}, "2014": {"count": 2, "presenters": ["Eubanks, Charlotte"]}, "2015": {"count": 1, "presenters": ["Tsen, Darwin"]}, "2016": {"count": 1, "presenters": ["Eubanks, Charlotte"]}, "2017": {"count": 1, "presenters": ["Eubanks, Charlotte"]}, "2019": {"count": 3, "presenters": ["Abel, Jonathan E.", "Gutiérrez, Camila"]}, "2021": {"count": 2, "presenters": ["Abel, Jonathan E.", "Eubanks, Charlotte"]}, "2022": {"count": 1, "presenters": ["Abel, Jonathan E."]}, "2024": {"count": 1, "presenters": ["Ivanovic, Vasilije"]}}}, {"institution": "University of Massachusetts-Amherst", "total": 17, "geo": "US Northeast", "years": {"1983": {"count": 1, "presenters": ["Miller, Stephen"]}, "1985": {"count": 1, "presenters": ["Miller, Stephen"]}, "1995": {"count": 1, "presenters": ["Miller, Stephen"]}, "1996": {"count": 2, "presenters": ["Miller, Stephen"]}, "1998": {"count": 2, "presenters": ["Miller, Stephen"]}, "1999": {"count": 1, "presenters": ["Miller, Stephen"]}, "2001": {"count": 2, "presenters": ["Miller, Stephen"]}, "2006": {"count": 2, "presenters": ["Miller, Stephen"]}, "2007": {"count": 2, "presenters": ["Miller, Stephen"]}, "2009": {"count": 3, "presenters": ["Miller, Stephen"]}}}, {"institution": "University of", "total": 15, "geo": "US West", "years": {"1978": {"count": 1, "presenters": ["Yun, Chang S."]}, "1980": {"count": 1, "presenters": ["McDonald, Keiko"]}, "1987": {"count": 2, "presenters": ["Garreau, Joseph E.", "Maddux, John Stephen"]}, "1990": {"count": 1, "presenters": ["Sumida, Stephen"]}, "1996": {"count": 2, "presenters": ["Mikals-Adachi, Eileen B."]}, "1998": {"count": 1, "presenters": ["Goebel, Rolf Johannes"]}, "1999": {"count": 1, "presenters": ["Libin, Mark I."]}, "2006": {"count": 1, "presenters": ["Moore, Timothy"]}, "2007": {"count": 1, "presenters": ["Spafford, David"]}, "2008": {"count": 1, "presenters": ["Nagase, Mari"]}, "2009": {"count": 1, "presenters": ["J?o, Fumiko"]}, "2015": {"count": 2, "presenters": ["Bernards, Brian", "Iovene, Paola"]}}}, {"institution": "University of Chicago", "total": 15, "geo": "US Midwest", "years": {"1985": {"count": 1, "presenters": ["Field, Norma"]}, "1997": {"count": 1, "presenters": ["Choi, Kyeong-Hee"]}, "2001": {"count": 1, "presenters": ["Seaman, Amanda C."]}, "2012": {"count": 1, "presenters": ["Joo, Fumiko"]}, "2013": {"count": 2, "presenters": ["Chute, Hillary L.", "Long, Hoyt"]}, "2014": {"count": 1, "presenters": ["Drake, Phillip"]}, "2017": {"count": 1, "presenters": ["Choi, Kyeong-Hee"]}, "2019": {"count": 3, "presenters": ["Bourdaghs, Michael", "Choi, Kyeong-Hee", "Jackson, Reginald R."]}, "2020": {"count": 2, "presenters": ["Jackson, Reginald R.", "Long, Hoyt J."]}, "2021": {"count": 2, "presenters": ["Chen, Jiayi", "Murphy, Alexander"]}}}, {"institution": "University of Wisconsin-Madison", "total": 15, "geo": "US Midwest", "years": {"1990": {"count": 1, "presenters": ["Rao, K. S. N."]}, "1998": {"count": 1, "presenters": ["Thomas, Julia Adeney"]}, "1999": {"count": 1, "presenters": ["Layoun, Mary N."]}, "2003": {"count": 1, "presenters": ["Rhine, Marjorie Edna"]}, "2017": {"count": 1, "presenters": ["Quinn, Aragorn"]}, "2018": {"count": 1, "presenters": ["Yu, Timothy"]}, "2020": {"count": 1, "presenters": ["Carnes, Jeremy"]}, "2021": {"count": 1, "presenters": ["Kanesaka, Erica"]}, "2023": {"count": 1, "presenters": ["D'Etcheverry, Charo"]}, "2024": {"count": 2, "presenters": ["Ridgely, Steve", "Ridgely, Steven"]}, "2025": {"count": 2, "presenters": ["D'Etcheverry, Charo", "Murthy, Viren"]}, "2026": {"count": 2, "presenters": ["D'Etcheverry, Charo"]}}}, {"institution": "University of California, Berkeley", "total": 14, "geo": "US West", "years": {"1986": {"count": 1, "presenters": ["Carnes, Pack"]}, "1987": {"count": 1, "presenters": ["Knapton, Antoinette"]}, "2012": {"count": 4, "presenters": ["Lee, Steven", "Lye, Colleen", "Shaughnessy, Orna", "Sosnak, Katy"]}, "2013": {"count": 1, "presenters": ["Hill, Christopher Laing"]}, "2017": {"count": 1, "presenters": ["Bassoe, Pedro"]}, "2018": {"count": 2, "presenters": ["Leong, Andrew W.", "Zwicker, Jonathan E."]}, "2019": {"count": 1, "presenters": ["Leong, Andrew W."]}, "2020": {"count": 1, "presenters": ["Zwicker, Jonathan E."]}, "2021": {"count": 1, "presenters": ["Zwicker, Jonathan E."]}, "2023": {"count": 1, "presenters": ["Sas, Miryam"]}}}, {"institution": "Purdue University", "total": 13, "geo": "US Midwest", "years": {"1970": {"count": 1, "presenters": ["Daniel, T M"]}, "1988": {"count": 2, "presenters": ["Sekine, Eiji"]}, "1992": {"count": 1, "presenters": ["Sekine, Eiji"]}, "2024": {"count": 4, "presenters": ["Bassoe, Pedro"]}, "2025": {"count": 3, "presenters": ["Bassoe, Pedro"]}, "2026": {"count": 2, "presenters": ["Bassoe, Pedro"]}}}, {"institution": "Indiana University", "total": 13, "geo": "US Midwest", "years": {"1981": {"count": 1, "presenters": ["Jones, Sumie A."]}, "1986": {"count": 2, "presenters": ["Jones, Sumie A."]}, "1987": {"count": 2, "presenters": ["Jones, Sumie A."]}, "1988": {"count": 3, "presenters": ["Jones, Sumie A."]}, "1991": {"count": 1, "presenters": ["Jones, Sumie A."]}, "1993": {"count": 1, "presenters": ["Sarra, Edith L."]}, "2017": {"count": 1, "presenters": ["Blair, Heather"]}, "2025": {"count": 1, "presenters": ["Airriess, Hannah"]}, "2026": {"count": 1, "presenters": ["Román, Miguel"]}}}, {"institution": "Brown University", "total": 12, "geo": "US Northeast", "years": {"1989": {"count": 1, "presenters": ["Chow, Rey"]}, "1991": {"count": 1, "presenters": ["Chow, Rey"]}, "1994": {"count": 1, "presenters": ["Chow, Rey"]}, "1997": {"count": 1, "presenters": ["Chow, Rey"]}, "1998": {"count": 1, "presenters": ["Chow, Rey"]}, "1999": {"count": 2, "presenters": ["Chow, Rey"]}, "2003": {"count": 2, "presenters": ["Chow, Rey"]}, "2007": {"count": 2, "presenters": ["Chow, Rey"]}, "2015": {"count": 1, "presenters": ["Chow, Rey"]}}}, {"institution": "Doshisha University", "total": 11, "geo": "Japan", "years": {"1976": {"count": 1, "presenters": ["Hall, John Whitney"]}, "1982": {"count": 2, "presenters": ["Hall, John Whitney"]}, "1983": {"count": 1, "presenters": ["Hall, John Whitney"]}, "1987": {"count": 2, "presenters": ["Hall, John Whitney"]}, "1988": {"count": 1, "presenters": ["Hall, John Whitney"]}, "1991": {"count": 1, "presenters": ["Hall, John Whitney"]}, "1993": {"count": 1, "presenters": ["Hall, John Whitney"]}, "1994": {"count": 1, "presenters": ["Hall, John Whitney"]}, "2012": {"count": 1, "presenters": ["Thorsten, Marie"]}}}, {"institution": "Florida Atlantic University", "total": 11, "geo": "US South", "years": {"1986": {"count": 1, "presenters": ["MacDonald, Ian"]}, "2015": {"count": 2, "presenters": ["MacDonald, Ian"]}, "2018": {"count": 1, "presenters": ["MacDonald, Ian"]}, "2020": {"count": 1, "presenters": ["MacDonald, Ian"]}, "2021": {"count": 1, "presenters": ["MacDonald, Ian"]}, "2022": {"count": 1, "presenters": ["MacDonald, Ian"]}, "2023": {"count": 2, "presenters": ["MacDonald, Ian"]}, "2025": {"count": 2, "presenters": ["MacDonald, Ian"]}}}, {"institution": "University of Washington", "total": 10, "geo": "US West", "years": {"1965": {"count": 1, "presenters": ["McKinnon, Richard"]}, "1998": {"count": 1, "presenters": ["Treat, John Whittier"]}, "2003": {"count": 1, "presenters": ["Mack, Ted"]}, "2012": {"count": 1, "presenters": ["Xie, Kai"]}, "2015": {"count": 3, "presenters": ["Mack, Edward", "Textor, Cindi"]}, "2017": {"count": 3, "presenters": ["Cho, Heekyoung", "Textor, Cindi"]}}}, {"institution": "Columbia University", "total": 10, "geo": "US Northeast", "years": {"1979": {"count": 1, "presenters": ["Shirane, Haruo"]}, "2002": {"count": 1, "presenters": ["Shirane, Haruo"]}, "2003": {"count": 1, "presenters": ["Shirane, Haruo"]}, "2014": {"count": 1, "presenters": ["Gaubatz, Thomas"]}, "2017": {"count": 1, "presenters": ["Hughes, Theodore"]}, "2024": {"count": 1, "presenters": ["Laughlin, Charles Andrew"]}, "2025": {"count": 4, "presenters": ["Hughes, Theodore", "Laughlin, Charles Andrew", "Lethen, Hana"]}}}, {"institution": "University of Colorado", "total": 10, "geo": "US West", "years": {"2001": {"count": 1, "presenters": ["Rodd, Laurel Rasplica"]}, "2002": {"count": 1, "presenters": ["Rodd, Laurel Rasplica"]}, "2005": {"count": 3, "presenters": ["Rodd, Laurel Rasplica"]}, "2006": {"count": 2, "presenters": ["Rodd, Laurel Rasplica"]}, "2007": {"count": 2, "presenters": ["Rodd, Laurel Rasplica"]}, "2008": {"count": 1, "presenters": ["Rodd, Laurel Rasplica"]}}}, {"institution": "Hamilton College", "total": 10, "geo": "US West", "years": {"2003": {"count": 4, "presenters": ["Omori, Kyoko", "Ortabasi, Melek Su"]}, "2009": {"count": 2, "presenters": ["Ortabasi, Melek Su"]}, "2015": {"count": 1, "presenters": ["Ortabasi, Melek Su"]}, "2018": {"count": 1, "presenters": ["Omori, Kyoko"]}, "2020": {"count": 2, "presenters": ["Omori, Kyoko", "Ortabasi, Melek Su"]}}}, {"institution": "University of Minnesota", "total": 9, "geo": "US Midwest", "years": {"1985": {"count": 1, "presenters": ["Anderson, Mark"]}, "1995": {"count": 1, "presenters": ["Anderson, Mark"]}, "1998": {"count": 1, "presenters": ["Anderson, Mark"]}, "2012": {"count": 1, "presenters": ["Rouzer, Paul"]}, "2014": {"count": 2, "presenters": ["Rabinowitz, Paula", "Rouzer, Paul"]}, "2015": {"count": 2, "presenters": ["Crandol, Michael", "Rouzer, Paul"]}, "2016": {"count": 1, "presenters": ["Rouzer, Paul"]}}}, {"institution": "University of Michigan", "total": 9, "geo": "US Midwest", "years": {"1992": {"count": 1, "presenters": ["Pincus, Leslie"]}, "1998": {"count": 1, "presenters": ["Feng, Jin"]}, "2000": {"count": 1, "presenters": ["Feng, Jin"]}, "2009": {"count": 2, "presenters": ["Dowdle, Brian C."]}, "2014": {"count": 1, "presenters": ["Bowen-Struyk, Heather"]}, "2017": {"count": 1, "presenters": ["Hill, Christopher Laing"]}, "2026": {"count": 2, "presenters": ["Brightwell, Erin L.", "Maslyk, Todd"]}}}, {"institution": "Dartmouth College", "total": 9, "geo": "US Northeast", "years": {"2006": {"count": 1, "presenters": ["Washburn, Dennis"]}, "2007": {"count": 2, "presenters": ["Washburn, Dennis"]}, "2008": {"count": 1, "presenters": ["Washburn, Dennis"]}, "2009": {"count": 1, "presenters": ["Washburn, Dennis"]}, "2013": {"count": 1, "presenters": ["Washburn, Dennis"]}, "2023": {"count": 1, "presenters": ["Schmidt-Hori, Sachi"]}, "2025": {"count": 1, "presenters": ["Schmidt-Hori, Sachi"]}, "2026": {"count": 1, "presenters": ["Schmidt-Hori, Sachi"]}}}, {"institution": "University of Toronto (Canada)", "total": 9, "geo": "Canada", "years": {"2007": {"count": 2, "presenters": ["Cazdyn, Eric"]}, "2020": {"count": 1, "presenters": ["Poole, Janet"]}, "2022": {"count": 1, "presenters": ["Poole, Janet"]}, "2023": {"count": 2, "presenters": ["Poole, Janet"]}, "2024": {"count": 1, "presenters": ["Poole, Janet"]}, "2025": {"count": 1, "presenters": ["Poole, Janet"]}, "2026": {"count": 1, "presenters": ["Cazdyn, Eric"]}}}], "top20": ["Harvard University", "Princeton University", "Yale University", "Cornell University", "University of Colorado at Boulder", "University of California, Los Angeles", "Pennsylvania State University", "University of Massachusetts-Amherst", "University of", "University of Chicago", "University of Wisconsin-Madison", "University of California, Berkeley", "Purdue University", "Indiana University", "Brown University", "Doshisha University", "Florida Atlantic University", "University of Washington", "Columbia University", "University of Colorado"], "raceData": {"Harvard University": {"1965": 0, "1967": 0, "1968": 0, "1970": 0, "1971": 0, "1972": 0, "1973": 0, "1975": 0, "1976": 0, "1977": 0, "1978": 0, "1979": 0, "1980": 0, "1981": 0, "1982": 0, "1983": 0, "1984": 0, "1985": 0, "1986": 0, "1987": 0, "1988": 2, "1989": 2, "1990": 2, "1991": 2, "1992": 2, "1993": 2, "1994": 2, "1995": 3, "1996": 3, "1997": 3, "1998": 3, "1999": 3, "2000": 3, "2001": 3, "2002": 3, "2003": 3, "2005": 3, "2006": 4, "2007": 9, "2008": 13, "2009": 16, "2012": 16, "2013": 16, "2014": 17, "2015": 20, "2016": 20, "2017": 22, "2018": 23, "2019": 24, "2020": 25, "2021": 26, "2022": 26, "2023": 28, "2024": 30, "2025": 34, "2026": 38}, "Princeton University": {"1965": 0, "1967": 0, "1968": 1, "1970": 2, "1971": 3, "1972": 5, "1973": 6, "1975": 6, "1976": 7, "1977": 7, "1978": 9, "1979": 12, "1980": 13, "1981": 14, "1982": 16, "1983": 18, "1984": 18, "1985": 20, "1986": 20, "1987": 22, "1988": 22, "1989": 22, "1990": 23, "1991": 23, "1992": 24, "1993": 24, "1994": 24, "1995": 24, "1996": 25, "1997": 26, "1998": 27, "1999": 28, "2000": 28, "2001": 28, "2002": 28, "2003": 28, "2005": 28, "2006": 28, "2007": 28, "2008": 30, "2009": 30, "2012": 30, "2013": 30, "2014": 30, "2015": 30, "2016": 30, "2017": 31, "2018": 31, "2019": 33, "2020": 33, "2021": 33, "2022": 33, "2023": 33, "2024": 35, "2025": 35, "2026": 35}, "Yale University": {"1965": 0, "1967": 0, "1968": 0, "1970": 0, "1971": 0, "1972": 0, "1973": 0, "1975": 0, "1976": 0, "1977": 0, "1978": 0, "1979": 0, "1980": 0, "1981": 0, "1982": 0, "1983": 0, "1984": 0, "1985": 0, "1986": 0, "1987": 3, "1988": 3, "1989": 3, "1990": 3, "1991": 3, "1992": 3, "1993": 3, "1994": 3, "1995": 3, "1996": 3, "1997": 3, "1998": 3, "1999": 3, "2000": 3, "2001": 3, "2002": 6, "2003": 6, "2005": 7, "2006": 10, "2007": 11, "2008": 14, "2009": 14, "2012": 15, "2013": 16, "2014": 17, "2015": 17, "2016": 17, "2017": 17, "2018": 17, "2019": 17, "2020": 17, "2021": 18, "2022": 18, "2023": 19, "2024": 23, "2025": 29, "2026": 31}, "Cornell University": {"1965": 0, "1967": 0, "1968": 0, "1970": 0, "1971": 0, "1972": 0, "1973": 0, "1975": 0, "1976": 0, "1977": 0, "1978": 0, "1979": 0, "1980": 0, "1981": 0, "1982": 0, "1983": 0, "1984": 0, "1985": 0, "1986": 0, "1987": 0, "1988": 0, "1989": 0, "1990": 0, "1991": 0, "1992": 0, "1993": 0, "1994": 0, "1995": 0, "1996": 0, "1997": 0, "1998": 0, "1999": 0, "2000": 0, "2001": 0, "2002": 0, "2003": 0, "2005": 0, "2006": 0, "2007": 0, "2008": 4, "2009": 8, "2012": 8, "2013": 8, "2014": 8, "2015": 8, "2016": 8, "2017": 9, "2018": 9, "2019": 11, "2020": 11, "2021": 12, "2022": 12, "2023": 17, "2024": 17, "2025": 19, "2026": 22}, "University of Colorado at Boulder": {"1965": 0, "1967": 0, "1968": 0, "1970": 0, "1971": 0, "1972": 0, "1973": 0, "1975": 0, "1976": 0, "1977": 0, "1978": 0, "1979": 0, "1980": 0, "1981": 0, "1982": 0, "1983": 0, "1984": 0, "1985": 0, "1986": 0, "1987": 0, "1988": 0, "1989": 0, "1990": 0, "1991": 0, "1992": 1, "1993": 3, "1994": 3, "1995": 3, "1996": 3, "1997": 3, "1998": 3, "1999": 3, "2000": 3, "2001": 3, "2002": 3, "2003": 5, "2005": 8, "2006": 12, "2007": 16, "2008": 18, "2009": 21, "2012": 21, "2013": 21, "2014": 21, "2015": 21, "2016": 21, "2017": 21, "2018": 21, "2019": 21, "2020": 21, "2021": 21, "2022": 21, "2023": 21, "2024": 21, "2025": 21, "2026": 21}, "University of California, Los Angeles": {"1965": 0, "1967": 0, "1968": 0, "1970": 0, "1971": 0, "1972": 0, "1973": 0, "1975": 0, "1976": 0, "1977": 0, "1978": 0, "1979": 0, "1980": 0, "1981": 0, "1982": 0, "1983": 0, "1984": 0, "1985": 0, "1986": 0, "1987": 0, "1988": 0, "1989": 0, "1990": 0, "1991": 0, "1992": 0, "1993": 0, "1994": 0, "1995": 0, "1996": 0, "1997": 0, "1998": 0, "1999": 0, "2000": 0, "2001": 0, "2002": 0, "2003": 0, "2005": 0, "2006": 0, "2007": 3, "2008": 3, "2009": 7, "2012": 8, "2013": 10, "2014": 11, "2015": 12, "2016": 13, "2017": 15, "2018": 17, "2019": 17, "2020": 19, "2021": 19, "2022": 20, "2023": 21, "2024": 21, "2025": 21, "2026": 21}, "Pennsylvania State University": {"1965": 0, "1967": 0, "1968": 1, "1970": 1, "1971": 1, "1972": 1, "1973": 1, "1975": 1, "1976": 1, "1977": 1, "1978": 1, "1979": 1, "1980": 1, "1981": 1, "1982": 1, "1983": 1, "1984": 1, "1985": 1, "1986": 1, "1987": 1, "1988": 1, "1989": 1, "1990": 1, "1991": 1, "1992": 1, "1993": 1, "1994": 1, "1995": 1, "1996": 1, "1997": 1, "1998": 1, "1999": 1, "2000": 1, "2001": 1, "2002": 1, "2003": 1, "2005": 1, "2006": 1, "2007": 1, "2008": 1, "2009": 1, "2012": 2, "2013": 5, "2014": 7, "2015": 8, "2016": 9, "2017": 10, "2018": 10, "2019": 13, "2020": 13, "2021": 15, "2022": 16, "2023": 16, "2024": 17, "2025": 17, "2026": 17}, "University of Massachusetts-Amherst": {"1965": 0, "1967": 0, "1968": 0, "1970": 0, "1971": 0, "1972": 0, "1973": 0, "1975": 0, "1976": 0, "1977": 0, "1978": 0, "1979": 0, "1980": 0, "1981": 0, "1982": 0, "1983": 1, "1984": 1, "1985": 2, "1986": 2, "1987": 2, "1988": 2, "1989": 2, "1990": 2, "1991": 2, "1992": 2, "1993": 2, "1994": 2, "1995": 3, "1996": 5, "1997": 5, "1998": 7, "1999": 8, "2000": 8, "2001": 10, "2002": 10, "2003": 10, "2005": 10, "2006": 12, "2007": 14, "2008": 14, "2009": 17, "2012": 17, "2013": 17, "2014": 17, "2015": 17, "2016": 17, "2017": 17, "2018": 17, "2019": 17, "2020": 17, "2021": 17, "2022": 17, "2023": 17, "2024": 17, "2025": 17, "2026": 17}, "University of": {"1965": 0, "1967": 0, "1968": 0, "1970": 0, "1971": 0, "1972": 0, "1973": 0, "1975": 0, "1976": 0, "1977": 0, "1978": 1, "1979": 1, "1980": 2, "1981": 2, "1982": 2, "1983": 2, "1984": 2, "1985": 2, "1986": 2, "1987": 4, "1988": 4, "1989": 4, "1990": 5, "1991": 5, "1992": 5, "1993": 5, "1994": 5, "1995": 5, "1996": 7, "1997": 7, "1998": 8, "1999": 9, "2000": 9, "2001": 9, "2002": 9, "2003": 9, "2005": 9, "2006": 10, "2007": 11, "2008": 12, "2009": 13, "2012": 13, "2013": 13, "2014": 13, "2015": 15, "2016": 15, "2017": 15, "2018": 15, "2019": 15, "2020": 15, "2021": 15, "2022": 15, "2023": 15, "2024": 15, "2025": 15, "2026": 15}, "University of Chicago": {"1965": 0, "1967": 0, "1968": 0, "1970": 0, "1971": 0, "1972": 0, "1973": 0, "1975": 0, "1976": 0, "1977": 0, "1978": 0, "1979": 0, "1980": 0, "1981": 0, "1982": 0, "1983": 0, "1984": 0, "1985": 1, "1986": 1, "1987": 1, "1988": 1, "1989": 1, "1990": 1, "1991": 1, "1992": 1, "1993": 1, "1994": 1, "1995": 1, "1996": 1, "1997": 2, "1998": 2, "1999": 2, "2000": 2, "2001": 3, "2002": 3, "2003": 3, "2005": 3, "2006": 3, "2007": 3, "2008": 3, "2009": 3, "2012": 4, "2013": 6, "2014": 7, "2015": 7, "2016": 7, "2017": 8, "2018": 8, "2019": 11, "2020": 13, "2021": 15, "2022": 15, "2023": 15, "2024": 15, "2025": 15, "2026": 15}, "University of Wisconsin-Madison": {"1965": 0, "1967": 0, "1968": 0, "1970": 0, "1971": 0, "1972": 0, "1973": 0, "1975": 0, "1976": 0, "1977": 0, "1978": 0, "1979": 0, "1980": 0, "1981": 0, "1982": 0, "1983": 0, "1984": 0, "1985": 0, "1986": 0, "1987": 0, "1988": 0, "1989": 0, "1990": 1, "1991": 1, "1992": 1, "1993": 1, "1994": 1, "1995": 1, "1996": 1, "1997": 1, "1998": 2, "1999": 3, "2000": 3, "2001": 3, "2002": 3, "2003": 4, "2005": 4, "2006": 4, "2007": 4, "2008": 4, "2009": 4, "2012": 4, "2013": 4, "2014": 4, "2015": 4, "2016": 4, "2017": 5, "2018": 6, "2019": 6, "2020": 7, "2021": 8, "2022": 8, "2023": 9, "2024": 11, "2025": 13, "2026": 15}, "University of California, Berkeley": {"1965": 0, "1967": 0, "1968": 0, "1970": 0, "1971": 0, "1972": 0, "1973": 0, "1975": 0, "1976": 0, "1977": 0, "1978": 0, "1979": 0, "1980": 0, "1981": 0, "1982": 0, "1983": 0, "1984": 0, "1985": 0, "1986": 1, "1987": 2, "1988": 2, "1989": 2, "1990": 2, "1991": 2, "1992": 2, "1993": 2, "1994": 2, "1995": 2, "1996": 2, "1997": 2, "1998": 2, "1999": 2, "2000": 2, "2001": 2, "2002": 2, "2003": 2, "2005": 2, "2006": 2, "2007": 2, "2008": 2, "2009": 2, "2012": 6, "2013": 7, "2014": 7, "2015": 7, "2016": 7, "2017": 8, "2018": 10, "2019": 11, "2020": 12, "2021": 13, "2022": 13, "2023": 14, "2024": 14, "2025": 14, "2026": 14}, "Purdue University": {"1965": 0, "1967": 0, "1968": 0, "1970": 1, "1971": 1, "1972": 1, "1973": 1, "1975": 1, "1976": 1, "1977": 1, "1978": 1, "1979": 1, "1980": 1, "1981": 1, "1982": 1, "1983": 1, "1984": 1, "1985": 1, "1986": 1, "1987": 1, "1988": 3, "1989": 3, "1990": 3, "1991": 3, "1992": 4, "1993": 4, "1994": 4, "1995": 4, "1996": 4, "1997": 4, "1998": 4, "1999": 4, "2000": 4, "2001": 4, "2002": 4, "2003": 4, "2005": 4, "2006": 4, "2007": 4, "2008": 4, "2009": 4, "2012": 4, "2013": 4, "2014": 4, "2015": 4, "2016": 4, "2017": 4, "2018": 4, "2019": 4, "2020": 4, "2021": 4, "2022": 4, "2023": 4, "2024": 8, "2025": 11, "2026": 13}, "Indiana University": {"1965": 0, "1967": 0, "1968": 0, "1970": 0, "1971": 0, "1972": 0, "1973": 0, "1975": 0, "1976": 0, "1977": 0, "1978": 0, "1979": 0, "1980": 0, "1981": 1, "1982": 1, "1983": 1, "1984": 1, "1985": 1, "1986": 3, "1987": 5, "1988": 8, "1989": 8, "1990": 8, "1991": 9, "1992": 9, "1993": 10, "1994": 10, "1995": 10, "1996": 10, "1997": 10, "1998": 10, "1999": 10, "2000": 10, "2001": 10, "2002": 10, "2003": 10, "2005": 10, "2006": 10, "2007": 10, "2008": 10, "2009": 10, "2012": 10, "2013": 10, "2014": 10, "2015": 10, "2016": 10, "2017": 11, "2018": 11, "2019": 11, "2020": 11, "2021": 11, "2022": 11, "2023": 11, "2024": 11, "2025": 12, "2026": 13}, "Brown University": {"1965": 0, "1967": 0, "1968": 0, "1970": 0, "1971": 0, "1972": 0, "1973": 0, "1975": 0, "1976": 0, "1977": 0, "1978": 0, "1979": 0, "1980": 0, "1981": 0, "1982": 0, "1983": 0, "1984": 0, "1985": 0, "1986": 0, "1987": 0, "1988": 0, "1989": 1, "1990": 1, "1991": 2, "1992": 2, "1993": 2, "1994": 3, "1995": 3, "1996": 3, "1997": 4, "1998": 5, "1999": 7, "2000": 7, "2001": 7, "2002": 7, "2003": 9, "2005": 9, "2006": 9, "2007": 11, "2008": 11, "2009": 11, "2012": 11, "2013": 11, "2014": 11, "2015": 12, "2016": 12, "2017": 12, "2018": 12, "2019": 12, "2020": 12, "2021": 12, "2022": 12, "2023": 12, "2024": 12, "2025": 12, "2026": 12}, "Doshisha University": {"1965": 0, "1967": 0, "1968": 0, "1970": 0, "1971": 0, "1972": 0, "1973": 0, "1975": 0, "1976": 1, "1977": 1, "1978": 1, "1979": 1, "1980": 1, "1981": 1, "1982": 3, "1983": 4, "1984": 4, "1985": 4, "1986": 4, "1987": 6, "1988": 7, "1989": 7, "1990": 7, "1991": 8, "1992": 8, "1993": 9, "1994": 10, "1995": 10, "1996": 10, "1997": 10, "1998": 10, "1999": 10, "2000": 10, "2001": 10, "2002": 10, "2003": 10, "2005": 10, "2006": 10, "2007": 10, "2008": 10, "2009": 10, "2012": 11, "2013": 11, "2014": 11, "2015": 11, "2016": 11, "2017": 11, "2018": 11, "2019": 11, "2020": 11, "2021": 11, "2022": 11, "2023": 11, "2024": 11, "2025": 11, "2026": 11}, "Florida Atlantic University": {"1965": 0, "1967": 0, "1968": 0, "1970": 0, "1971": 0, "1972": 0, "1973": 0, "1975": 0, "1976": 0, "1977": 0, "1978": 0, "1979": 0, "1980": 0, "1981": 0, "1982": 0, "1983": 0, "1984": 0, "1985": 0, "1986": 1, "1987": 1, "1988": 1, "1989": 1, "1990": 1, "1991": 1, "1992": 1, "1993": 1, "1994": 1, "1995": 1, "1996": 1, "1997": 1, "1998": 1, "1999": 1, "2000": 1, "2001": 1, "2002": 1, "2003": 1, "2005": 1, "2006": 1, "2007": 1, "2008": 1, "2009": 1, "2012": 1, "2013": 1, "2014": 1, "2015": 3, "2016": 3, "2017": 3, "2018": 4, "2019": 4, "2020": 5, "2021": 6, "2022": 7, "2023": 9, "2024": 9, "2025": 11, "2026": 11}, "University of Washington": {"1965": 1, "1967": 1, "1968": 1, "1970": 1, "1971": 1, "1972": 1, "1973": 1, "1975": 1, "1976": 1, "1977": 1, "1978": 1, "1979": 1, "1980": 1, "1981": 1, "1982": 1, "1983": 1, "1984": 1, "1985": 1, "1986": 1, "1987": 1, "1988": 1, "1989": 1, "1990": 1, "1991": 1, "1992": 1, "1993": 1, "1994": 1, "1995": 1, "1996": 1, "1997": 1, "1998": 2, "1999": 2, "2000": 2, "2001": 2, "2002": 2, "2003": 3, "2005": 3, "2006": 3, "2007": 3, "2008": 3, "2009": 3, "2012": 4, "2013": 4, "2014": 4, "2015": 7, "2016": 7, "2017": 10, "2018": 10, "2019": 10, "2020": 10, "2021": 10, "2022": 10, "2023": 10, "2024": 10, "2025": 10, "2026": 10}, "Columbia University": {"1965": 0, "1967": 0, "1968": 0, "1970": 0, "1971": 0, "1972": 0, "1973": 0, "1975": 0, "1976": 0, "1977": 0, "1978": 0, "1979": 1, "1980": 1, "1981": 1, "1982": 1, "1983": 1, "1984": 1, "1985": 1, "1986": 1, "1987": 1, "1988": 1, "1989": 1, "1990": 1, "1991": 1, "1992": 1, "1993": 1, "1994": 1, "1995": 1, "1996": 1, "1997": 1, "1998": 1, "1999": 1, "2000": 1, "2001": 1, "2002": 2, "2003": 3, "2005": 3, "2006": 3, "2007": 3, "2008": 3, "2009": 3, "2012": 3, "2013": 3, "2014": 4, "2015": 4, "2016": 4, "2017": 5, "2018": 5, "2019": 5, "2020": 5, "2021": 5, "2022": 5, "2023": 5, "2024": 6, "2025": 10, "2026": 10}, "University of Colorado": {"1965": 0, "1967": 0, "1968": 0, "1970": 0, "1971": 0, "1972": 0, "1973": 0, "1975": 0, "1976": 0, "1977": 0, "1978": 0, "1979": 0, "1980": 0, "1981": 0, "1982": 0, "1983": 0, "1984": 0, "1985": 0, "1986": 0, "1987": 0, "1988": 0, "1989": 0, "1990": 0, "1991": 0, "1992": 0, "1993": 0, "1994": 0, "1995": 0, "1996": 0, "1997": 0, "1998": 0, "1999": 0, "2000": 0, "2001": 1, "2002": 2, "2003": 2, "2005": 5, "2006": 7, "2007": 9, "2008": 10, "2009": 10, "2012": 10, "2013": 10, "2014": 10, "2015": 10, "2016": 10, "2017": 10, "2018": 10, "2019": 10, "2020": 10, "2021": 10, "2022": 10, "2023": 10, "2024": 10, "2025": 10, "2026": 10}}, "bumpData": {"Harvard University": {"1988": 7, "1989": 7, "1990": 7, "1991": 7, "1992": 7, "1993": 8, "1994": 9, "1995": 6, "1996": 7, "1997": 8, "1998": 8, "1999": 8, "2000": 8, "2001": 8, "2002": 9, "2003": 11, "2005": 12, "2006": 10, "2007": 9, "2008": 5, "2009": 4, "2012": 4, "2013": 4, "2014": 3, "2015": 3, "2016": 3, "2017": 2, "2018": 2, "2019": 2, "2020": 2, "2021": 2, "2022": 2, "2023": 2, "2024": 2, "2025": 2, "2026": 1}, "Princeton University": {"1968": 1, "1970": 1, "1971": 1, "1972": 1, "1973": 1, "1975": 1, "1976": 1, "1977": 1, "1978": 1, "1979": 1, "1980": 1, "1981": 1, "1982": 1, "1983": 1, "1984": 1, "1985": 1, "1986": 1, "1987": 1, "1988": 1, "1989": 1, "1990": 1, "1991": 1, "1992": 1, "1993": 1, "1994": 1, "1995": 1, "1996": 1, "1997": 1, "1998": 1, "1999": 1, "2000": 1, "2001": 1, "2002": 1, "2003": 1, "2005": 1, "2006": 1, "2007": 1, "2008": 1, "2009": 1, "2012": 1, "2013": 1, "2014": 1, "2015": 1, "2016": 1, "2017": 1, "2018": 1, "2019": 1, "2020": 1, "2021": 1, "2022": 1, "2023": 1, "2024": 1, "2025": 1, "2026": 2}, "Yale University": {"1987": 5, "1988": 5, "1989": 5, "1990": 5, "1991": 5, "1992": 6, "1993": 6, "1994": 6, "1995": 7, "1996": 8, "1997": 9, "1998": 9, "1999": 9, "2000": 9, "2001": 9, "2002": 7, "2003": 7, "2005": 8, "2006": 4, "2007": 4, "2008": 3, "2009": 5, "2012": 5, "2013": 5, "2014": 4, "2015": 4, "2016": 4, "2017": 4, "2018": 4, "2019": 4, "2020": 5, "2021": 5, "2022": 5, "2023": 5, "2024": 3, "2025": 3, "2026": 3}, "Cornell University": {"2008": 11, "2009": 11, "2012": 11, "2013": 12, "2014": 12, "2015": 12, "2016": 13, "2017": 14, "2018": 15, "2019": 10, "2020": 12, "2021": 11, "2022": 11, "2023": 6, "2024": 6, "2025": 6, "2026": 4}, "University of Colorado at Boulder": {"1992": 11, "1993": 7, "1994": 7, "1995": 8, "1996": 9, "1997": 10, "1998": 10, "1999": 10, "2000": 10, "2001": 10, "2002": 10, "2003": 8, "2005": 7, "2006": 2, "2007": 2, "2008": 2, "2009": 2, "2012": 2, "2013": 2, "2014": 2, "2015": 2, "2016": 2, "2017": 3, "2018": 3, "2019": 3, "2020": 3, "2021": 3, "2022": 3, "2023": 3, "2024": 4, "2025": 4, "2026": 5}, "University of California, Los Angeles": {"2007": 13, "2008": 14, "2009": 12, "2012": 12, "2013": 9, "2014": 7, "2015": 7, "2016": 7, "2017": 6, "2018": 5, "2019": 5, "2020": 4, "2021": 4, "2022": 4, "2023": 4, "2024": 5, "2025": 5, "2026": 6}, "Pennsylvania State University": {"1968": 2, "1970": 2, "1971": 2, "1972": 2, "1973": 2, "1975": 2, "1976": 2, "1977": 2, "1978": 2, "1979": 2, "1980": 3, "1981": 3, "1982": 4, "1983": 4, "1984": 4, "1985": 5, "1986": 6, "1987": 8, "1988": 10, "1989": 10, "1990": 10, "1991": 11, "1992": 12, "1993": 12, "1994": 12, "1995": 12, "1996": 12, "1997": 13, "1998": 15, "1999": 15, "2000": 15, "2001": 15, "2002": 17, "2003": 17, "2005": 17, "2006": 17, "2007": 18, "2008": 19, "2009": 19, "2012": 19, "2013": 15, "2014": 13, "2015": 13, "2016": 12, "2017": 11, "2018": 11, "2019": 8, "2020": 8, "2021": 7, "2022": 7, "2023": 8, "2024": 7, "2025": 7, "2026": 7}, "University of Massachusetts-Amherst": {"1983": 5, "1984": 5, "1985": 3, "1986": 4, "1987": 6, "1988": 8, "1989": 8, "1990": 8, "1991": 8, "1992": 8, "1993": 9, "1994": 10, "1995": 9, "1996": 5, "1997": 5, "1998": 5, "1999": 5, "2000": 5, "2001": 2, "2002": 2, "2003": 2, "2005": 2, "2006": 3, "2007": 3, "2008": 4, "2009": 3, "2012": 3, "2013": 3, "2014": 5, "2015": 5, "2016": 5, "2017": 5, "2018": 6, "2019": 6, "2020": 6, "2021": 6, "2022": 6, "2023": 7, "2024": 8, "2025": 8, "2026": 8}, "University of": {"1978": 3, "1979": 3, "1980": 2, "1981": 2, "1982": 3, "1983": 3, "1984": 3, "1985": 4, "1986": 5, "1987": 4, "1988": 4, "1989": 4, "1990": 4, "1991": 4, "1992": 4, "1993": 4, "1994": 4, "1995": 4, "1996": 4, "1997": 4, "1998": 4, "1999": 4, "2000": 4, "2001": 5, "2002": 5, "2003": 5, "2005": 5, "2006": 5, "2007": 5, "2008": 6, "2009": 6, "2012": 6, "2013": 6, "2014": 6, "2015": 6, "2016": 6, "2017": 7, "2018": 7, "2019": 7, "2020": 7, "2021": 8, "2022": 8, "2023": 9, "2024": 9, "2025": 9, "2026": 9}, "University of Chicago": {"1985": 6, "1986": 7, "1987": 9, "1988": 11, "1989": 11, "1990": 11, "1991": 12, "1992": 13, "1993": 13, "1994": 13, "1995": 13, "1996": 13, "1997": 11, "1998": 11, "1999": 12, "2000": 12, "2001": 11, "2002": 11, "2003": 12, "2005": 13, "2006": 13, "2007": 14, "2008": 15, "2009": 15, "2012": 14, "2013": 14, "2014": 14, "2015": 14, "2016": 14, "2017": 15, "2018": 16, "2019": 11, "2020": 9, "2021": 9, "2022": 9, "2023": 10, "2024": 10, "2025": 10, "2026": 10}, "University of Wisconsin-Madison": {"1990": 12, "1991": 13, "1992": 14, "1993": 14, "1994": 14, "1995": 14, "1996": 14, "1997": 14, "1998": 12, "1999": 11, "2000": 11, "2001": 12, "2002": 12, "2003": 9, "2005": 10, "2006": 11, "2007": 11, "2008": 12, "2009": 13, "2012": 15, "2013": 16, "2014": 16, "2015": 17, "2016": 17, "2017": 17, "2018": 17, "2019": 17, "2020": 17, "2021": 17, "2022": 17, "2023": 17, "2024": 13, "2025": 12, "2026": 11}, "University of California, Berkeley": {"1986": 8, "1987": 7, "1988": 9, "1989": 9, "1990": 9, "1991": 9, "1992": 9, "1993": 10, "1994": 11, "1995": 11, "1996": 11, "1997": 12, "1998": 13, "1999": 13, "2000": 13, "2001": 13, "2002": 13, "2003": 15, "2005": 16, "2006": 16, "2007": 17, "2008": 18, "2009": 18, "2012": 13, "2013": 13, "2014": 15, "2015": 15, "2016": 15, "2017": 16, "2018": 12, "2019": 12, "2020": 10, "2021": 10, "2022": 10, "2023": 11, "2024": 11, "2025": 11, "2026": 12}, "Purdue University": {"1970": 3, "1971": 3, "1972": 3, "1973": 3, "1975": 3, "1976": 3, "1977": 3, "1978": 4, "1979": 4, "1980": 4, "1981": 4, "1982": 5, "1983": 6, "1984": 6, "1985": 7, "1986": 9, "1987": 10, "1988": 6, "1989": 6, "1990": 6, "1991": 6, "1992": 5, "1993": 5, "1994": 5, "1995": 5, "1996": 6, "1997": 6, "1998": 7, "1999": 7, "2000": 7, "2001": 7, "2002": 8, "2003": 10, "2005": 11, "2006": 12, "2007": 12, "2008": 13, "2009": 14, "2012": 16, "2013": 17, "2014": 17, "2015": 18, "2016": 18, "2017": 19, "2018": 19, "2019": 19, "2020": 20, "2021": 20, "2022": 20, "2023": 20, "2024": 19, "2025": 15, "2026": 13}, "Indiana University": {"1981": 5, "1982": 6, "1983": 7, "1984": 7, "1985": 8, "1986": 3, "1987": 3, "1988": 2, "1989": 2, "1990": 2, "1991": 2, "1992": 2, "1993": 2, "1994": 2, "1995": 2, "1996": 2, "1997": 2, "1998": 2, "1999": 2, "2000": 2, "2001": 3, "2002": 3, "2003": 3, "2005": 3, "2006": 6, "2007": 7, "2008": 8, "2009": 8, "2012": 9, "2013": 10, "2014": 10, "2015": 10, "2016": 10, "2017": 9, "2018": 9, "2019": 13, "2020": 13, "2021": 13, "2022": 13, "2023": 13, "2024": 14, "2025": 13, "2026": 14}, "Brown University": {"1989": 12, "1990": 13, "1991": 10, "1992": 10, "1993": 11, "1994": 8, "1995": 10, "1996": 10, "1997": 7, "1998": 6, "1999": 6, "2000": 6, "2001": 6, "2002": 6, "2003": 6, "2005": 6, "2006": 8, "2007": 6, "2008": 7, "2009": 7, "2012": 7, "2013": 7, "2014": 8, "2015": 8, "2016": 8, "2017": 8, "2018": 8, "2019": 9, "2020": 11, "2021": 12, "2022": 12, "2023": 12, "2024": 12, "2025": 14, "2026": 15}, "Doshisha University": {"1976": 4, "1977": 4, "1978": 5, "1979": 5, "1980": 5, "1981": 6, "1982": 2, "1983": 2, "1984": 2, "1985": 2, "1986": 2, "1987": 2, "1988": 3, "1989": 3, "1990": 3, "1991": 3, "1992": 3, "1993": 3, "1994": 3, "1995": 3, "1996": 3, "1997": 3, "1998": 3, "1999": 3, "2000": 3, "2001": 4, "2002": 4, "2003": 4, "2005": 4, "2006": 7, "2007": 8, "2008": 9, "2009": 9, "2012": 8, "2013": 8, "2014": 9, "2015": 9, "2016": 9, "2017": 10, "2018": 10, "2019": 14, "2020": 14, "2021": 14, "2022": 14, "2023": 14, "2024": 15, "2025": 16, "2026": 16}, "Florida Atlantic University": {"1986": 10, "1987": 11, "1988": 12, "1989": 13, "1990": 14, "1991": 14, "1992": 15, "1993": 15, "1994": 15, "1995": 15, "1996": 15, "1997": 15, "1998": 16, "1999": 16, "2000": 16, "2001": 16, "2002": 18, "2003": 18, "2005": 18, "2006": 18, "2007": 19, "2008": 20, "2009": 20, "2012": 20, "2013": 20, "2014": 20, "2015": 20, "2016": 20, "2017": 20, "2018": 20, "2019": 20, "2020": 18, "2021": 18, "2022": 18, "2023": 18, "2024": 18, "2025": 17, "2026": 17}, "University of Washington": {"1965": 1, "1967": 1, "1968": 3, "1970": 4, "1971": 4, "1972": 4, "1973": 4, "1975": 4, "1976": 5, "1977": 5, "1978": 6, "1979": 6, "1980": 6, "1981": 7, "1982": 7, "1983": 8, "1984": 8, "1985": 9, "1986": 11, "1987": 12, "1988": 13, "1989": 14, "1990": 15, "1991": 15, "1992": 16, "1993": 16, "1994": 16, "1995": 16, "1996": 16, "1997": 16, "1998": 14, "1999": 14, "2000": 14, "2001": 14, "2002": 14, "2003": 13, "2005": 14, "2006": 14, "2007": 15, "2008": 16, "2009": 16, "2012": 17, "2013": 18, "2014": 18, "2015": 16, "2016": 16, "2017": 12, "2018": 13, "2019": 15, "2020": 15, "2021": 15, "2022": 15, "2023": 15, "2024": 16, "2025": 18, "2026": 18}, "Columbia University": {"1979": 7, "1980": 7, "1981": 8, "1982": 8, "1983": 9, "1984": 9, "1985": 10, "1986": 12, "1987": 13, "1988": 14, "1989": 15, "1990": 16, "1991": 16, "1992": 17, "1993": 17, "1994": 17, "1995": 17, "1996": 17, "1997": 17, "1998": 17, "1999": 17, "2000": 17, "2001": 17, "2002": 15, "2003": 14, "2005": 15, "2006": 15, "2007": 16, "2008": 17, "2009": 17, "2012": 18, "2013": 19, "2014": 19, "2015": 19, "2016": 19, "2017": 18, "2018": 18, "2019": 18, "2020": 19, "2021": 19, "2022": 19, "2023": 19, "2024": 20, "2025": 19, "2026": 19}, "University of Colorado": {"2001": 18, "2002": 16, "2003": 16, "2005": 9, "2006": 9, "2007": 10, "2008": 10, "2009": 10, "2012": 10, "2013": 11, "2014": 11, "2015": 11, "2016": 11, "2017": 13, "2018": 14, "2019": 16, "2020": 16, "2021": 16, "2022": 16, "2023": 16, "2024": 17, "2025": 20, "2026": 20}}, "concentration": [{"era": "1965-1979", "pct": 52.6, "total": 38, "top5": [{"inst": "Princeton University", "count": 12}, {"inst": "University of Oregon", "count": 3}, {"inst": "University of Southern California", "count": 2}, {"inst": "Arizona State University", "count": 2}, {"inst": "Pennsylvania State University", "count": 1}]}, {"era": "1980-1994", "pct": 34.4, "total": 125, "top5": [{"inst": "Princeton University", "count": 12}, {"inst": "Indiana University", "count": 10}, {"inst": "Doshisha University", "count": 9}, {"inst": "Tufts University", "count": 7}, {"inst": "Rutgers The State University of New Jersey - New Brunswick", "count": 5}]}, {"era": "1995-2009", "pct": 33.0, "total": 206, "top5": [{"inst": "University of Colorado at Boulder", "count": 18}, {"inst": "University of Massachusetts-Amherst", "count": 15}, {"inst": "Harvard University", "count": 14}, {"inst": "Yale University", "count": 11}, {"inst": "University of Colorado", "count": 10}]}, {"era": "2010-2024", "pct": 20.4, "total": 334, "top5": [{"inst": "Pennsylvania State University", "count": 16}, {"inst": "Harvard University", "count": 14}, {"inst": "University of California, Los Angeles", "count": 14}, {"inst": "University of Chicago", "count": 12}, {"inst": "University of California, Berkeley", "count": 12}]}, {"era": "2025-2026", "pct": 27.7, "total": 112, "top5": [{"inst": "Harvard University", "count": 8}, {"inst": "Yale University", "count": 8}, {"inst": "Cornell University", "count": 5}, {"inst": "Purdue University", "count": 5}, {"inst": "Lehigh U", "count": 5}]}], "geoBreakdown": [{"era": "1965-1979", "US": 36, "Japan": 1, "Other": 1}, {"era": "1980-1994", "US": 110, "Japan": 11, "Other": 4}, {"era": "1995-2009", "US": 186, "Japan": 3, "Other": 17}, {"era": "2010-2024", "US": 272, "Japan": 21, "Other": 41}, {"era": "2025-2026", "US": 87, "Japan": 9, "Other": 16}], "firstTimers": [{"year": 1965, "count": 1}, {"year": 1967, "count": 1}, {"year": 1968, "count": 8}, {"year": 1970, "count": 1}, {"year": 1971, "count": 3}, {"year": 1972, "count": 0}, {"year": 1973, "count": 0}, {"year": 1975, "count": 0}, {"year": 1976, "count": 2}, {"year": 1977, "count": 0}, {"year": 1978, "count": 1}, {"year": 1979, "count": 6}, {"year": 1980, "count": 0}, {"year": 1981, "count": 3}, {"year": 1982, "count": 0}, {"year": 1983, "count": 4}, {"year": 1984, "count": 2}, {"year": 1985, "count": 4}, {"year": 1986, "count": 8}, {"year": 1987, "count": 7}, {"year": 1988, "count": 1}, {"year": 1989, "count": 8}, {"year": 1990, "count": 2}, {"year": 1991, "count": 2}, {"year": 1992, "count": 9}, {"year": 1993, "count": 1}, {"year": 1994, "count": 4}, {"year": 1995, "count": 0}, {"year": 1996, "count": 2}, {"year": 1997, "count": 2}, {"year": 1998, "count": 2}, {"year": 1999, "count": 4}, {"year": 2000, "count": 3}, {"year": 2001, "count": 4}, {"year": 2002, "count": 2}, {"year": 2003, "count": 3}, {"year": 2005, "count": 3}, {"year": 2006, "count": 4}, {"year": 2007, "count": 3}, {"year": 2008, "count": 5}, {"year": 2009, "count": 10}, {"year": 2012, "count": 11}, {"year": 2013, "count": 7}, {"year": 2014, "count": 6}, {"year": 2015, "count": 9}, {"year": 2016, "count": 4}, {"year": 2017, "count": 16}, {"year": 2018, "count": 9}, {"year": 2019, "count": 7}, {"year": 2020, "count": 1}, {"year": 2021, "count": 5}, {"year": 2022, "count": 6}, {"year": 2023, "count": 7}, {"year": 2024, "count": 10}, {"year": 2025, "count": 19}, {"year": 2026, "count": 9}]};
+const CONF_KEY = 'mla';
+
+
+const tooltip = document.getElementById('tooltip');
+function showTooltip(evt, html) {
+    tooltip.innerHTML = html;
+    tooltip.classList.add('show');
+    const r = tooltip.getBoundingClientRect();
+    let tx = evt.clientX + 14, ty = evt.clientY + 14;
+    if (tx + r.width > window.innerWidth) tx = evt.clientX - r.width - 10;
+    if (ty + r.height > window.innerHeight) ty = evt.clientY - r.height - 10;
+    tooltip.style.left = tx + 'px';
+    tooltip.style.top = ty + 'px';
+}
+function hideTooltip() { tooltip.classList.remove('show'); }
+
+
+
+let isDark = false;
+function toggleTheme() {
+    isDark = !isDark;
+    document.body.classList.toggle('dark-mode', isDark);
+    document.getElementById('themeBtn').textContent = isDark ? '☀ Light' : '☾ Dark';
+    if (typeof onThemeChange === 'function') onThemeChange();
+}
+function cssVar(v) { return getComputedStyle(document.body).getPropertyValue(v).trim(); }
+
+
+
+function exportPng() {
+    const svgEl = document.querySelector('.chart-area svg');
+    if (!svgEl) { alert('No chart to export'); return; }
+    const serializer = new XMLSerializer();
+    const svgStr = serializer.serializeToString(svgEl);
+    const canvas = document.createElement('canvas');
+    const bb = svgEl.getBoundingClientRect();
+    canvas.width = bb.width * 2; canvas.height = bb.height * 2;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(2, 2);
+    ctx.fillStyle = cssVar('--bg');
+    ctx.fillRect(0, 0, bb.width, bb.height);
+    const img = new Image();
+    const blob = new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+        ctx.drawImage(img, 0, 0, bb.width, bb.height);
+        URL.revokeObjectURL(url);
+        const link = document.createElement('a');
+        link.download = 'mla_' + (activeTab || 'chart') + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    };
+    img.src = url;
+}
+function exportCsv() {
+    if (typeof buildCsvContent !== 'function') { alert('No CSV export defined'); return; }
+    const csvContent = buildCsvContent();
+    const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = 'mla_' + (activeTab || 'data') + '.csv';
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+}
+
+
+
+
+
+const D = ALL_DATA;
+const SCHOOL_COLORS = {"Columbia University": "#B9D9EB", "Yale University": "#00356B", "Duke University": "#003087", "Harvard University": "#A51C30", "Cornell University": "#B31B1B", "Stanford University": "#8C1515", "Dartmouth College": "#00693E", "Northwestern University": "#4E2A84", "New York University": "#57068C", "Princeton University": "#E77500", "University of Michigan": "#FFCB05", "University of Chicago": "#800000", "University of California, Los Angeles": "#2774AE", "University of California, Berkeley": "#003262", "University of Pennsylvania": "#011F5B", "University of Minnesota": "#7A0019", "University of Washington": "#4B2E83", "University of Hawai'i": "#024731", "Pennsylvania State University": "#041E42", "University of Illinois at Urbana-Champaign": "#E84A27", "Emory University": "#012169", "University of Pittsburgh": "#003594", "Oberlin College": "#A6192E", "The Ohio State University": "#BB0000", "Rutgers University": "#CC0033", "Indiana University": "#990000", "Purdue University": "#CEB888", "University of British Columbia": "#002145", "Tufts University": "#3E8EDE", "University of Oregon": "#154733", "University of Colorado Boulder": "#CFB87C", "Boston University": "#CC0000", "University of Toronto": "#002A5C", "University of Massachusetts Amherst": "#881C1C", "Washington University in St. Louis": "#A51417", "University of Tokyo": "#2A5CAA", "Kyoto University": "#1B3A5C", "Waseda University": "#8B0000", "Keio University": "#C8102E", "Osaka University": "#00567B"};
+const SCHOOL_COLORS_DARK = {"Columbia University": "#B9D9EB", "Yale University": "#3377AA", "Duke University": "#3366BB", "Harvard University": "#A51C30", "Cornell University": "#B31B1B", "Stanford University": "#8C1515", "Dartmouth College": "#00693E", "Northwestern University": "#4E2A84", "New York University": "#57068C", "Princeton University": "#E77500", "University of Michigan": "#FFCB05", "University of Chicago": "#800000", "University of California, Los Angeles": "#2774AE", "University of California, Berkeley": "#3366AA", "University of Pennsylvania": "#3355AA", "University of Minnesota": "#7A0019", "University of Washington": "#4B2E83", "University of Hawai'i": "#024731", "Pennsylvania State University": "#334488", "University of Illinois at Urbana-Champaign": "#E84A27", "Emory University": "#3355AA", "University of Pittsburgh": "#003594", "Oberlin College": "#A6192E", "The Ohio State University": "#BB0000", "Rutgers University": "#CC0033", "Indiana University": "#990000", "Purdue University": "#CEB888", "University of British Columbia": "#3366AA", "Tufts University": "#3E8EDE", "University of Oregon": "#154733", "University of Colorado Boulder": "#CFB87C", "Boston University": "#CC0000", "University of Toronto": "#3366AA", "University of Massachusetts Amherst": "#881C1C", "Washington University in St. Louis": "#A51417", "University of Tokyo": "#2A5CAA", "Kyoto University": "#4477AA", "Waseda University": "#8B0000", "Keio University": "#C8102E", "Osaka University": "#00567B"};
+
+const years = D.years;
+const heatmap = D.heatmap;
+const top20 = D.top20;
+const raceData = D.raceData;
+const bumpData = D.bumpData;
+const yearCoverage = D.yearCoverage;
+
+// Sparse years: fewer than MIN_SPARSE presentations with affiliations
+const MIN_SPARSE = 10;
+const sparseYears = new Set(years.filter(y => (yearCoverage[String(y)] || 0) < MIN_SPARSE));
+
+// Missing years in the range
+const allYearRange = [];
+for (let y = years[0]; y <= years[years.length-1]; y++) allYearRange.push(y);
+const missingYears = new Set(allYearRange.filter(y => years.indexOf(y) < 0));
+
+let activeView = 'heatmap';
+let highlightInst = null;
+let displayMode = 'count';
+const yearTotals = D.yearTotals;
+
+// Bar chart race state
+let raceYearIdx = 0;
+let raceInterval = null;
+let raceSpeed = 500;
+
+// Color helper
+function instColor(inst) {
+    const colors = isDark ? SCHOOL_COLORS_DARK : SCHOOL_COLORS;
+    return colors[inst] || (isDark ? '#666' : '#999');
+}
+
+// ── Sidebar ──────────────────────────────────────────────────────
+function buildSidebar() {
+    const sb = d3.select('#inst-sidebar');
+    sb.html('');
+
+    // Top-5 Concentration
+    const sec1 = sb.append('div').attr('class', 'sidebar-section');
+    sec1.append('h3').text('Top-5 Concentration');
+    const conc = D.concentration;
+    if (conc.length > 0) {
+        const cw = 248, ch = conc.length * 28 + 10;
+        const csvg = sec1.append('svg').attr('width', cw).attr('height', ch);
+        const cScale = d3.scaleLinear().domain([0, 100]).range([0, 160]);
+        conc.forEach((d, i) => {
+            const g = csvg.append('g').attr('transform', `translate(0,${i*28+5})`);
+            g.append('text').attr('x', 0).attr('y', 12).attr('font-size', 11)
+                .attr('fill', cssVar('--fg2')).text(d.era);
+            g.append('rect').attr('x', 78).attr('y', 0).attr('width', cScale(d.pct))
+                .attr('height', 18).attr('rx', 3).attr('fill', cssVar('--accent'));
+            g.append('text').attr('x', 80 + cScale(d.pct)).attr('y', 13)
+                .attr('font-size', 11).attr('fill', cssVar('--fg')).text(d.pct + '%');
+        });
+    }
+
+    // Geographic breakdown
+    const sec2 = sb.append('div').attr('class', 'sidebar-section');
+    sec2.append('h3').text('Geographic Breakdown');
+    const geo = D.geoBreakdown;
+    if (geo.length > 0) {
+        const gw = 248, gh = geo.length * 32 + 24;
+        const gsvg = sec2.append('svg').attr('width', gw).attr('height', gh);
+        geo.forEach((d, i) => {
+            const total = d.US + d.Japan + d.Other;
+            if (total === 0) return;
+            const g = gsvg.append('g').attr('transform', `translate(0,${i*32+5})`);
+            g.append('text').attr('x', 0).attr('y', 13).attr('font-size', 11)
+                .attr('fill', cssVar('--fg2')).text(d.era);
+            const barX = 78, barW = 152;
+            const usW = d.US / total * barW;
+            const jpW = d.Japan / total * barW;
+            const otW = d.Other / total * barW;
+            g.append('rect').attr('x', barX).attr('y', 0).attr('width', usW)
+                .attr('height', 18).attr('fill', '#4363d8');
+            g.append('rect').attr('x', barX + usW).attr('y', 0).attr('width', jpW)
+                .attr('height', 18).attr('fill', '#e6194b');
+            g.append('rect').attr('x', barX + usW + jpW).attr('y', 0).attr('width', otW)
+                .attr('height', 18).attr('fill', '#3cb44b');
+            if (i === 0) {
+                const leg = gsvg.append('g').attr('transform', `translate(78,${geo.length*32+2})`);
+                [['US','#4363d8'],['Japan','#e6194b'],['Other','#3cb44b']].forEach(([label,col], li) => {
+                    leg.append('rect').attr('x', li*55).attr('y', 0).attr('width', 10)
+                        .attr('height', 10).attr('fill', col);
+                    leg.append('text').attr('x', li*55+14).attr('y', 9).attr('font-size', 10)
+                        .attr('fill', cssVar('--fg2')).text(label);
+                });
+            }
+        });
+    }
+
+    // New institutions per year
+    const sec3 = sb.append('div').attr('class', 'sidebar-section');
+    sec3.append('h3').text('New Institutions per Year');
+    const ft = D.firstTimers;
+    if (ft.length > 0) {
+        const fw = 248, fh = 80;
+        const fsvg = sec3.append('svg').attr('width', fw).attr('height', fh);
+        const fxScale = d3.scaleBand().domain(ft.map(d => d.year)).range([30, fw - 5]).padding(0.2);
+        const maxFt = d3.max(ft, d => d.count) || 1;
+        const fyScale = d3.scaleLinear().domain([0, maxFt]).range([fh - 16, 4]);
+        const fLine = d3.line().x(d => fxScale(d.year) + fxScale.bandwidth()/2)
+            .y(d => fyScale(d.count));
+        fsvg.append('path').attr('d', fLine(ft)).attr('fill', 'none')
+            .attr('stroke', cssVar('--accent')).attr('stroke-width', 1.5);
+        ft.forEach(d => {
+            fsvg.append('circle')
+                .attr('cx', fxScale(d.year) + fxScale.bandwidth()/2)
+                .attr('cy', fyScale(d.count))
+                .attr('r', 2.5).attr('fill', cssVar('--accent'));
+        });
+        ft.forEach(d => {
+            if (d.year % 5 === 0 || d.year === years[0] || d.year === years[years.length-1]) {
+                fsvg.append('text')
+                    .attr('x', fxScale(d.year) + fxScale.bandwidth()/2)
+                    .attr('y', fh - 2).attr('text-anchor', 'middle')
+                    .attr('font-size', 9).attr('fill', cssVar('--fg3'))
+                    .text(d.year);
+            }
+        });
+        fsvg.append('text').attr('x', 2).attr('y', 10).attr('font-size', 9)
+            .attr('fill', cssVar('--fg3')).text(maxFt);
+        fsvg.append('text').attr('x', 2).attr('y', fh - 16).attr('font-size', 9)
+            .attr('fill', cssVar('--fg3')).text('0');
+    }
+
+    // Data coverage note
+    const sec4 = sb.append('div').attr('class', 'sidebar-section');
+    sec4.append('h3').text('Data Coverage');
+    const sparseList = years.filter(y => sparseYears.has(y));
+    let note = '';
+    if (sparseList.length > 0) {
+        note += 'Sparse years (marked *): ' + sparseList.join(', ') + '. ';
+    }
+    const missList = Array.from(missingYears).sort((a,b) => a - b);
+    if (missList.length > 0) {
+        note += 'Years with no data: ' + missList.join(', ') + '. ';
+    }
+    if (!note) note = 'All years have data coverage.';
+    sec4.append('div').style('font-size','11px').style('color', cssVar('--fg2'))
+        .style('line-height','1.5').html(note);
+}
+
+// ── Heatmap ──────────────────────────────────────────────────────
+function drawHeatmap() {
+    const svg = d3.select('#inst-chart');
+    svg.selectAll('*').remove();
+
+    const margin = {top: 80, right: 20, bottom: 30, left: 260};
+    const cellW = Math.max(22, Math.min(30, (document.getElementById('viz-area').clientWidth - margin.left - margin.right - 32) / years.length));
+    const cellH = 22;
+    const w = margin.left + years.length * cellW + margin.right;
+    const h = margin.top + heatmap.length * cellH + margin.bottom;
+    svg.attr('width', w).attr('height', h).attr('viewBox', `0 0 ${w} ${h}`);
+
+    const isPct = displayMode === 'pct';
+    let maxVal;
+    if (isPct) {
+        maxVal = d3.max(heatmap, d => d3.max(years, y => {
+            const cnt = (d.years[y] || {}).count || 0;
+            const tot = yearTotals[y] || 1;
+            return cnt / tot * 100;
+        })) || 1;
+    } else {
+        maxVal = d3.max(heatmap, d => d3.max(years, y => (d.years[y] || {}).count || 0)) || 1;
+    }
+    const colorScale = d3.scaleSequential(d3.interpolateBlues).domain([0, maxVal]);
+
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+    // Year labels (rotated)
+    years.forEach((y, i) => {
+        const isSparse = sparseYears.has(y);
+        g.append('text')
+            .attr('x', i * cellW + cellW/2).attr('y', -8)
+            .attr('text-anchor', 'end')
+            .attr('font-size', 10)
+            .attr('fill', isSparse ? cssVar('--accent2') : cssVar('--fg2'))
+            .attr('font-style', isSparse ? 'italic' : 'normal')
+            .attr('transform', `rotate(-45,${i*cellW+cellW/2},-8)`)
+            .text(y + (isSparse ? '*' : ''));
+    });
+
+    // Rows
+    heatmap.forEach((row, ri) => {
+        const rg = g.append('g').attr('transform', `translate(0,${ri * cellH})`);
+
+        // Institution label
+        const isTop20 = top20.indexOf(row.institution) >= 0;
+        rg.append('text')
+            .attr('x', -8).attr('y', cellH/2 + 4)
+            .attr('text-anchor', 'end').attr('font-size', 11)
+            .attr('fill', highlightInst === row.institution ? cssVar('--accent') :
+                          (isTop20 ? cssVar('--fg') : cssVar('--fg2')))
+            .attr('font-weight', highlightInst === row.institution ? 700 : (isTop20 ? 600 : 400))
+            .attr('cursor', 'pointer')
+            .text(row.institution.length > 35 ? row.institution.substring(0,33) + '...' : row.institution)
+            .on('click', () => {
+                highlightInst = highlightInst === row.institution ? null : row.institution;
+                drawCurrent();
+            });
+
+        // Total count badge
+        rg.append('text')
+            .attr('x', -262 + margin.left).attr('y', cellH/2 + 4)
+            .attr('text-anchor', 'start').attr('font-size', 9)
+            .attr('fill', cssVar('--fg3'))
+            .text('(' + row.total + ')');
+
+        // Geo indicator dot
+        const geoCol = row.geo === 'Japan' ? '#e6194b'
+            : (row.geo.startsWith('US') ? '#4363d8' : '#3cb44b');
+        rg.append('circle')
+            .attr('cx', -262 + margin.left - 10).attr('cy', cellH/2)
+            .attr('r', 3).attr('fill', geoCol).attr('opacity', 0.6);
+
+        // Cells
+        years.forEach((y, ci) => {
+            const cell = row.years[String(y)] || {};
+            const cnt = cell.count || 0;
+            const tot = yearTotals[y] || 1;
+            const pctVal = cnt / tot * 100;
+            const displayVal = isPct ? pctVal : cnt;
+
+            rg.append('rect')
+                .attr('x', ci * cellW).attr('y', 0)
+                .attr('width', cellW - 1).attr('height', cellH - 1)
+                .attr('rx', 2)
+                .attr('fill', cnt > 0 ? colorScale(displayVal) : (isDark ? '#1a1a2e' : '#f9f9f9'))
+                .attr('stroke', cssVar('--grid')).attr('stroke-width', 0.5)
+                .attr('data-inst', row.institution)
+                .attr('data-year', y)
+                .attr('data-count', cnt)
+                .attr('data-pct', pctVal.toFixed(1))
+                .attr('data-presenters', (cell.presenters || []).join(', '));
+
+            if (cnt > 0) {
+                const label = isPct ? pctVal.toFixed(0) + '%' : String(cnt);
+                rg.append('text')
+                    .attr('x', ci * cellW + cellW/2 - 0.5)
+                    .attr('y', cellH/2 + 3.5)
+                    .attr('text-anchor', 'middle').attr('font-size', isPct ? 8 : 9)
+                    .attr('fill', displayVal >= maxVal * 0.6 ? '#fff' : cssVar('--fg'))
+                    .attr('pointer-events', 'none')
+                    .text(label);
+            }
+        });
+    });
+
+    // Tooltip on hover
+    svg.on('mousemove', function(e) {
+        const target = e.target;
+        if (target.tagName === 'rect' && target.getAttribute('data-inst')) {
+            const inst = target.getAttribute('data-inst');
+            const yr = target.getAttribute('data-year');
+            const cnt = target.getAttribute('data-count');
+            const pct = target.getAttribute('data-pct');
+            const presenters = target.getAttribute('data-presenters');
+            const isSparse = sparseYears.has(+yr);
+            showTooltip(e, '<b>' + inst + '</b><br>Year: ' + yr
+                + (isSparse ? ' (sparse data)' : '')
+                + '<br>Presentations: ' + cnt + ' (' + pct + '%)'
+                + (presenters ? '<br><span style="color:' + cssVar('--fg2')
+                    + ';font-size:11px">' + presenters + '</span>' : ''));
+        } else {
+            hideTooltip();
+        }
+    });
+    svg.on('mouseleave', () => hideTooltip());
+}
+
+// ── Bar Chart Race ───────────────────────────────────────────────
+function drawRace() {
+    const svg = d3.select('#inst-chart');
+    svg.selectAll('*').remove();
+
+    const margin = {top: 60, right: 60, bottom: 30, left: 260};
+    const barH = 26, barGap = 5;
+    const numBars = 20;
+    const w = Math.max(700, document.getElementById('viz-area').clientWidth - 32);
+    const h = margin.top + numBars * (barH + barGap) + margin.bottom;
+    svg.attr('width', w).attr('height', h);
+
+    // Controls
+    const vizArea = d3.select('#viz-area');
+    vizArea.select('#raceControls').remove();
+    const controls = vizArea.insert('div', 'svg').attr('class', 'race-controls').attr('id', 'raceControls');
+    controls.append('button').attr('id', 'racePlayBtn').text('Play').on('click', togglePlay);
+    controls.append('button').text('Step Back').on('click', () => stepRace(-1));
+    controls.append('button').text('Step Fwd').on('click', () => stepRace(1));
+    controls.append('div').attr('class', 'year-display').attr('id', 'raceYearLabel').text(years[raceYearIdx]);
+    controls.append('input').attr('type', 'range')
+        .attr('min', 0).attr('max', years.length - 1).attr('value', raceYearIdx)
+        .attr('id', 'raceSlider')
+        .on('input', function() { raceYearIdx = +this.value; renderRaceFrame(false); });
+    controls.append('label').text('Speed:');
+    const speedSel = controls.append('select').attr('id', 'raceSpeedSel')
+        .on('change', function() {
+            raceSpeed = +this.value;
+            if (raceInterval) { stopPlay(); togglePlay(); }
+        });
+    [['Slow', 1000], ['Normal', 500], ['Fast', 200]].forEach(([label, val]) => {
+        speedSel.append('option').attr('value', val).text(label)
+            .property('selected', val === raceSpeed);
+    });
+
+    renderRaceFrame(false);
+}
+
+function renderRaceFrame(animate) {
+    const svg = d3.select('#inst-chart');
+    const margin = {top: 10, right: 60, bottom: 20, left: 260};
+    const barH = 26, barGap = 5;
+    const numBars = 20;
+    const w = +svg.attr('width');
+    const y = years[raceYearIdx];
+
+    d3.select('#raceYearLabel').text(y + (sparseYears.has(y) ? '*' : ''));
+    d3.select('#raceSlider').property('value', raceYearIdx);
+
+    // Cumulative total across all institutions up to this year
+    let cumTotal = 0;
+    for (let yi = 0; yi <= raceYearIdx; yi++) cumTotal += (yearTotals[years[yi]] || 0);
+
+    // Cumulative values for this year
+    const isPctR = displayMode === 'pct';
+    const vals = top20.map(inst => {
+        const raw = raceData[inst] ? (raceData[inst][String(y)] || 0) : 0;
+        return {
+            inst,
+            value: isPctR && cumTotal > 0 ? raw / cumTotal * 100 : raw,
+            rawValue: raw
+        };
+    });
+    vals.sort((a, b) => b.value - a.value);
+
+    const maxVal = d3.max(vals, d => d.value) || 1;
+    const xScale = d3.scaleLinear().domain([0, maxVal])
+        .range([0, w - margin.left - margin.right]);
+
+    let g = svg.select('.race-g');
+    if (g.empty()) {
+        g = svg.append('g').attr('class', 'race-g')
+            .attr('transform', `translate(${margin.left},${margin.top})`);
+    }
+
+    const dur = animate ? Math.min(raceSpeed * 0.8, 400) : 0;
+
+    // Bars
+    const bars = g.selectAll('.race-bar').data(vals, d => d.inst);
+    const barsEnter = bars.enter().append('g').attr('class', 'race-bar')
+        .attr('transform', (d, i) => `translate(0,${i * (barH + barGap)})`);
+    barsEnter.append('rect').attr('class', 'bar-rect').attr('height', barH).attr('rx', 4);
+    barsEnter.append('text').attr('class', 'bar-label').attr('y', barH/2 + 4).attr('x', -8)
+        .attr('text-anchor', 'end').attr('font-size', 11);
+    barsEnter.append('text').attr('class', 'bar-value').attr('y', barH/2 + 4)
+        .attr('font-size', 11).attr('font-weight', 600);
+
+    const merged = barsEnter.merge(bars);
+    merged.transition().duration(dur)
+        .attr('transform', (d, i) => `translate(0,${i * (barH + barGap)})`);
+    merged.select('.bar-rect')
+        .attr('fill', d => instColor(d.inst))
+        .transition().duration(dur)
+        .attr('width', d => Math.max(0, xScale(d.value)));
+    merged.select('.bar-label')
+        .attr('fill', d => highlightInst === d.inst ? cssVar('--accent') : cssVar('--fg'))
+        .attr('font-weight', d => highlightInst === d.inst ? 700 : 400)
+        .text(d => d.inst.length > 32 ? d.inst.substring(0,30) + '...' : d.inst);
+    merged.select('.bar-value')
+        .attr('fill', cssVar('--fg'))
+        .transition().duration(dur)
+        .attr('x', d => xScale(d.value) + 6)
+        .tween('text', function(d) {
+            const self = d3.select(this);
+            if (isPctR) {
+                const prev = parseFloat(self.text()) || 0;
+                const interp = d3.interpolateNumber(prev, d.value);
+                return t => self.text(interp(t).toFixed(1) + '%');
+            } else {
+                const prev = +self.text() || 0;
+                const interp = d3.interpolateRound(prev, d.value);
+                return t => self.text(interp(t));
+            }
+        });
+
+    bars.exit().remove();
+}
+
+function togglePlay() {
+    if (raceInterval) {
+        stopPlay();
+    } else {
+        d3.select('#racePlayBtn').text('Pause');
+        raceInterval = setInterval(() => {
+            if (raceYearIdx < years.length - 1) {
+                raceYearIdx++;
+                renderRaceFrame(true);
+            } else {
+                stopPlay();
+            }
+        }, raceSpeed);
+    }
+}
+
+function stopPlay() {
+    clearInterval(raceInterval);
+    raceInterval = null;
+    const btn = document.getElementById('racePlayBtn');
+    if (btn) btn.textContent = 'Play';
+}
+
+function stepRace(dir) {
+    stopPlay();
+    raceYearIdx = Math.max(0, Math.min(years.length - 1, raceYearIdx + dir));
+    renderRaceFrame(true);
+}
+
+// ── Bump Chart ───────────────────────────────────────────────────
+function drawBump() {
+    const svg = d3.select('#inst-chart');
+    svg.selectAll('*').remove();
+
+    const margin = {top: 40, right: 200, bottom: 40, left: 40};
+    const w = Math.max(900, document.getElementById('viz-area').clientWidth - 32);
+    const h = 580;
+    svg.attr('width', w).attr('height', h);
+
+    const xScale = d3.scalePoint().domain(years)
+        .range([margin.left, w - margin.right]).padding(0.5);
+    const yScale = d3.scaleLinear().domain([1, 20])
+        .range([margin.top, h - margin.bottom]);
+
+    const g = svg.append('g');
+
+    // Grid lines
+    for (let r = 1; r <= 20; r++) {
+        g.append('line')
+            .attr('x1', margin.left).attr('x2', w - margin.right)
+            .attr('y1', yScale(r)).attr('y2', yScale(r))
+            .attr('stroke', cssVar('--grid')).attr('stroke-width', 0.5);
+        g.append('text').attr('x', margin.left - 8).attr('y', yScale(r) + 4)
+            .attr('text-anchor', 'end').attr('font-size', 10)
+            .attr('fill', cssVar('--fg3')).text('#' + r);
+    }
+
+    // X axis year labels (rotated)
+    years.forEach(y => {
+        const isSparse = sparseYears.has(y);
+        g.append('text').attr('x', xScale(y)).attr('y', h - margin.bottom + 18)
+            .attr('text-anchor', 'middle').attr('font-size', 10)
+            .attr('fill', isSparse ? cssVar('--accent2') : cssVar('--fg2'))
+            .attr('font-style', isSparse ? 'italic' : 'normal')
+            .attr('transform', `rotate(-45,${xScale(y)},${h - margin.bottom + 18})`)
+            .text(y + (isSparse ? '*' : ''));
+    });
+
+    // Lines and dots for each institution
+    top20.forEach(inst => {
+        const bd = bumpData[inst];
+        const points = years.filter(y => bd[String(y)] !== undefined)
+            .map(y => ({ year: y, rank: bd[String(y)] }));
+
+        if (points.length < 2) return;
+
+        const isHighlighted = highlightInst === inst;
+        const opacity = highlightInst ? (isHighlighted ? 1 : 0.12) : 0.75;
+        const lineWidth = isHighlighted ? 3.5 : 1.5;
+
+        const line = d3.line()
+            .x(d => xScale(d.year))
+            .y(d => yScale(d.rank))
+            .curve(d3.curveMonotoneX);
+        g.append('path')
+            .attr('d', line(points))
+            .attr('fill', 'none')
+            .attr('stroke', instColor(inst))
+            .attr('stroke-width', lineWidth)
+            .attr('opacity', opacity);
+
+        points.forEach(pt => {
+            g.append('circle')
+                .attr('cx', xScale(pt.year)).attr('cy', yScale(pt.rank))
+                .attr('r', isHighlighted ? 5 : 3)
+                .attr('fill', instColor(inst))
+                .attr('opacity', opacity)
+                .attr('stroke', isDark ? '#000' : '#fff')
+                .attr('stroke-width', 1)
+                .attr('data-inst', inst)
+                .attr('data-year', pt.year)
+                .attr('data-rank', pt.rank);
+        });
+
+        // End label
+        const lastPt = points[points.length - 1];
+        g.append('text')
+            .attr('x', xScale(lastPt.year) + 10)
+            .attr('y', yScale(lastPt.rank) + 4)
+            .attr('font-size', 10)
+            .attr('fill', instColor(inst))
+            .attr('opacity', opacity)
+            .attr('font-weight', isHighlighted ? 700 : 400)
+            .text(inst.length > 28 ? inst.substring(0,26) + '...' : inst);
+    });
+
+    // Tooltip for dots
+    svg.on('mousemove', function(e) {
+        const target = e.target;
+        if (target.tagName === 'circle' && target.getAttribute('data-inst')) {
+            const inst = target.getAttribute('data-inst');
+            const yr = target.getAttribute('data-year');
+            const rank = target.getAttribute('data-rank');
+            const cum = raceData[inst] ? (raceData[inst][yr] || 0) : 0;
+            const isSparse = sparseYears.has(+yr);
+            showTooltip(e, '<b>' + inst + '</b><br>Year: ' + yr
+                + (isSparse ? ' (sparse data)' : '')
+                + '<br>Rank: #' + rank
+                + '<br>Cumulative: ' + cum);
+        } else {
+            hideTooltip();
+        }
+    });
+    svg.on('mouseleave', () => hideTooltip());
+
+    // Click to highlight
+    svg.on('click', function(e) {
+        const target = e.target;
+        if (target.tagName === 'circle' && target.getAttribute('data-inst')) {
+            const inst = target.getAttribute('data-inst');
+            highlightInst = highlightInst === inst ? null : inst;
+            drawCurrent();
+        }
+    });
+}
+
+// ── View switching ───────────────────────────────────────────────
+function drawCurrent() {
+    // Remove race controls if not in race view
+    if (activeView !== 'race') {
+        const rc = document.getElementById('raceControls');
+        if (rc) rc.remove();
+        stopPlay();
+    }
+    if (activeView === 'heatmap') drawHeatmap();
+    else if (activeView === 'race') drawRace();
+    else if (activeView === 'bump') drawBump();
+    buildSidebar();
+}
+
+// Theme change callback (called by THEME_TOGGLE_JS)
+function onThemeChange() {
+    drawCurrent();
+}
+
+// Count/Pct toggle
+document.querySelectorAll('#inst-mode-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('#inst-mode-toggle button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        displayMode = btn.dataset.mode;
+        drawCurrent();
+    });
+});
+
+document.querySelectorAll('#view-pills .pill').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('#view-pills .pill').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        activeView = this.getAttribute('data-view');
+        raceYearIdx = 0;
+        stopPlay();
+        drawCurrent();
+    });
+});
+
+// CSV export
+function buildCsvContent() {
+    let csv = 'Institution,Geography,' + years.join(',') + ',Total\n';
+    heatmap.forEach(row => {
+        const vals = years.map(y => (row.years[String(y)] || {}).count || 0);
+        csv += '"' + row.institution.replace(/"/g, '""') + '",'
+            + row.geo + ',' + vals.join(',') + ',' + row.total + '\n';
+    });
+    return csv;
+}
+
+// Responsive
+window.addEventListener('resize', () => {
+    if (activeView !== 'race') drawCurrent();
+});
+
+// Initial render
+drawCurrent();
+
+
+</script>
+
+
+<style>
+.info-btn { font-size:16px; font-weight:bold; min-width:32px; cursor:pointer; }
+#info-overlay {
+  display:none; position:fixed; inset:0; z-index:9999;
+  background:rgba(0,0,0,.55); justify-content:center; align-items:center;
+}
+#info-overlay.show { display:flex; }
+#info-box {
+  background:var(--bg,#fff); color:var(--fg,#222); border:1px solid var(--border,#ccc);
+  border-radius:10px; max-width:720px; width:92vw; max-height:85vh;
+  display:flex; flex-direction:column; box-shadow:0 8px 32px rgba(0,0,0,.3);
+}
+#info-header {
+  display:flex; align-items:center; padding:14px 20px 0; gap:12px;
+}
+#info-header .info-tab {
+  padding:8px 18px; cursor:pointer; border-radius:6px 6px 0 0;
+  border:1px solid var(--border,#ccc); border-bottom:none;
+  background:var(--bg2,#f5f5f5); font-size:13px; font-weight:600;
+}
+#info-header .info-tab.active {
+  background:var(--bg,#fff); border-bottom:1px solid var(--bg,#fff);
+  margin-bottom:-1px; position:relative; z-index:1;
+}
+#info-close {
+  margin-left:auto; background:none; border:none; font-size:22px;
+  cursor:pointer; color:var(--fg,#222); padding:4px 8px; line-height:1;
+}
+#info-body {
+  padding:20px 24px; overflow-y:auto; border-top:1px solid var(--border,#ccc);
+  font-size:14px; line-height:1.65;
+}
+#info-body h3 { margin:16px 0 8px; font-size:15px; }
+#info-body p { margin:0 0 10px; }
+#info-body ul { margin:4px 0 10px 20px; }
+#info-body li { margin:0 0 4px; }
+.info-pane { display:none; }
+.info-pane.active { display:block; }
+</style>
+<div id="info-overlay" onclick="if(event.target===this)toggleInfoModal()">
+  <div id="info-box">
+    <div id="info-header">
+      <div class="info-tab active" data-pane="about" onclick="switchInfoTab(this)">About This Visualization</div>
+      <div class="info-tab" data-pane="method" onclick="switchInfoTab(this)">Methodology</div>
+      <button id="info-close" onclick="toggleInfoModal()">&times;</button>
+    </div>
+    <div id="info-body">
+      <div class="info-pane active" id="info-about"><p>This visualization examines which academic institutions have been
+represented at Modern Language Association (MLA) conferences through panels and papers on Japan.
+Data spans 1965&ndash;2026, covering 56 conference years.</p>
+<p>Three complementary views reveal different aspects of institutional participation:</p>
+<ul>
+<li>The <strong>heatmap</strong> shows the top 25 institutions across all conference years, with
+cell intensity reflecting presentation count.</li>
+<li>The <strong>bar chart race</strong> animates cumulative institutional contributions over time,
+revealing which institutions have sustained or accelerated their presence.</li>
+<li>The <strong>bump chart</strong> tracks rank trajectories for the top 20 institutions, showing
+which departments have risen or fallen in relative participation.</li>
+</ul>
+<p>The sidebar provides concentration metrics (top-5 share by era), geographic breakdowns (US,
+Japan, and international), and new institutional appearances each year. Institutions are
+colored with their official university brand colors where available.</p></div>
+      <div class="info-pane" id="info-method"><h3>Data Source</h3>
+<p>Institution data comes from presenter self-reported affiliations in MLA conference
+programs and proceedings.</p>
+<h3>Normalization</h3>
+<p>Raw institution strings are processed through a multi-stage pipeline: alias lookup
+(~200 canonical mappings), prefix normalization for university systems (UC, SUNY, etc.),
+and artifact removal (trailing colons, concatenated titles, role prefixes). Entries that
+are clearly not institutions (independent scholars, freelance, etc.) are excluded.</p>
+<h3>School Colors</h3>
+<p>The top institutions receive colors matching their official brand palettes. Colors
+adjust for dark mode to ensure visibility. Institutions without defined brand colors
+appear in grey.</p>
+<h3>Metrics</h3>
+<p>The top-5 concentration percentage shows what share of all institutional presentations
+came from the five most active institutions in each era. Higher values indicate more
+concentrated participation.</p>
+<h3>Limitations</h3>
+<ul>
+<li>Institution names are self-reported and may include department names or
+research centers despite normalization efforts.</li>
+<li>Some institutions may appear under multiple variant names that are not fully
+consolidated.</li>
+<li>Presentations without affiliation data are excluded from institutional counts.</li>
+</ul></div>
+    </div>
+  </div>
+</div>
+<script>
+function toggleInfoModal(){
+  document.getElementById('info-overlay').classList.toggle('show');
+}
+function switchInfoTab(el){
+  document.querySelectorAll('#info-header .info-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#info-body .info-pane').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('info-'+el.dataset.pane).classList.add('active');
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.getElementById('info-overlay').classList.remove('show'); });
+</script>
+
+</body>
+</html>

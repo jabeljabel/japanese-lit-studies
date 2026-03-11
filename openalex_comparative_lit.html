@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anglophone Literary Studies: A Comparative View</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+/* ── Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #1a1a1a;
+  --bg2:      #242424;
+  --bg3:      #2e2e2e;
+  --border:   #444;
+  --text:     #f5f5dc;
+  --text2:    #aaa;
+  --accent:   #d4a844;
+  --tab-act:  #2e2e2e;
+  --tab-in:   #1a1a1a;
+  --btn-bg:   #333;
+  --btn-hov:  #444;
+}
+body.light {
+  --bg:       #fafaf8;
+  --bg2:      #f0f0ec;
+  --bg3:      #e8e8e4;
+  --border:   #ccc;
+  --text:     #1a1a1a;
+  --text2:    #555;
+  --accent:   #b08828;
+  --tab-act:  #e8e8e4;
+  --tab-in:   #fafaf8;
+  --btn-bg:   #e0e0dc;
+  --btn-hov:  #d0d0cc;
+}
+
+body {
+  font-family: 'Georgia', serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 20px;
+  transition: background .3s, color .3s;
+}
+
+h1 { font-size: 1.4rem; letter-spacing: .05em; margin-bottom: 4px; }
+.subtitle { color: var(--text2); font-size: .85rem; margin-bottom: 20px; }
+
+/* ── Controls bar ── */
+.controls {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  align-items: center; margin-bottom: 16px;
+}
+.controls label { font-size: .8rem; color: var(--text2); margin-right: 2px; }
+select, button {
+  background: var(--btn-bg); color: var(--text); border: 1px solid var(--border);
+  border-radius: 4px; padding: 4px 10px; font-size: .8rem; cursor: pointer;
+  transition: background .2s;
+}
+select:hover, button:hover { background: var(--btn-hov); }
+.sep { width: 1px; height: 20px; background: var(--border); }
+
+/* ── Tabs ── */
+.tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.tab-btn {
+  padding: 8px 20px; font-size: .85rem; cursor: pointer;
+  background: var(--tab-in); color: var(--text2); border: none;
+  border-bottom: 3px solid transparent; transition: all .2s;
+}
+.tab-btn.active {
+  background: var(--tab-act); color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+/* ── Chart containers ── */
+.panel { display: none; }
+.panel.active { display: block; }
+.chart-wrap {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 6px; padding: 20px; overflow-x: auto;
+}
+svg { font-family: 'Georgia', serif; }
+.axis text { fill: var(--text); font-size: 11px; }
+.axis path, .axis line { stroke: var(--border); }
+.grid line { stroke: var(--border); stroke-opacity: .5; stroke-dasharray: 2,3; }
+.grid path { stroke: none; }
+
+/* ── Legend ── */
+.legend {
+  display: flex; flex-wrap: wrap; gap: 12px;
+  margin-top: 12px; font-size: .8rem;
+}
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-swatch {
+  width: 14px; height: 14px; border-radius: 2px; flex-shrink: 0;
+}
+
+/* ── Tooltip ── */
+.tooltip {
+  position: fixed; pointer-events: none; opacity: 0;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 4px; padding: 8px 12px; font-size: .8rem;
+  line-height: 1.5; z-index: 100; max-width: 240px;
+  transition: opacity .15s;
+}
+
+/* ── Method note ── */
+.method-note {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent); border-radius: 4px;
+  padding: 12px 16px; font-size: .78rem; color: var(--text2);
+  line-height: 1.6; margin-top: 20px;
+}
+.method-note strong { color: var(--text); }
+
+/* ── Warning banner ── */
+.warn-bar {
+  background: #3a2e0a; border: 1px solid #7a6020; border-radius: 4px;
+  padding: 6px 12px; font-size: .78rem; color: #d4a844; margin-bottom: 10px;
+}
+body.light .warn-bar { background: #fdf5d8; border-color: #d4a844; color: #7a5510; }
+</style>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
+</head>
+<body>
+
+<h1>Anglophone Literary Studies: A Comparative View</h1>
+<p class="subtitle">English-language academic articles by field, 1945–2024 &nbsp;|&nbsp;
+   Source: OpenAlex API, queried 2026-03-05 &nbsp;|&nbsp;
+   Filter: language:en, type:article, domain:Social&nbsp;Sciences</p>
+
+<!-- Controls -->
+<div class="controls">
+  <label>Dataset:</label>
+  <select id="datasetSel">
+    <option value="literature">&ldquo;X literature&rdquo; (Strategy C)</option>
+    <option value="expanded">Expanded OR query</option>
+  </select>
+  <div class="sep"></div>
+  <button id="themeBtn">☀ Light mode</button>
+  <div class="sep"></div>
+  <button id="exportPng">⬇ PNG</button>
+  <button id="exportCsv">⬇ CSV</button>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab-btn active" data-tab="bar">Grouped bar chart</button>
+  <button class="tab-btn" data-tab="line">Relative share (2000–2024)</button>
+</div>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip"></div>
+
+<!-- Panel 1: Grouped bar chart -->
+<div class="panel active" id="panel-bar">
+  <div class="warn-bar" id="warnBar">
+    ⚠ Pre-2000 bars use reduced opacity — OpenAlex coverage is incomplete for that period,
+    especially for Japanese-field journals. Treat as lower bounds.
+  </div>
+  <div class="chart-wrap">
+    <svg id="barSvg"></svg>
+  </div>
+  <div class="legend" id="barLegend"></div>
+</div>
+
+<!-- Panel 2: Line chart -->
+<div class="panel" id="panel-line">
+  <div class="chart-wrap">
+    <svg id="lineSvg"></svg>
+  </div>
+  <div class="legend" id="lineLegend"></div>
+</div>
+
+<!-- Methodology -->
+<div class="method-note" id="methodNote">
+  <strong>Methodology.</strong>
+  Data queried from the <strong>OpenAlex API</strong> (<code>api.openalex.org</code>),
+  2026-03-05. Works filtered by: <code>language:en</code>, <code>type:article</code>,
+  <code>primary_topic.domain.id:2</code> (Social Sciences domain, which includes Arts &amp; Humanities).
+  Two formulations tested: (1) <em>&ldquo;[field] literature&rdquo;</em> as an exact phrase;
+  (2) an expanded OR query combining literature, literary, poetics, aesthetics, fiction, poetry,
+  and prose variants. Validation samples showed 0% STEM noise under both formulations after the
+  domain filter. &nbsp;&bull;&nbsp;
+  <strong>Known limitation:</strong> Pre-2000 coverage for Japanese-field journals
+  (<em>Monumenta Nipponica</em>, <em>Journal of Japanese Studies</em>,
+  <em>Japanese Language and Literature</em>) is substantially thinner than for
+  European-literature journals (<em>French Studies</em>: 32,442 works indexed;
+  all four Japanese-field journals combined: &lt;9,000). Pre-2000 Japanese counts
+  should be treated as lower bounds. &nbsp;&bull;&nbsp;
+  <strong>2020–24</strong> bar is an incomplete decade (through end of 2024).
+</div>
+
+<script>
+"use strict";
+
+// ── Embedded data ─────────────────────────────────────────────────────────────
+const DATA = {
+  "decades": [
+    "1945–49",
+    "1950–59",
+    "1960–69",
+    "1970–79",
+    "1980–89",
+    "1990–99",
+    "2000–09",
+    "2010–19",
+    "2020–24"
+  ],
+  "fields": [
+    "Japanese",
+    "Chinese",
+    "French",
+    "German",
+    "American",
+    "Comparative"
+  ],
+  "colors": {
+    "Japanese": "#e8622a",
+    "Chinese": "#d4a844",
+    "French": "#3a7bc8",
+    "German": "#2d9f83",
+    "American": "#9b5de5",
+    "Comparative": "#c75146"
+  },
+  "literature": {
+    "Japanese": [
+      2,
+      37,
+      35,
+      121,
+      194,
+      244,
+      757,
+      1423,
+      1068
+    ],
+    "Chinese": [
+      5,
+      28,
+      73,
+      135,
+      219,
+      347,
+      3845,
+      4191,
+      3963
+    ],
+    "French": [
+      41,
+      138,
+      227,
+      299,
+      308,
+      582,
+      1064,
+      2405,
+      1589
+    ],
+    "German": [
+      52,
+      147,
+      186,
+      272,
+      326,
+      525,
+      1172,
+      2356,
+      1655
+    ],
+    "American": [
+      114,
+      329,
+      712,
+      1435,
+      2539,
+      3425,
+      7020,
+      14231,
+      8562
+    ],
+    "Comparative": [
+      21,
+      52,
+      110,
+      185,
+      298,
+      723,
+      3310,
+      7492,
+      6068
+    ]
+  },
+  "expanded": {
+    "Japanese": [
+      4,
+      51,
+      68,
+      163,
+      266,
+      381,
+      1122,
+      2175,
+      1614
+    ],
+    "Chinese": [
+      11,
+      39,
+      119,
+      246,
+      421,
+      701,
+      6776,
+      6961,
+      5786
+    ],
+    "French": [
+      61,
+      202,
+      342,
+      461,
+      483,
+      918,
+      1773,
+      3991,
+      2584
+    ],
+    "German": [
+      70,
+      196,
+      247,
+      337,
+      462,
+      711,
+      1561,
+      3290,
+      2338
+    ],
+    "American": [
+      172,
+      464,
+      987,
+      2182,
+      3790,
+      5598,
+      10772,
+      21180,
+      12292
+    ],
+    "Comparative": [
+      47,
+      139,
+      273,
+      567,
+      839,
+      2163,
+      6017,
+      15326,
+      14396
+    ]
+  },
+  "queryDate": "2026-03-05"
+};
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let activeDataset = "literature";
+let darkMode = true;
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+const tooltip = document.getElementById("tooltip");
+function showTip(html, evt) {
+  tooltip.innerHTML = html;
+  tooltip.style.opacity = 1;
+  moveTip(evt);
+}
+function moveTip(evt) {
+  const x = evt.clientX + 14, y = evt.clientY - 10;
+  tooltip.style.left = x + "px"; tooltip.style.top = y + "px";
+}
+function hideTip() { tooltip.style.opacity = 0; }
+
+function getDataset() { return DATA[activeDataset]; }
+
+// ── Hatch pattern ─────────────────────────────────────────────────────────────
+function addHatchPattern(svg) {
+  const defs = svg.append("defs");
+  DATA.fields.forEach(field => {
+    const color = DATA.colors[field];
+    const id = "hatch-" + field.toLowerCase();
+    const pat = defs.append("pattern")
+      .attr("id", id).attr("patternUnits","userSpaceOnUse")
+      .attr("width", 6).attr("height", 6)
+      .attr("patternTransform","rotate(45)");
+    pat.append("rect").attr("width",6).attr("height",6).attr("fill",color).attr("opacity",.25);
+    pat.append("line").attr("x1",0).attr("y1",0).attr("x2",0).attr("y2",6)
+      .attr("stroke",color).attr("stroke-width",2.5);
+  });
+}
+
+// ── Bar chart ─────────────────────────────────────────────────────────────────
+const PRE2000 = new Set(["1945–49","1950–59","1960–69","1970–79","1980–89","1990–99"]);
+const INCOMPLETE = "2020–24";
+
+function buildBar() {
+  const container = document.getElementById("panel-bar").querySelector(".chart-wrap");
+  const W = Math.max(container.clientWidth - 40, 700);
+  const margin = {top: 30, right: 20, bottom: 60, left: 70};
+  const H = 440;
+  const width  = W - margin.left - margin.right;
+  const height = H - margin.top  - margin.bottom;
+
+  d3.select("#barSvg").selectAll("*").remove();
+  const svg = d3.select("#barSvg")
+    .attr("width", W).attr("height", H);
+
+  addHatchPattern(svg);
+
+  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+  const dataset = getDataset();
+  const decades = DATA.decades;
+  const fields  = DATA.fields;
+
+  // Scales
+  const x0 = d3.scaleBand().domain(decades).range([0, width]).paddingInner(.15).paddingOuter(.05);
+  const x1 = d3.scaleBand().domain(fields).range([0, x0.bandwidth()]).padding(.06);
+  const maxVal = d3.max(fields, f => d3.max(dataset[f]));
+  const y  = d3.scaleLinear().domain([0, maxVal * 1.08]).range([height, 0]);
+
+  // Grid
+  g.append("g").attr("class","grid")
+    .call(d3.axisLeft(y).ticks(6).tickSize(-width).tickFormat(""));
+
+  // Decade groups
+  const decade_g = g.selectAll(".dg").data(decades).join("g")
+    .attr("class","dg")
+    .attr("transform", d => `translate(${x0(d)},0)`);
+
+  decade_g.each(function(decade, di) {
+    const grp = d3.select(this);
+    const isPre = PRE2000.has(decade);
+    const isInc = decade === INCOMPLETE;
+
+    fields.forEach(field => {
+      const val = dataset[field][di];
+      const color = DATA.colors[field];
+      const xPos  = x1(field);
+      const barH  = height - y(val);
+      const fillId = "hatch-" + field.toLowerCase();
+
+      // Main bar (solid or hatch + dim)
+      grp.append("rect")
+        .attr("x", xPos).attr("y", y(val))
+        .attr("width", x1.bandwidth()).attr("height", barH)
+        .attr("fill", isPre ? `url(#${fillId})` : color)
+        .attr("opacity", isPre ? .55 : 1)
+        .on("mouseover", (evt) => {
+          const preNote = isPre ? "<br><em style='color:#aaa'>⚠ pre-2000: lower bound</em>" : "";
+          const incNote = isInc ? "<br><em style='color:#aaa'>Incomplete decade</em>" : "";
+          showTip(`<strong>${field}</strong> (${decade})<br>${val.toLocaleString()} articles${preNote}${incNote}`, evt);
+        })
+        .on("mousemove", moveTip)
+        .on("mouseout", hideTip);
+    });
+
+    // Incomplete decade hatching overlay
+    if (isInc) {
+      grp.append("text")
+        .attr("x", x0.bandwidth()/2).attr("y", -6)
+        .attr("text-anchor","middle").attr("font-size",9).attr("fill","#aaa")
+        .text("incomplete");
+    }
+  });
+
+  // Axes
+  g.append("g").attr("class","axis").attr("transform",`translate(0,${height})`)
+    .call(d3.axisBottom(x0).tickSize(3))
+    .selectAll("text")
+    .attr("dy","1em").attr("font-size",11);
+
+  g.append("g").attr("class","axis")
+    .call(d3.axisLeft(y).ticks(6).tickFormat(d3.format(",d")));
+
+  // Y label
+  g.append("text")
+    .attr("transform","rotate(-90)").attr("x",-height/2).attr("y",-55)
+    .attr("text-anchor","middle").attr("fill","var(--text2)").attr("font-size",11)
+    .text("Articles (language:en, type:article, Social Sciences domain)");
+
+  // Legend
+  const legend = document.getElementById("barLegend");
+  legend.innerHTML = "";
+  DATA.fields.forEach(field => {
+    const item = document.createElement("div");
+    item.className = "legend-item";
+    item.innerHTML = `<div class="legend-swatch" style="background:${DATA.colors[field]}"></div>${field} literature`;
+    legend.appendChild(item);
+  });
+}
+
+// ── Line chart (relative share, 2000–2024) ─────────────────────────────────────
+function buildLine() {
+  const post2000bins = [6, 7, 8];  // indices of 2000–09, 2010–19, 2020–24
+  const post2000decades = post2000bins.map(i => DATA.decades[i]);
+
+  const container = document.getElementById("panel-line").querySelector(".chart-wrap");
+  const W = Math.max(container.clientWidth - 40, 640);
+  const margin = {top: 40, right: 130, bottom: 50, left: 60};
+  const H = 420;
+  const width  = W - margin.left - margin.right;
+  const height = H - margin.top  - margin.bottom;
+
+  d3.select("#lineSvg").selectAll("*").remove();
+  const svg = d3.select("#lineSvg").attr("width", W).attr("height", H);
+  const g   = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+  const dataset = getDataset();
+
+  // Compute shares per decade
+  const shareData = post2000bins.map((bi, ti) => {
+    const total = DATA.fields.reduce((s, f) => s + dataset[f][bi], 0);
+    const obj = { decade: post2000decades[ti] };
+    DATA.fields.forEach(f => {
+      obj[f] = total > 0 ? (dataset[f][bi] / total * 100) : 0;
+    });
+    return obj;
+  });
+
+  const x = d3.scalePoint().domain(post2000decades).range([0, width]).padding(.3);
+  const y = d3.scaleLinear().domain([0, d3.max(shareData, d =>
+    d3.max(DATA.fields, f => d[f])
+  ) * 1.1]).range([height, 0]);
+
+  // Grid
+  g.append("g").attr("class","grid")
+    .call(d3.axisLeft(y).ticks(5).tickSize(-width).tickFormat(""));
+
+  // Lines + dots per field
+  DATA.fields.forEach(field => {
+    const color = DATA.colors[field];
+    const line  = d3.line().x(d => x(d.decade)).y(d => y(d[field]));
+
+    g.append("path").datum(shareData)
+      .attr("fill","none").attr("stroke",color).attr("stroke-width",2.5)
+      .attr("d", line);
+
+    g.selectAll(`.dot-${field.toLowerCase()}`)
+      .data(shareData).join("circle")
+      .attr("cx", d => x(d.decade)).attr("cy", d => y(d[field]))
+      .attr("r", 5).attr("fill", color)
+      .on("mouseover", (evt, d) => {
+        showTip(`<strong>${field}</strong> (${d.decade})<br>${d[field].toFixed(1)}% of total`, evt);
+      })
+      .on("mousemove", moveTip)
+      .on("mouseout", hideTip);
+
+    // End labels
+    const last = shareData[shareData.length - 1];
+    g.append("text")
+      .attr("x", x(last.decade) + 10).attr("y", y(last[field]) + 4)
+      .attr("fill", color).attr("font-size", 11).attr("font-weight","bold")
+      .text(field);
+  });
+
+  // Chinese surge annotation
+  const chinaShare2010 = shareData[1]["Chinese"];
+  g.append("line")
+    .attr("x1", x("2010–19")).attr("x2", x("2010–19"))
+    .attr("y1", height).attr("y2", y(chinaShare2010) + 16)
+    .attr("stroke","#d4a844").attr("stroke-dasharray","4,3").attr("stroke-width",1.2);
+  g.append("text")
+    .attr("x", x("2010–19") + 6).attr("y", y(chinaShare2010) + 30)
+    .attr("fill","#d4a844").attr("font-size",10).attr("font-style","italic")
+    .text("Chinese surge");
+
+  // Axes
+  g.append("g").attr("class","axis").attr("transform",`translate(0,${height})`)
+    .call(d3.axisBottom(x).tickSize(3));
+  g.append("g").attr("class","axis")
+    .call(d3.axisLeft(y).ticks(5).tickFormat(d => d.toFixed(0) + "%"));
+  g.append("text")
+    .attr("transform","rotate(-90)").attr("x",-height/2).attr("y",-50)
+    .attr("text-anchor","middle").attr("fill","var(--text2)").attr("font-size",11)
+    .text("Share of total English-language articles across six fields (%)");
+
+  // Title note
+  g.append("text")
+    .attr("x", width/2).attr("y", -20)
+    .attr("text-anchor","middle").attr("fill","var(--text2)").attr("font-size",11)
+    .text("2020–24 is an incomplete decade");
+
+  // Legend
+  const legend = document.getElementById("lineLegend");
+  legend.innerHTML = "";
+  DATA.fields.forEach(field => {
+    const item = document.createElement("div");
+    item.className = "legend-item";
+    item.innerHTML = `<div class="legend-swatch" style="background:${DATA.colors[field]}"></div>${field}`;
+    legend.appendChild(item);
+  });
+}
+
+// ── Render both charts ─────────────────────────────────────────────────────────
+function renderAll() { buildBar(); buildLine(); }
+renderAll();
+
+// ── Tab switching ──────────────────────────────────────────────────────────────
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("panel-" + btn.dataset.tab).classList.add("active");
+  });
+});
+
+// ── Dataset toggle ─────────────────────────────────────────────────────────────
+document.getElementById("datasetSel").addEventListener("change", function() {
+  activeDataset = this.value;
+  renderAll();
+});
+
+// ── Dark/light toggle ──────────────────────────────────────────────────────────
+document.getElementById("themeBtn").addEventListener("click", function() {
+  darkMode = !darkMode;
+  document.body.classList.toggle("light", !darkMode);
+  this.textContent = darkMode ? "☀ Light mode" : "☾ Dark mode";
+  renderAll();
+});
+
+// ── PNG export ─────────────────────────────────────────────────────────────────
+document.getElementById("exportPng").addEventListener("click", () => {
+  const svgEl = document.querySelector(".panel.active svg");
+  if (!svgEl) return;
+  const svgStr = new XMLSerializer().serializeToString(svgEl);
+  const canvas = document.createElement("canvas");
+  canvas.width  = svgEl.width.baseVal.value * 2;
+  canvas.height = svgEl.height.baseVal.value * 2;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = darkMode ? "#1a1a1a" : "#fafaf8";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.scale(2, 2);
+  const img = new Image();
+  img.onload = () => {
+    ctx.drawImage(img, 0, 0);
+    const a = document.createElement("a");
+    a.download = `openalex_comparative_lit_${activeDataset}.png`;
+    a.href = canvas.toDataURL("image/png");
+    a.click();
+  };
+  img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgStr)));
+});
+
+// ── CSV export ─────────────────────────────────────────────────────────────────
+document.getElementById("exportCsv").addEventListener("click", () => {
+  const dataset = getDataset();
+  let csv = "formulation,field,decade,count\n";
+  DATA.fields.forEach(field => {
+    DATA.decades.forEach((dec, i) => {
+      csv += `${activeDataset},${field},${dec},${dataset[field][i]}\n`;
+    });
+  });
+  const a = document.createElement("a");
+  a.download = `openalex_comparative_lit_${activeDataset}.csv`;
+  a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+  a.click();
+});
+
+// ── Resize ────────────────────────────────────────────────────────────────────
+let resizeTimer;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(renderAll, 200);
+});
+</script>
+</body>
+</html>

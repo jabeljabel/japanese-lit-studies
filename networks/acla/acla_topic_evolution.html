@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ACLA Topic Evolution</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
+<style>
+
+:root {
+    --bg: #ffffff; --bg2: #f5f5f5; --bg3: #e8e8e8;
+    --fg: #1a1a2e; --fg2: #555; --fg3: #888;
+    --accent: #2563eb; --accent2: #dc2626;
+    --grid: rgba(0,0,0,0.08); --border: #ddd;
+}
+.dark-mode {
+    --bg: #0a0a1a; --bg2: #141428; --bg3: #1e1e3a;
+    --fg: #e0e0e0; --fg2: #aaa; --fg3: #777;
+    --accent: #4a9eff; --accent2: #ff6b6b;
+    --grid: rgba(255,255,255,0.05); --border: #333;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--fg);
+    overflow-x: hidden;
+}
+#toolbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px; background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap; min-height: 44px;
+}
+#toolbar h1 {
+    font-size: 16px; font-weight: 600; white-space: nowrap;
+}
+.spacer { flex: 1; }
+#toolbar button, #toolbar select {
+    padding: 5px 12px; border-radius: 4px;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--fg); cursor: pointer; font-size: 12px;
+}
+#toolbar button:hover { background: var(--bg3); }
+.info-btn {
+    width: 28px; height: 28px; border-radius: 50% !important;
+    padding: 0 !important; font-size: 14px !important;
+    display: flex; align-items: center; justify-content: center;
+}
+
+/* Tabs */
+.tabs {
+    display: flex; border-bottom: 2px solid var(--border);
+    padding: 0 16px; background: var(--bg2); gap: 2px;
+}
+.tab-btn {
+    padding: 8px 16px; border: none; background: transparent;
+    color: var(--fg2); cursor: pointer; font-size: 13px;
+    font-weight: 500; border-bottom: 2px solid transparent;
+    margin-bottom: -2px; transition: all 0.15s;
+}
+.tab-btn:hover { color: var(--fg); background: var(--bg3); }
+.tab-btn.active {
+    color: var(--accent); border-bottom-color: var(--accent);
+    font-weight: 600;
+}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Controls */
+.controls {
+    display: flex; gap: 12px; padding: 10px 16px;
+    flex-wrap: wrap; align-items: center;
+    border-bottom: 1px solid var(--border);
+}
+.btn-group {
+    display: flex; border: 1px solid var(--border); border-radius: 4px;
+    overflow: hidden;
+}
+.btn-group button {
+    padding: 4px 10px; border: none; border-right: 1px solid var(--border);
+    background: var(--bg); color: var(--fg2); cursor: pointer; font-size: 12px;
+}
+.btn-group button:last-child { border-right: none; }
+.btn-group button:hover { background: var(--bg3); }
+.btn-group button.active { background: var(--accent); color: #fff; }
+.controls label { font-size: 12px; color: var(--fg2); }
+.controls select {
+    padding: 3px 8px; font-size: 12px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--fg); border-radius: 3px;
+}
+.controls input[type="range"] { width: 120px; }
+
+/* Chart area */
+.chart-container {
+    display: flex; width: 100%; min-height: calc(100vh - 160px);
+}
+.chart-area {
+    flex: 1; overflow: hidden; position: relative;
+    padding: 16px;
+}
+.legend-panel {
+    width: 220px; min-width: 220px; padding: 10px;
+    border-left: 1px solid var(--border);
+    overflow-y: auto; font-size: 12px;
+    max-height: calc(100vh - 160px);
+}
+.legend-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3px 6px; cursor: pointer; border-radius: 3px;
+    transition: opacity 0.15s;
+}
+.legend-item:hover { background: var(--bg3); }
+.legend-item.muted { opacity: 0.25; }
+.legend-dot {
+    width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0;
+}
+.legend-label { flex: 1; }
+.legend-count { color: var(--fg3); font-size: 11px; }
+.legend-divider {
+    font-size: 10px; color: var(--fg3); text-transform: uppercase;
+    letter-spacing: 0.5px; padding: 6px 6px 2px;
+    margin-top: 4px; border-top: 1px solid var(--border);
+}
+.show-all-btn {
+    display: block; width: 100%; padding: 4px 8px; margin-top: 6px;
+    border: 1px solid var(--border); border-radius: 3px;
+    background: var(--bg2); color: var(--fg2); cursor: pointer;
+    font-size: 11px; text-align: center;
+}
+.show-all-btn:hover { background: var(--bg3); }
+
+/* Tooltip */
+#tooltip {
+    position: fixed; pointer-events: none; z-index: 1000;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 12px; font-size: 12px;
+    line-height: 1.4; max-width: 300px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: none;
+}
+#tooltip.show { display: block; }
+
+/* Sidebar (for network/presenter viz) */
+.sidebar {
+    width: 320px; min-width: 320px; padding: 12px;
+    border-left: 1px solid var(--border);
+    overflow-y: auto; font-size: 12px;
+    max-height: calc(100vh - 100px);
+}
+.sidebar h3 { font-size: 14px; margin-bottom: 8px; }
+.sidebar .stat { margin: 4px 0; }
+.sidebar .stat-label { color: var(--fg2); }
+
+/* Search */
+.search-box {
+    padding: 5px 10px; border: 1px solid var(--border);
+    border-radius: 4px; background: var(--bg); color: var(--fg);
+    font-size: 12px; width: 180px;
+}
+.search-box::placeholder { color: var(--fg3); }
+
+/* COVID annotation */
+.covid-marker {
+    font-size: 10px; color: var(--accent2); font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .chart-container { flex-direction: column; }
+    .legend-panel, .sidebar {
+        width: 100%; min-width: 100%;
+        max-height: 200px; border-left: none;
+        border-top: 1px solid var(--border);
+    }
+}
+
+
+.chart-container { display: flex; flex-direction: row; }
+.chart-area { flex: 1; padding: 8px 16px; overflow-x: auto; }
+.legend-panel {
+    width: 240px; min-width: 240px; padding: 10px;
+    border-left: 1px solid var(--border); overflow-y: auto;
+    max-height: calc(100vh - 160px); font-size: 12px;
+}
+.controls { display: flex; gap: 12px; padding: 8px 16px; flex-wrap: wrap; align-items: center; border-bottom: 1px solid var(--border); }
+.btn-group { display: flex; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+.btn-group button {
+    padding: 4px 10px; border: none; border-right: 1px solid var(--border);
+    background: var(--bg); color: var(--fg2); cursor: pointer; font-size: 12px;
+}
+.btn-group button:last-child { border-right: none; }
+.btn-group button:hover { background: var(--bg3); }
+.btn-group button.active { background: var(--accent); color: #fff; }
+.controls label { font-size: 12px; color: var(--fg2); }
+.bump-section { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px; }
+.legend-item { display: flex; align-items: center; gap: 6px; padding: 3px 6px; cursor: pointer; border-radius: 3px; }
+.legend-item:hover { background: var(--bg3); }
+.legend-item.muted { opacity: 0.2; }
+.legend-dot { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+.legend-label { flex: 1; font-size: 11px; }
+.legend-count { color: var(--fg3); font-size: 10px; }
+.legend-divider {
+    font-size: 10px; color: var(--fg3); text-transform: uppercase;
+    letter-spacing: 0.5px; padding: 6px 6px 2px;
+    margin-top: 4px; border-top: 1px solid var(--border);
+}
+.show-all-btn {
+    display: block; width: 100%; padding: 4px 8px; margin-top: 6px;
+    border: 1px solid var(--border); border-radius: 3px;
+    background: var(--bg2); color: var(--fg2); cursor: pointer;
+    font-size: 11px; text-align: center;
+}
+.show-all-btn:hover { background: var(--bg3); }
+
+</style>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
+</head>
+<body>
+
+<div id="toolbar">
+    <h1>ACLA Topic Evolution</h1>
+    <div class="spacer"></div>
+    <button class="info-btn" onclick="toggleInfoModal()" title="About this visualization">&#8505;</button>
+    <button onclick="exportPng()">Export PNG</button>
+    <button onclick="exportCsv()">Export CSV</button>
+    <button id="themeBtn" onclick="toggleTheme()">&#9790; Dark</button>
+</div>
+
+<div class="tabs"><button class="tab-btn active" data-tab="themes">Themes</button>
+<button class="tab-btn" data-tab="figures">Literary Figures</button>
+<button class="tab-btn" data-tab="genres">Genres</button>
+<button class="tab-btn" data-tab="periods">Periods</button></div>
+
+
+<div class="controls" id="topic-controls">
+    <div class="btn-group" id="mode-toggle">
+        <button class="active" data-mode="count">Count</button>
+        <button data-mode="pct">%</button>
+    </div>
+    <label><input type="checkbox" id="bump-toggle" checked> Show bump chart</label>
+</div>
+<div class="chart-container">
+    <div class="chart-area" id="chart-area">
+        <svg id="bar-svg"></svg>
+        <div class="bump-section" id="bump-section">
+            <h4 style="font-size:12px;color:var(--fg2);margin-bottom:8px;">Rank Changes (topics in 3+ years)</h4>
+            <svg id="bump-svg"></svg>
+        </div>
+    </div>
+    <div class="legend-panel" id="legend-panel"></div>
+</div>
+
+
+<div id="tooltip"></div>
+
+<script>
+const ALL_DATA = {"years": [1992, 2004, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026], "tabs": {"themes": {"items": [{"term": "Nature & Environment", "total": 21, "yearsPresent": 10, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 2, "2013": 0, "2014": 1, "2015": 4, "2016": 5, "2017": 3, "2018": 0, "2019": 1, "2020": 1, "2021": 0, "2022": 1, "2023": 2, "2024": 1, "2025": 0, "2026": 0}}, {"term": "War & Memory", "total": 20, "yearsPresent": 12, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 1, "2009": 0, "2010": 2, "2011": 4, "2012": 0, "2013": 0, "2014": 2, "2015": 0, "2016": 0, "2017": 1, "2018": 1, "2019": 1, "2020": 1, "2021": 0, "2022": 3, "2023": 1, "2024": 1, "2025": 2, "2026": 0}}, {"term": "Translation & World Lit", "total": 19, "yearsPresent": 14, "counts": {"1992": 1, "2004": 2, "2006": 0, "2007": 0, "2008": 1, "2009": 0, "2010": 2, "2011": 0, "2012": 1, "2013": 1, "2014": 2, "2015": 1, "2016": 1, "2017": 0, "2018": 1, "2019": 1, "2020": 0, "2021": 0, "2022": 3, "2023": 0, "2024": 1, "2025": 0, "2026": 1}}, {"term": "Modernity & Modernism", "total": 19, "yearsPresent": 13, "counts": {"1992": 0, "2004": 1, "2006": 1, "2007": 0, "2008": 1, "2009": 3, "2010": 2, "2011": 1, "2012": 1, "2013": 0, "2014": 0, "2015": 1, "2016": 1, "2017": 2, "2018": 2, "2019": 0, "2020": 2, "2021": 0, "2022": 1, "2023": 0, "2024": 0, "2025": 0, "2026": 0}}, {"term": "Technology & Media", "total": 18, "yearsPresent": 11, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 1, "2009": 2, "2010": 3, "2011": 0, "2012": 2, "2013": 0, "2014": 1, "2015": 1, "2016": 1, "2017": 0, "2018": 0, "2019": 0, "2020": 1, "2021": 0, "2022": 2, "2023": 0, "2024": 2, "2025": 0, "2026": 2}}, {"term": "Gender & Sexuality", "total": 14, "yearsPresent": 9, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 1, "2010": 1, "2011": 0, "2012": 0, "2013": 1, "2014": 0, "2015": 0, "2016": 2, "2017": 0, "2018": 3, "2019": 1, "2020": 2, "2021": 0, "2022": 1, "2023": 0, "2024": 2, "2025": 0, "2026": 0}}, {"term": "Nation & Identity", "total": 12, "yearsPresent": 8, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 2, "2010": 2, "2011": 0, "2012": 0, "2013": 1, "2014": 0, "2015": 1, "2016": 1, "2017": 0, "2018": 2, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 2, "2024": 0, "2025": 0, "2026": 1}}, {"term": "Empire & Colonialism", "total": 12, "yearsPresent": 7, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 1, "2011": 0, "2012": 1, "2013": 0, "2014": 1, "2015": 3, "2016": 1, "2017": 0, "2018": 2, "2019": 0, "2020": 0, "2021": 0, "2022": 3, "2023": 0, "2024": 0, "2025": 0, "2026": 0}}, {"term": "Body & Affect", "total": 10, "yearsPresent": 9, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 1, "2010": 0, "2011": 1, "2012": 0, "2013": 0, "2014": 0, "2015": 1, "2016": 1, "2017": 1, "2018": 1, "2019": 1, "2020": 0, "2021": 0, "2022": 1, "2023": 0, "2024": 0, "2025": 0, "2026": 2}}, {"term": "Space & Place", "total": 9, "yearsPresent": 7, "counts": {"1992": 1, "2004": 1, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 3, "2011": 0, "2012": 0, "2013": 0, "2014": 1, "2015": 0, "2016": 1, "2017": 0, "2018": 0, "2019": 0, "2020": 0, "2021": 0, "2022": 1, "2023": 0, "2024": 1, "2025": 0, "2026": 0}}, {"term": "Religion & Spirituality", "total": 6, "yearsPresent": 6, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 1, "2009": 1, "2010": 0, "2011": 0, "2012": 1, "2013": 0, "2014": 0, "2015": 1, "2016": 1, "2017": 0, "2018": 0, "2019": 0, "2020": 0, "2021": 0, "2022": 1, "2023": 0, "2024": 0, "2025": 0, "2026": 0}}, {"term": "Race & Ethnicity", "total": 5, "yearsPresent": 4, "counts": {"1992": 0, "2004": 1, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 1, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 0, "2017": 0, "2018": 1, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 2, "2026": 0}}, {"term": "Sound & Music", "total": 5, "yearsPresent": 5, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 1, "2011": 0, "2012": 0, "2013": 1, "2014": 0, "2015": 0, "2016": 0, "2017": 0, "2018": 1, "2019": 0, "2020": 1, "2021": 0, "2022": 0, "2023": 1, "2024": 0, "2025": 0, "2026": 0}}, {"term": "Food & Material Culture", "total": 2, "yearsPresent": 2, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 1, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 0, "2017": 0, "2018": 1, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 0, "2026": 0}}, {"term": "Childhood & Education", "total": 2, "yearsPresent": 2, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 0, "2017": 1, "2018": 0, "2019": 0, "2020": 0, "2021": 0, "2022": 1, "2023": 0, "2024": 0, "2025": 0, "2026": 0}}], "yearTotals": {"1992": 2, "2004": 5, "2006": 1, "2007": 0, "2008": 5, "2009": 10, "2010": 18, "2011": 7, "2012": 8, "2013": 4, "2014": 8, "2015": 13, "2016": 15, "2017": 8, "2018": 15, "2019": 5, "2020": 8, "2021": 0, "2022": 18, "2023": 6, "2024": 8, "2025": 4, "2026": 6}}, "figures": {"items": [{"term": "Tawada Yōko", "total": 16, "yearsPresent": 4, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 0, "2017": 0, "2018": 12, "2019": 0, "2020": 1, "2021": 0, "2022": 1, "2023": 0, "2024": 2, "2025": 0, "2026": 0}, "era": "Contemporary"}, {"term": "Natsume Sōseki", "total": 9, "yearsPresent": 9, "counts": {"1992": 0, "2004": 0, "2006": 1, "2007": 0, "2008": 1, "2009": 0, "2010": 0, "2011": 1, "2012": 0, "2013": 0, "2014": 1, "2015": 0, "2016": 1, "2017": 1, "2018": 1, "2019": 1, "2020": 0, "2021": 0, "2022": 0, "2023": 1, "2024": 0, "2025": 0, "2026": 0}, "era": "Meiji/Taishō"}, {"term": "Mishima Yukio", "total": 8, "yearsPresent": 7, "counts": {"1992": 1, "2004": 1, "2006": 0, "2007": 0, "2008": 0, "2009": 1, "2010": 0, "2011": 0, "2012": 0, "2013": 1, "2014": 0, "2015": 0, "2016": 0, "2017": 0, "2018": 2, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 1, "2025": 1, "2026": 0}, "era": "Shōwa"}, {"term": "Abe Kōbō", "total": 6, "yearsPresent": 5, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 2, "2010": 1, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 1, "2017": 1, "2018": 0, "2019": 1, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 0, "2026": 0}, "era": "Shōwa"}, {"term": "Kurosawa Akira", "total": 5, "yearsPresent": 3, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 2, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 0, "2017": 0, "2018": 2, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 1, "2025": 0, "2026": 0}, "era": "Director"}, {"term": "Murakami Haruki", "total": 5, "yearsPresent": 4, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 1, "2013": 0, "2014": 0, "2015": 0, "2016": 2, "2017": 0, "2018": 0, "2019": 1, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 1, "2026": 0}, "era": "Contemporary"}, {"term": "Kawabata Yasunari", "total": 4, "yearsPresent": 4, "counts": {"1992": 1, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 1, "2015": 0, "2016": 0, "2017": 0, "2018": 0, "2019": 0, "2020": 0, "2021": 0, "2022": 1, "2023": 0, "2024": 0, "2025": 0, "2026": 1}, "era": "Shōwa"}, {"term": "Ōe Kenzaburō", "total": 4, "yearsPresent": 3, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 2, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 1, "2017": 0, "2018": 0, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 1, "2024": 0, "2025": 0, "2026": 0}, "era": "Shōwa"}, {"term": "Genji monogatari", "total": 3, "yearsPresent": 3, "counts": {"1992": 0, "2004": 1, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 1, "2014": 0, "2015": 0, "2016": 1, "2017": 0, "2018": 0, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 0, "2026": 0}, "era": "Classical"}, {"term": "Tanizaki Jun'ichirō", "total": 3, "yearsPresent": 3, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 1, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 0, "2017": 0, "2018": 0, "2019": 1, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 1, "2026": 0}, "era": "Meiji/Taishō"}, {"term": "Dazai Osamu", "total": 2, "yearsPresent": 2, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 1, "2015": 0, "2016": 0, "2017": 0, "2018": 0, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 1, "2025": 0, "2026": 0}, "era": "Shōwa"}, {"term": "Furukawa Hideo", "total": 2, "yearsPresent": 2, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 1, "2017": 1, "2018": 0, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 0, "2026": 0}, "era": "Contemporary"}, {"term": "Miyazaki Hayao", "total": 2, "yearsPresent": 2, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 0, "2017": 0, "2018": 1, "2019": 0, "2020": 0, "2021": 0, "2022": 1, "2023": 0, "2024": 0, "2025": 0, "2026": 0}, "era": "Director"}, {"term": "Kirino Natsuo", "total": 1, "yearsPresent": 1, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 1, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 0, "2017": 0, "2018": 0, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 0, "2026": 0}, "era": "Contemporary"}, {"term": "Matsuo Bashō", "total": 1, "yearsPresent": 1, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 1, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 0, "2017": 0, "2018": 0, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 0, "2026": 0}, "era": "Classical"}, {"term": "Akutagawa Ryūnosuke", "total": 1, "yearsPresent": 1, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 1, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 0, "2017": 0, "2018": 0, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 0, "2026": 0}, "era": "Meiji/Taishō"}, {"term": "Ogawa Yōko", "total": 1, "yearsPresent": 1, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 1, "2014": 0, "2015": 0, "2016": 0, "2017": 0, "2018": 0, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 0, "2026": 0}, "era": "Contemporary"}, {"term": "Yoshimoto Banana", "total": 1, "yearsPresent": 1, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 1, "2015": 0, "2016": 0, "2017": 0, "2018": 0, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 0, "2026": 0}, "era": "Contemporary"}, {"term": "Nakagami Kenji", "total": 1, "yearsPresent": 1, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 1, "2017": 0, "2018": 0, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 0, "2026": 0}, "era": "Shōwa"}, {"term": "Mori Ōgai", "total": 1, "yearsPresent": 1, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 0, "2017": 0, "2018": 1, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 0, "2026": 0}, "era": "Meiji/Taishō"}, {"term": "Enchi Fumiko", "total": 1, "yearsPresent": 1, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 0, "2017": 0, "2018": 0, "2019": 0, "2020": 1, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 0, "2026": 0}, "era": "Shōwa"}, {"term": "Hayashi Fumiko", "total": 1, "yearsPresent": 1, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 0, "2017": 0, "2018": 0, "2019": 0, "2020": 1, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 0, "2026": 0}, "era": "Shōwa"}, {"term": "Ozu Yasujirō", "total": 1, "yearsPresent": 1, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 0, "2017": 0, "2018": 0, "2019": 0, "2020": 1, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 0, "2026": 0}, "era": "Director"}, {"term": "Kawakami Mieko", "total": 1, "yearsPresent": 1, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 0, "2017": 0, "2018": 0, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 1, "2024": 0, "2025": 0, "2026": 0}, "era": "Contemporary"}], "yearTotals": {"1992": 2, "2004": 2, "2006": 1, "2007": 0, "2008": 2, "2009": 5, "2010": 6, "2011": 1, "2012": 1, "2013": 3, "2014": 4, "2015": 0, "2016": 8, "2017": 3, "2018": 19, "2019": 4, "2020": 4, "2021": 0, "2022": 3, "2023": 3, "2024": 5, "2025": 3, "2026": 1}}, "genres": {"items": [{"term": "Poetry", "total": 23, "yearsPresent": 15, "counts": {"1992": 0, "2004": 1, "2006": 0, "2007": 1, "2008": 1, "2009": 0, "2010": 0, "2011": 2, "2012": 2, "2013": 0, "2014": 0, "2015": 1, "2016": 1, "2017": 0, "2018": 5, "2019": 2, "2020": 2, "2021": 1, "2022": 1, "2023": 0, "2024": 1, "2025": 1, "2026": 1}}, {"term": "Novel/Fiction", "total": 22, "yearsPresent": 12, "counts": {"1992": 0, "2004": 2, "2006": 0, "2007": 0, "2008": 0, "2009": 1, "2010": 0, "2011": 1, "2012": 0, "2013": 1, "2014": 4, "2015": 3, "2016": 2, "2017": 3, "2018": 1, "2019": 2, "2020": 0, "2021": 0, "2022": 1, "2023": 0, "2024": 0, "2025": 1, "2026": 0}}, {"term": "Translation", "total": 14, "yearsPresent": 11, "counts": {"1992": 0, "2004": 2, "2006": 0, "2007": 0, "2008": 1, "2009": 0, "2010": 0, "2011": 1, "2012": 0, "2013": 0, "2014": 0, "2015": 1, "2016": 1, "2017": 0, "2018": 1, "2019": 1, "2020": 2, "2021": 0, "2022": 2, "2023": 0, "2024": 1, "2025": 1, "2026": 0}}, {"term": "Anime/Manga", "total": 12, "yearsPresent": 8, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 1, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 1, "2015": 1, "2016": 2, "2017": 1, "2018": 0, "2019": 0, "2020": 0, "2021": 0, "2022": 3, "2023": 0, "2024": 2, "2025": 0, "2026": 1}}, {"term": "Film/Cinema", "total": 12, "yearsPresent": 9, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 1, "2011": 0, "2012": 2, "2013": 0, "2014": 2, "2015": 0, "2016": 1, "2017": 1, "2018": 1, "2019": 0, "2020": 0, "2021": 0, "2022": 2, "2023": 0, "2024": 1, "2025": 1, "2026": 0}}, {"term": "Drama/Theater", "total": 11, "yearsPresent": 8, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 1, "2010": 3, "2011": 1, "2012": 0, "2013": 0, "2014": 0, "2015": 1, "2016": 0, "2017": 0, "2018": 2, "2019": 0, "2020": 1, "2021": 0, "2022": 0, "2023": 0, "2024": 1, "2025": 1, "2026": 0}}, {"term": "Digital/New Media", "total": 6, "yearsPresent": 5, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 1, "2013": 0, "2014": 0, "2015": 0, "2016": 0, "2017": 1, "2018": 0, "2019": 1, "2020": 0, "2021": 0, "2022": 1, "2023": 0, "2024": 2, "2025": 0, "2026": 0}}, {"term": "Essay/Criticism", "total": 2, "yearsPresent": 2, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 0, "2017": 0, "2018": 1, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 1, "2026": 0}}, {"term": "Diary/Life Writing", "total": 1, "yearsPresent": 1, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 0, "2017": 0, "2018": 0, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 1, "2025": 0, "2026": 0}}], "yearTotals": {"1992": 0, "2004": 5, "2006": 0, "2007": 1, "2008": 2, "2009": 3, "2010": 4, "2011": 5, "2012": 5, "2013": 1, "2014": 7, "2015": 7, "2016": 7, "2017": 6, "2018": 11, "2019": 6, "2020": 5, "2021": 1, "2022": 10, "2023": 0, "2024": 9, "2025": 6, "2026": 2}}, "periods": {"items": [{"term": "Postwar", "total": 15, "yearsPresent": 11, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 1, "2009": 2, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 3, "2015": 1, "2016": 0, "2017": 0, "2018": 1, "2019": 0, "2020": 1, "2021": 0, "2022": 1, "2023": 1, "2024": 1, "2025": 1, "2026": 2}}, {"term": "Contemporary", "total": 7, "yearsPresent": 7, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 1, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 1, "2017": 1, "2018": 0, "2019": 0, "2020": 1, "2021": 0, "2022": 0, "2023": 1, "2024": 1, "2025": 0, "2026": 1}}, {"term": "Meiji/Taishō", "total": 4, "yearsPresent": 4, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 1, "2016": 1, "2017": 1, "2018": 0, "2019": 0, "2020": 0, "2021": 0, "2022": 1, "2023": 0, "2024": 0, "2025": 0, "2026": 0}}, {"term": "Edo/Early Modern", "total": 3, "yearsPresent": 2, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 1, "2016": 0, "2017": 0, "2018": 2, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 0, "2026": 0}}, {"term": "Medieval", "total": 1, "yearsPresent": 1, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 1, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 0, "2017": 0, "2018": 0, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 0, "2026": 0}}, {"term": "Classical/Heian", "total": 1, "yearsPresent": 1, "counts": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 0, "2009": 0, "2010": 0, "2011": 0, "2012": 0, "2013": 0, "2014": 0, "2015": 0, "2016": 1, "2017": 0, "2018": 0, "2019": 0, "2020": 0, "2021": 0, "2022": 0, "2023": 0, "2024": 0, "2025": 0, "2026": 0}}], "yearTotals": {"1992": 0, "2004": 0, "2006": 0, "2007": 0, "2008": 1, "2009": 2, "2010": 2, "2011": 0, "2012": 0, "2013": 0, "2014": 3, "2015": 3, "2016": 3, "2017": 2, "2018": 3, "2019": 0, "2020": 2, "2021": 0, "2022": 2, "2023": 2, "2024": 2, "2025": 1, "2026": 3}}}};
+const CONF_KEY = 'acla';
+
+
+const tooltip = document.getElementById('tooltip');
+function showTooltip(evt, html) {
+    tooltip.innerHTML = html;
+    tooltip.classList.add('show');
+    const r = tooltip.getBoundingClientRect();
+    let tx = evt.clientX + 14, ty = evt.clientY + 14;
+    if (tx + r.width > window.innerWidth) tx = evt.clientX - r.width - 10;
+    if (ty + r.height > window.innerHeight) ty = evt.clientY - r.height - 10;
+    tooltip.style.left = tx + 'px';
+    tooltip.style.top = ty + 'px';
+}
+function hideTooltip() { tooltip.classList.remove('show'); }
+
+
+
+let isDark = false;
+function toggleTheme() {
+    isDark = !isDark;
+    document.body.classList.toggle('dark-mode', isDark);
+    document.getElementById('themeBtn').textContent = isDark ? '☀ Light' : '☾ Dark';
+    if (typeof onThemeChange === 'function') onThemeChange();
+}
+function cssVar(v) { return getComputedStyle(document.body).getPropertyValue(v).trim(); }
+
+
+
+function exportPng() {
+    const svgEl = document.querySelector('.chart-area svg');
+    if (!svgEl) { alert('No chart to export'); return; }
+    const serializer = new XMLSerializer();
+    const svgStr = serializer.serializeToString(svgEl);
+    const canvas = document.createElement('canvas');
+    const bb = svgEl.getBoundingClientRect();
+    canvas.width = bb.width * 2; canvas.height = bb.height * 2;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(2, 2);
+    ctx.fillStyle = cssVar('--bg');
+    ctx.fillRect(0, 0, bb.width, bb.height);
+    const img = new Image();
+    const blob = new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+        ctx.drawImage(img, 0, 0, bb.width, bb.height);
+        URL.revokeObjectURL(url);
+        const link = document.createElement('a');
+        link.download = 'acla_' + (activeTab || 'chart') + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    };
+    img.src = url;
+}
+function exportCsv() {
+    if (typeof buildCsvContent !== 'function') { alert('No CSV export defined'); return; }
+    const csvContent = buildCsvContent();
+    const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = 'acla_' + (activeTab || 'data') + '.csv';
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+}
+
+
+
+const TAB_IDS = ["themes", "figures", "genres", "periods"];
+let activeTab = TAB_IDS[0];
+
+function switchTab(tabId) {
+    activeTab = tabId;
+    TAB_IDS.forEach(id => {
+        const btn = document.querySelector('[data-tab="' + id + '"]');
+        const content = document.getElementById('tab-' + id);
+        if (id === tabId) {
+            if (btn) btn.classList.add('active');
+            if (content) content.classList.add('active');
+        } else {
+            if (btn) btn.classList.remove('active');
+            if (content) content.classList.remove('active');
+        }
+    });
+    if (typeof renderTab === 'function') renderTab(tabId);
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+
+
+const COLORS_MAP = {"themes": {"Gender & Sexuality": "#e6194b", "Empire & Colonialism": "#3cb44b", "War & Memory": "#4363d8", "Nature & Environment": "#f58231", "Race & Ethnicity": "#911eb4", "Translation & World Lit": "#42d4f4", "Religion & Spirituality": "#f032e6", "Modernity & Modernism": "#bfef45", "Technology & Media": "#fabed4", "Body & Affect": "#469990", "Food & Material Culture": "#dcbeff", "Sound & Music": "#9A6324", "Space & Place": "#fffac8", "Nation & Identity": "#800000", "Childhood & Education": "#aaffc3"}, "genres": {"Novel/Fiction": "#2ca02c", "Poetry": "#1f77b4", "Drama/Theater": "#ff7f0e", "Film/Cinema": "#d62728", "Anime/Manga": "#9467bd", "Essay/Criticism": "#8c564b", "Diary/Life Writing": "#e377c2", "Translation": "#7f7f7f", "Digital/New Media": "#bcbd22"}, "periods": {"Classical/Heian": "#8B4513", "Medieval": "#DAA520", "Edo/Early Modern": "#2E8B57", "Meiji/Taishō": "#4682B4", "Prewar/Shōwa": "#708090", "Postwar": "#8B008B", "Contemporary": "#DC143C"}};
+const FIGURE_PALETTE = ["#4e79a7", "#f28e2b", "#e15759", "#76b7b2", "#59a14f", "#edc949", "#af7aa1", "#ff9da7", "#9c755f", "#bab0ab", "#86bcb6", "#d37295", "#b07aa1", "#ff9da7", "#a0cbe8"];
+const FIGURE_ERA = {"Murasaki Shikibu": "Classical", "Genji monogatari": "Classical", "Sei Shōnagon": "Classical", "Matsuo Bashō": "Classical", "Chikamatsu": "Classical", "Ihara Saikaku": "Classical", "Zeami": "Classical", "Ki no Tsurayuki": "Classical", "Yoshida Kenkō": "Classical", "Kamo no Chōmei": "Classical", "Natsume Sōseki": "Meiji/Taishō", "Mori Ōgai": "Meiji/Taishō", "Akutagawa Ryūnosuke": "Meiji/Taishō", "Higuchi Ichiyō": "Meiji/Taishō", "Izumi Kyōka": "Meiji/Taishō", "Tayama Katai": "Meiji/Taishō", "Shimazaki Tōson": "Meiji/Taishō", "Nagai Kafū": "Meiji/Taishō", "Tanizaki Jun'ichirō": "Meiji/Taishō", "Yosano Akiko": "Meiji/Taishō", "Kawabata Yasunari": "Shōwa", "Mishima Yukio": "Shōwa", "Dazai Osamu": "Shōwa", "Abe Kōbō": "Shōwa", "Ōe Kenzaburō": "Shōwa", "Enchi Fumiko": "Shōwa", "Ibuse Masuji": "Shōwa", "Hayashi Fumiko": "Shōwa", "Nakagami Kenji": "Shōwa", "Ōba Minako": "Shōwa", "Shimao Toshio": "Shōwa", "Murakami Haruki": "Contemporary", "Yoshimoto Banana": "Contemporary", "Ogawa Yōko": "Contemporary", "Kawakami Hiromi": "Contemporary", "Tawada Yōko": "Contemporary", "Kirino Natsuo": "Contemporary", "Kawakami Mieko": "Contemporary", "Medoruma Shun": "Contemporary", "Furukawa Hideo": "Contemporary", "Kurosawa Akira": "Director", "Ozu Yasujirō": "Director", "Miyazaki Hayao": "Director", "Koreeda Hirokazu": "Director", "Miike Takashi": "Director", "Kon Satoshi": "Director", "Oshii Mamoru": "Director", "Anno Hideaki": "Director"};
+const COVID_YEARS = {"2020": "cancelled", "2021": "virtual"};
+const MISSING_YEARS = new Set([]);
+
+let displayMode = 'count';
+let showBump = true;
+let selectedItems = new Set();  // empty = show all
+let currentTabData = null;
+
+function getItemColor(term, tabId) {
+    if (tabId === 'figures') {
+        // Assign from palette by index
+        if (!currentTabData) return '#999';
+        const idx = currentTabData.items.findIndex(it => it.term === term);
+        return FIGURE_PALETTE[idx % FIGURE_PALETTE.length];
+    }
+    const map = COLORS_MAP[tabId];
+    if (map && map[term]) return map[term];
+    return '#888';
+}
+
+function renderTab(tabId) {
+    const data = ALL_DATA.tabs[tabId];
+    if (!data) return;
+    currentTabData = data;
+    selectedItems.clear();
+    buildLegend(tabId, data);
+    renderBarChart(tabId, data);
+    if (showBump) renderBumpChart(tabId, data);
+    else document.getElementById('bump-section').style.display = 'none';
+}
+
+function buildLegend(tabId, data) {
+    const panel = document.getElementById('legend-panel');
+    panel.innerHTML = '';
+
+    // If figures tab, group by era
+    if (tabId === 'figures') {
+        const eras = {};
+        data.items.forEach(it => {
+            const era = it.era || 'Other';
+            if (!eras[era]) eras[era] = [];
+            eras[era].push(it);
+        });
+        const eraOrder = ['Classical', 'Meiji/Taish\u014d', 'Sh\u014dwa', 'Contemporary', 'Director', 'Other'];
+        eraOrder.forEach(era => {
+            if (!eras[era]) return;
+            const div = document.createElement('div');
+            div.className = 'legend-divider';
+            div.textContent = era;
+            panel.appendChild(div);
+            eras[era].forEach(it => addLegendItem(panel, tabId, it));
+        });
+    } else {
+        data.items.forEach(it => addLegendItem(panel, tabId, it));
+    }
+
+    // Show all button
+    const btn = document.createElement('button');
+    btn.className = 'show-all-btn';
+    btn.textContent = 'Show All';
+    btn.onclick = () => { selectedItems.clear(); updateMuting(); renderBarChart(tabId, data); if (showBump) renderBumpChart(tabId, data); };
+    panel.appendChild(btn);
+}
+
+function addLegendItem(panel, tabId, item) {
+    const div = document.createElement('div');
+    div.className = 'legend-item';
+    div.innerHTML = '<span class="legend-dot" style="background:' + getItemColor(item.term, tabId) + '"></span>'
+        + '<span class="legend-label">' + item.term + '</span>'
+        + '<span class="legend-count">' + item.total + '</span>';
+    div.dataset.term = item.term;
+    div.addEventListener('click', (evt) => {
+        if (evt.shiftKey) {
+            if (selectedItems.has(item.term)) selectedItems.delete(item.term);
+            else selectedItems.add(item.term);
+        } else {
+            if (selectedItems.size === 1 && selectedItems.has(item.term)) {
+                selectedItems.clear();
+            } else {
+                selectedItems.clear();
+                selectedItems.add(item.term);
+            }
+        }
+        updateMuting();
+        renderBarChart(tabId, currentTabData);
+        if (showBump) renderBumpChart(tabId, currentTabData);
+    });
+    panel.appendChild(div);
+}
+
+function updateMuting() {
+    document.querySelectorAll('.legend-item').forEach(el => {
+        if (selectedItems.size === 0) {
+            el.classList.remove('muted');
+        } else {
+            el.classList.toggle('muted', !selectedItems.has(el.dataset.term));
+        }
+    });
+}
+
+function renderBarChart(tabId, data) {
+    const years = ALL_DATA.years;
+    const items = data.items.filter(it => selectedItems.size === 0 || selectedItems.has(it.term));
+    const container = document.getElementById('chart-area');
+    const fullW = Math.max(container.clientWidth - 32, 600);
+    const margin = {top: 20, right: 20, bottom: 36, left: 50};
+    const w = fullW - margin.left - margin.right;
+    const h = 360;
+    const fullH = h + margin.top + margin.bottom;
+
+    const svg = d3.select('#bar-svg').attr('width', fullW).attr('height', fullH);
+    svg.selectAll('*').remove();
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+    const x = d3.scaleBand().domain(years).range([0, w]).padding(0.15);
+
+    // Stack data
+    const stackData = years.map(yr => {
+        const row = {year: yr};
+        items.forEach(it => {
+            const val = it.counts[yr] || 0;
+            if (displayMode === 'pct') {
+                const total = data.yearTotals[yr] || 1;
+                row[it.term] = total > 0 ? (val / total * 100) : 0;
+            } else {
+                row[it.term] = val;
+            }
+        });
+        return row;
+    });
+
+    const keys = items.map(it => it.term);
+    const stack = d3.stack().keys(keys);
+    const series = stack(stackData);
+
+    const yMax = d3.max(stackData, d => {
+        let sum = 0;
+        keys.forEach(k => sum += (d[k] || 0));
+        return sum;
+    }) || 1;
+    const y = d3.scaleLinear().domain([0, yMax * 1.05]).range([h, 0]);
+
+    // Grid
+    y.ticks(5).forEach(v => {
+        g.append('line').attr('x1', 0).attr('x2', w).attr('y1', y(v)).attr('y2', y(v))
+            .attr('stroke', 'var(--grid)').attr('stroke-width', 0.5);
+    });
+
+    // Bars
+    series.forEach(s => {
+        const color = getItemColor(s.key, tabId);
+        g.selectAll('.bar-' + s.index)
+            .data(s).enter().append('rect')
+            .attr('x', d => x(d.data.year))
+            .attr('y', d => y(d[1]))
+            .attr('height', d => Math.max(0, y(d[0]) - y(d[1])))
+            .attr('width', x.bandwidth())
+            .attr('fill', color)
+            .attr('opacity', 0.85)
+            .on('mousemove', (evt, d) => {
+                const val = (d[1] - d[0]);
+                const valStr = displayMode === 'pct' ? val.toFixed(1) + '%' : Math.round(val);
+                showTooltip(evt, '<strong>' + s.key + '</strong><br>' + d.data.year + ': ' + valStr);
+            })
+            .on('mouseleave', hideTooltip);
+    });
+
+    // X axis
+    const xAxis = g.append('g').attr('transform', `translate(0,${h})`).call(d3.axisBottom(x).tickValues(
+        years.filter((yr, i) => i % Math.max(1, Math.floor(years.length / 20)) === 0 || i === years.length - 1)
+    ));
+    xAxis.selectAll('text').attr('fill', 'var(--fg2)').attr('font-size', 10)
+        .attr('transform', 'rotate(-45)').attr('text-anchor', 'end');
+    xAxis.selectAll('line, .domain').attr('stroke', 'var(--fg3)');
+
+    // Y axis
+    const yAxis = g.append('g').call(d3.axisLeft(y).ticks(5));
+    yAxis.selectAll('text').attr('fill', 'var(--fg2)').attr('font-size', 10);
+    yAxis.selectAll('line, .domain').attr('stroke', 'var(--fg3)');
+
+    // Y label
+    g.append('text').attr('transform', 'rotate(-90)')
+        .attr('x', -h/2).attr('y', -38).attr('text-anchor', 'middle')
+        .attr('fill', 'var(--fg3)').attr('font-size', 11)
+        .text(displayMode === 'pct' ? 'Percentage of topics' : 'Count');
+
+    // Missing years markers
+    MISSING_YEARS.forEach(yr => {
+        if (x(yr) !== undefined) {
+            g.append('text').attr('x', x(yr) + x.bandwidth()/2).attr('y', h - 4)
+                .attr('text-anchor', 'middle').attr('fill', 'var(--accent2)')
+                .attr('font-size', 8).text('\u2716');
+        }
+    });
+}
+
+function renderBumpChart(tabId, data) {
+    const section = document.getElementById('bump-section');
+    section.style.display = showBump ? 'block' : 'none';
+    if (!showBump) return;
+
+    const years = ALL_DATA.years;
+    const items = data.items.filter(it => it.yearsPresent >= 3);
+    if (selectedItems.size > 0) {
+        // If items are selected, only show those
+    }
+
+    const container = document.getElementById('chart-area');
+    const fullW = Math.max(container.clientWidth - 32, 600);
+    const margin = {top: 10, right: 140, bottom: 30, left: 50};
+    const w = fullW - margin.left - margin.right;
+    const h = Math.min(300, items.length * 18 + 40);
+    const fullH = h + margin.top + margin.bottom;
+
+    const svg = d3.select('#bump-svg').attr('width', fullW).attr('height', fullH);
+    svg.selectAll('*').remove();
+    if (!items.length) return;
+
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+    const x = d3.scalePoint().domain(years).range([0, w]).padding(0.3);
+
+    // Compute ranks per year
+    const yearRanks = {};
+    years.forEach(yr => {
+        const sorted = [...items].sort((a, b) => (b.counts[yr] || 0) - (a.counts[yr] || 0));
+        sorted.forEach((it, idx) => {
+            if (!yearRanks[it.term]) yearRanks[it.term] = {};
+            yearRanks[it.term][yr] = (it.counts[yr] || 0) > 0 ? idx + 1 : null;
+        });
+    });
+
+    const maxRank = items.length;
+    const y = d3.scaleLinear().domain([1, maxRank]).range([10, h - 10]);
+
+    // Grid
+    [1, 5, 10, 15, 20].filter(v => v <= maxRank).forEach(v => {
+        g.append('line').attr('x1', 0).attr('x2', w)
+            .attr('y1', y(v)).attr('y2', y(v))
+            .attr('stroke', 'var(--grid)').attr('stroke-width', 0.5);
+        g.append('text').attr('x', -6).attr('y', y(v))
+            .attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
+            .attr('fill', 'var(--fg3)').attr('font-size', 9).text('#' + v);
+    });
+
+    // X axis
+    years.forEach(yr => {
+        g.append('text').attr('x', x(yr)).attr('y', h + 14)
+            .attr('text-anchor', 'middle').attr('fill', 'var(--fg3)').attr('font-size', 9)
+            .text(yr < 2000 ? "'" + String(yr).slice(2) : String(yr).slice(2));
+    });
+
+    // Draw lines
+    items.forEach(it => {
+        const color = getItemColor(it.term, tabId);
+        const ranks = yearRanks[it.term] || {};
+        const points = years.filter(yr => ranks[yr] != null).map(yr => ({yr, rank: ranks[yr]}));
+        if (points.length < 2) return;
+
+        const alpha = (selectedItems.size > 0 && !selectedItems.has(it.term)) ? 0.1 : 0.8;
+
+        const line = d3.line().x(d => x(d.yr)).y(d => y(d.rank)).curve(d3.curveMonotoneX);
+        g.append('path').datum(points).attr('d', line)
+            .attr('fill', 'none').attr('stroke', color).attr('stroke-width', 2)
+            .attr('opacity', alpha);
+
+        // End label
+        const last = points[points.length - 1];
+        g.append('text').attr('x', x(last.yr) + 8).attr('y', y(last.rank))
+            .attr('dominant-baseline', 'middle')
+            .attr('fill', color).attr('font-size', 9)
+            .attr('opacity', alpha)
+            .text(it.term.length > 20 ? it.term.slice(0, 18) + '..' : it.term);
+    });
+}
+
+// Mode toggle
+document.querySelectorAll('#mode-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('#mode-toggle button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        displayMode = btn.dataset.mode;
+        if (currentTabData) renderBarChart(activeTab, currentTabData);
+    });
+});
+
+// Bump toggle
+document.getElementById('bump-toggle').addEventListener('change', function() {
+    showBump = this.checked;
+    if (currentTabData) {
+        if (showBump) renderBumpChart(activeTab, currentTabData);
+        else document.getElementById('bump-section').style.display = 'none';
+    }
+});
+
+function onThemeChange() {
+    if (currentTabData) {
+        renderBarChart(activeTab, currentTabData);
+        if (showBump) renderBumpChart(activeTab, currentTabData);
+    }
+}
+
+function buildCsvContent() {
+    if (!currentTabData) return '';
+    let csv = 'year';
+    currentTabData.items.forEach(it => csv += ',"' + it.term.replace(/"/g, '""') + '"');
+    csv += '\n';
+    ALL_DATA.years.forEach(yr => {
+        csv += yr;
+        currentTabData.items.forEach(it => csv += ',' + (it.counts[yr] || 0));
+        csv += '\n';
+    });
+    return csv;
+}
+
+// Resize handler
+let resizeTimer;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+        if (currentTabData) {
+            renderBarChart(activeTab, currentTabData);
+            if (showBump) renderBumpChart(activeTab, currentTabData);
+        }
+    }, 200);
+});
+
+// Initial render
+renderTab(TAB_IDS[0]);
+
+
+</script>
+
+
+<style>
+.info-btn { font-size:16px; font-weight:bold; min-width:32px; cursor:pointer; }
+#info-overlay {
+  display:none; position:fixed; inset:0; z-index:9999;
+  background:rgba(0,0,0,.55); justify-content:center; align-items:center;
+}
+#info-overlay.show { display:flex; }
+#info-box {
+  background:var(--bg,#fff); color:var(--fg,#222); border:1px solid var(--border,#ccc);
+  border-radius:10px; max-width:720px; width:92vw; max-height:85vh;
+  display:flex; flex-direction:column; box-shadow:0 8px 32px rgba(0,0,0,.3);
+}
+#info-header {
+  display:flex; align-items:center; padding:14px 20px 0; gap:12px;
+}
+#info-header .info-tab {
+  padding:8px 18px; cursor:pointer; border-radius:6px 6px 0 0;
+  border:1px solid var(--border,#ccc); border-bottom:none;
+  background:var(--bg2,#f5f5f5); font-size:13px; font-weight:600;
+}
+#info-header .info-tab.active {
+  background:var(--bg,#fff); border-bottom:1px solid var(--bg,#fff);
+  margin-bottom:-1px; position:relative; z-index:1;
+}
+#info-close {
+  margin-left:auto; background:none; border:none; font-size:22px;
+  cursor:pointer; color:var(--fg,#222); padding:4px 8px; line-height:1;
+}
+#info-body {
+  padding:20px 24px; overflow-y:auto; border-top:1px solid var(--border,#ccc);
+  font-size:14px; line-height:1.65;
+}
+#info-body h3 { margin:16px 0 8px; font-size:15px; }
+#info-body p { margin:0 0 10px; }
+#info-body ul { margin:4px 0 10px 20px; }
+#info-body li { margin:0 0 4px; }
+.info-pane { display:none; }
+.info-pane.active { display:block; }
+</style>
+<div id="info-overlay" onclick="if(event.target===this)toggleInfoModal()">
+  <div id="info-box">
+    <div id="info-header">
+      <div class="info-tab active" data-pane="about" onclick="switchInfoTab(this)">About This Visualization</div>
+      <div class="info-tab" data-pane="method" onclick="switchInfoTab(this)">Methodology</div>
+      <button id="info-close" onclick="toggleInfoModal()">&times;</button>
+    </div>
+    <div id="info-body">
+      <div class="info-pane active" id="info-about"><p>This visualization tracks the evolution of topics in Japan-related sessions
+at the American Comparative Literature Association (ACLA) across 23 conference years
+(1992&ndash;2026). Four tabs explore different dimensions: thematic
+concerns, literary figures, genres/media, and historical periods.</p>
+<p>Each tab provides a stacked bar chart (showing topic frequency per year) and a bump chart
+(tracking rank changes of the most persistent topics over time). Click legend items to isolate
+specific topics, and use the count/percentage toggle to switch views.</p></div>
+      <div class="info-pane" id="info-method"><h3>Topic Extraction</h3>
+<p>Topics are extracted from paper titles and session titles using four regex-based keyword
+dictionaries. Matching applies Unicode diacritics flattening and word-boundary enforcement.</p>
+<h3>Dictionaries</h3>
+<ul>
+<li><strong>Themes</strong>: 15 categories (~180 keywords) covering gender, empire, modernity, war, etc.</li>
+<li><strong>Periods</strong>: 7 eras (~40 terms) from classical/Heian through contemporary.</li>
+<li><strong>Genres/Media</strong>: 9 types (~50 terms) including novel, poetry, film, manga.</li>
+<li><strong>Literary Figures</strong>: ~45 authors with ~120 romanization variants.</li>
+</ul>
+<h3>Visualization</h3>
+<p>The stacked bar chart shows raw counts or percentages per year. The bump chart filters to
+topics appearing in 3+ years and shows rank trajectories. Click items in the legend to
+isolate or combine topics.</p></div>
+    </div>
+  </div>
+</div>
+<script>
+function toggleInfoModal(){
+  document.getElementById('info-overlay').classList.toggle('show');
+}
+function switchInfoTab(el){
+  document.querySelectorAll('#info-header .info-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#info-body .info-pane').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('info-'+el.dataset.pane).classList.add('active');
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.getElementById('info-overlay').classList.remove('show'); });
+</script>
+
+</body>
+</html>

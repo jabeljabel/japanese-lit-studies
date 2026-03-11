@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conferences — Japanese Literary Studies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f6f3ee;
+  --bg-card: #ffffff;
+  --bg-dash: #faf5f0;
+  --text: #2c2826;
+  --text-muted: #6b6460;
+  --text-light: #9e9590;
+  --accent: #8b3a3a;
+  --accent-light: #c4847a;
+  --border: #e0dbd5;
+  --border-hover: #c4b8ae;
+}
+
+[data-theme="dark"] {
+  --bg: #1a1816;
+  --bg-card: #242120;
+  --bg-dash: #2a2522;
+  --text: #e8e2da;
+  --text-muted: #9e9590;
+  --text-light: #6b6460;
+  --accent: #c4847a;
+  --accent-light: #d4a69e;
+  --border: #3a3533;
+  --border-hover: #5a524d;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Source Sans 3', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+.breadcrumb {
+  margin-bottom: 24px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.breadcrumb a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+header {
+  margin-bottom: 48px;
+}
+
+h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  font-weight: 300;
+  max-width: 720px;
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  transition: all 0.2s ease;
+  z-index: 100;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.05);
+  border-color: var(--accent);
+}
+
+.section {
+  margin-bottom: 48px;
+}
+
+.section-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: var(--accent);
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.viz-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 20px;
+  text-decoration: none;
+  color: var(--text);
+  transition: all 0.3s ease;
+}
+
+.viz-card.dashboard {
+  background: var(--bg-dash);
+  border: 2px solid var(--accent-light);
+}
+
+.viz-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border-color: var(--border-hover);
+}
+
+.viz-card.dashboard:hover {
+  border-color: var(--accent);
+}
+
+.viz-card h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--accent);
+}
+
+.viz-card p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.dashboard-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 680px) {
+  .viz-grid {
+    grid-template-columns: 1fr;
+  }
+  h1 {
+    font-size: 2.2rem;
+  }
+}
+</style>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
+</head>
+<body>
+
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">◑</button>
+
+<div class="container">
+  <nav class="breadcrumb">
+    <a href="index.html">Home</a> / Conferences
+  </nav>
+
+  <header>
+    <h1>Conferences</h1>
+    <p class="subtitle">Participation networks and topic trends at five major venues: AJLS, AAS, MLA, ACLA, SCMS. 13,592 presentations analyzed.</p>
+  </header>
+
+  <div class="section">
+    <h2 class="section-title">AJLS (Association for Japanese Literary Studies)</h2>
+    <div class="viz-grid">
+      <a href="networks/ajls/ajls_dashboard.html" class="viz-card dashboard">
+        <div class="dashboard-badge">Dashboard</div>
+        <h3>AJLS Dashboard</h3>
+        <p>Overview of AJLS conference participation</p>
+      </a>
+      <a href="networks/ajls/ajls_copanel_network.html" class="viz-card">
+        <h3>AJLS Network</h3>
+        <p>Co-presentation network at AJLS</p>
+      </a>
+      <a href="networks/ajls/ajls_panel_themes.html" class="viz-card">
+        <h3>AJLS Topics</h3>
+        <p>Thematic analysis of paper titles</p>
+      </a>
+      <a href="networks/ajls/ajls_topic_evolution.html" class="viz-card">
+        <h3>AJLS Timeline</h3>
+        <p>Evolution of participation over time</p>
+      </a>
+      <a href="networks/ajls/ajls_institutional_presence.html" class="viz-card">
+        <h3>AJLS Institutions</h3>
+        <p>Institutional representation at AJLS</p>
+      </a>
+      <a href="networks/ajls/ajls_presenter_careers.html" class="viz-card">
+        <h3>AJLS Participants</h3>
+        <p>Career trajectories of AJLS presenters</p>
+      </a>
+      <a href="networks/ajls/ajls_geography.html" class="viz-card">
+        <h3>AJLS Geography</h3>
+        <p>Geographic distribution of AJLS participants</p>
+      </a>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">AAS (Association for Asian Studies)</h2>
+    <div class="viz-grid">
+      <a href="networks/aas/aas_dashboard.html" class="viz-card dashboard">
+        <div class="dashboard-badge">Dashboard</div>
+        <h3>AAS Dashboard</h3>
+        <p>Overview of AAS conference participation</p>
+      </a>
+      <a href="networks/aas/aas_copanel_network.html" class="viz-card">
+        <h3>AAS Network</h3>
+        <p>Co-presentation network at AAS</p>
+      </a>
+      <a href="networks/aas/aas_panel_themes.html" class="viz-card">
+        <h3>AAS Topics</h3>
+        <p>Thematic analysis of paper titles</p>
+      </a>
+      <a href="networks/aas/aas_topic_evolution.html" class="viz-card">
+        <h3>AAS Timeline</h3>
+        <p>Evolution of participation over time</p>
+      </a>
+      <a href="networks/aas/aas_institutional_presence.html" class="viz-card">
+        <h3>AAS Institutions</h3>
+        <p>Institutional representation at AAS</p>
+      </a>
+      <a href="networks/aas/aas_presenter_careers.html" class="viz-card">
+        <h3>AAS Participants</h3>
+        <p>Career trajectories of AAS presenters</p>
+      </a>
+      <a href="networks/aas/aas_geography.html" class="viz-card">
+        <h3>AAS Geography</h3>
+        <p>Geographic distribution of AAS participants</p>
+      </a>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">MLA (Modern Language Association)</h2>
+    <div class="viz-grid">
+      <a href="networks/mla/mla_dashboard.html" class="viz-card dashboard">
+        <div class="dashboard-badge">Dashboard</div>
+        <h3>MLA Dashboard</h3>
+        <p>Overview of MLA convention participation</p>
+      </a>
+      <a href="networks/mla/mla_copanel_network.html" class="viz-card">
+        <h3>MLA Network</h3>
+        <p>Co-presentation network at MLA</p>
+      </a>
+      <a href="networks/mla/mla_panel_themes.html" class="viz-card">
+        <h3>MLA Topics</h3>
+        <p>Thematic analysis of paper titles</p>
+      </a>
+      <a href="networks/mla/mla_topic_evolution.html" class="viz-card">
+        <h3>MLA Timeline</h3>
+        <p>Evolution of participation over time</p>
+      </a>
+      <a href="networks/mla/mla_institutional_presence.html" class="viz-card">
+        <h3>MLA Institutions</h3>
+        <p>Institutional representation at MLA</p>
+      </a>
+      <a href="networks/mla/mla_presenter_careers.html" class="viz-card">
+        <h3>MLA Participants</h3>
+        <p>Career trajectories of MLA presenters</p>
+      </a>
+      <a href="networks/mla/mla_crossdisciplinary.html" class="viz-card">
+        <h3>MLA Cross-disciplinary</h3>
+        <p>How Japanese lit studies connects to other MLA divisions</p>
+      </a>
+      <a href="networks/mla/mla_geography.html" class="viz-card">
+        <h3>MLA Geography</h3>
+        <p>Geographic distribution of MLA participants</p>
+      </a>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">ACLA (American Comparative Literature Association)</h2>
+    <div class="viz-grid">
+      <a href="networks/acla/acla_dashboard.html" class="viz-card dashboard">
+        <div class="dashboard-badge">Dashboard</div>
+        <h3>ACLA Dashboard</h3>
+        <p>Overview of ACLA conference participation</p>
+      </a>
+      <a href="networks/acla/acla_copanel_network.html" class="viz-card">
+        <h3>ACLA Network</h3>
+        <p>Co-presentation network at ACLA</p>
+      </a>
+      <a href="networks/acla/acla_panel_themes.html" class="viz-card">
+        <h3>ACLA Topics</h3>
+        <p>Thematic analysis of paper titles</p>
+      </a>
+      <a href="networks/acla/acla_topic_evolution.html" class="viz-card">
+        <h3>ACLA Timeline</h3>
+        <p>Evolution of participation over time</p>
+      </a>
+      <a href="networks/acla/acla_institutional_presence.html" class="viz-card">
+        <h3>ACLA Institutions</h3>
+        <p>Institutional representation at ACLA</p>
+      </a>
+      <a href="networks/acla/acla_presenter_careers.html" class="viz-card">
+        <h3>ACLA Participants</h3>
+        <p>Career trajectories of ACLA presenters</p>
+      </a>
+      <a href="networks/acla/acla_geography.html" class="viz-card">
+        <h3>ACLA Geography</h3>
+        <p>Geographic distribution of ACLA participants</p>
+      </a>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">SCMS (Society for Cinema and Media Studies)</h2>
+    <div class="viz-grid">
+      <a href="networks/scms/scms_dashboard.html" class="viz-card dashboard">
+        <div class="dashboard-badge">Dashboard</div>
+        <h3>SCMS Dashboard</h3>
+        <p>Overview of SCMS conference participation</p>
+      </a>
+      <a href="networks/scms/scms_copanel_network.html" class="viz-card">
+        <h3>SCMS Network</h3>
+        <p>Co-presentation network at SCMS</p>
+      </a>
+      <a href="networks/scms/scms_panel_themes.html" class="viz-card">
+        <h3>SCMS Topics</h3>
+        <p>Thematic analysis of paper titles</p>
+      </a>
+      <a href="networks/scms/scms_topic_evolution.html" class="viz-card">
+        <h3>SCMS Timeline</h3>
+        <p>Evolution of participation over time</p>
+      </a>
+      <a href="networks/scms/scms_institutional_presence.html" class="viz-card">
+        <h3>SCMS Institutions</h3>
+        <p>Institutional representation at SCMS</p>
+      </a>
+      <a href="networks/scms/scms_presenter_careers.html" class="viz-card">
+        <h3>SCMS Participants</h3>
+        <p>Career trajectories of SCMS presenters</p>
+      </a>
+      <a href="networks/scms/scms_geography.html" class="viz-card">
+        <h3>SCMS Geography</h3>
+        <p>Geographic distribution of SCMS participants</p>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+const themeToggle = document.getElementById('themeToggle');
+const html = document.documentElement;
+
+const savedTheme = localStorage.getItem('theme') ||
+  (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+html.setAttribute('data-theme', savedTheme);
+
+themeToggle.addEventListener('click', () => {
+  const currentTheme = html.getAttribute('data-theme');
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+});
+</script>
+
+</body>
+</html>

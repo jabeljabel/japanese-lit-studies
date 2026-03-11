@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Japanese Literature, Culture, and Language Job Market (1966-2025)</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
+<style>
+
+:root {
+    --bg: #ffffff; --bg2: #f5f5f5; --bg3: #e8e8e8;
+    --fg: #1a1a2e; --fg2: #555; --fg3: #888;
+    --accent: #2563eb; --accent2: #dc2626;
+    --grid: rgba(0,0,0,0.08); --border: #ddd;
+}
+.dark-mode {
+    --bg: #0a0a1a; --bg2: #141428; --bg3: #1e1e3a;
+    --fg: #e0e0e0; --fg2: #aaa; --fg3: #777;
+    --accent: #4a9eff; --accent2: #ff6b6b;
+    --grid: rgba(255,255,255,0.05); --border: #333;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--fg);
+    overflow-x: hidden;
+}
+#toolbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px; background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap; min-height: 44px;
+}
+#toolbar h1 {
+    font-size: 16px; font-weight: 600; white-space: nowrap;
+}
+.spacer { flex: 1; }
+#toolbar button, #toolbar select {
+    padding: 5px 12px; border-radius: 4px;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--fg); cursor: pointer; font-size: 12px;
+}
+#toolbar button:hover { background: var(--bg3); }
+.info-btn {
+    width: 28px; height: 28px; border-radius: 50% !important;
+    padding: 0 !important; font-size: 14px !important;
+    display: flex; align-items: center; justify-content: center;
+}
+
+/* Tabs */
+.tabs {
+    display: flex; border-bottom: 2px solid var(--border);
+    padding: 0 16px; background: var(--bg2); gap: 2px;
+}
+.tab-btn {
+    padding: 8px 16px; border: none; background: transparent;
+    color: var(--fg2); cursor: pointer; font-size: 13px;
+    font-weight: 500; border-bottom: 2px solid transparent;
+    margin-bottom: -2px; transition: all 0.15s;
+}
+.tab-btn:hover { color: var(--fg); background: var(--bg3); }
+.tab-btn.active {
+    color: var(--accent); border-bottom-color: var(--accent);
+    font-weight: 600;
+}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Controls */
+.controls {
+    display: flex; gap: 12px; padding: 10px 16px;
+    flex-wrap: wrap; align-items: center;
+    border-bottom: 1px solid var(--border);
+}
+.btn-group {
+    display: flex; border: 1px solid var(--border); border-radius: 4px;
+    overflow: hidden;
+}
+.btn-group button {
+    padding: 4px 10px; border: none; border-right: 1px solid var(--border);
+    background: var(--bg); color: var(--fg2); cursor: pointer; font-size: 12px;
+}
+.btn-group button:last-child { border-right: none; }
+.btn-group button:hover { background: var(--bg3); }
+.btn-group button.active { background: var(--accent); color: #fff; }
+.controls label { font-size: 12px; color: var(--fg2); }
+.controls select {
+    padding: 3px 8px; font-size: 12px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--fg); border-radius: 3px;
+}
+.controls input[type="range"] { width: 120px; }
+
+/* Chart area */
+.chart-container {
+    display: flex; width: 100%; min-height: calc(100vh - 160px);
+}
+.chart-area {
+    flex: 1; overflow: hidden; position: relative;
+    padding: 16px;
+}
+.legend-panel {
+    width: 220px; min-width: 220px; padding: 10px;
+    border-left: 1px solid var(--border);
+    overflow-y: auto; font-size: 12px;
+    max-height: calc(100vh - 160px);
+}
+.legend-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3px 6px; cursor: pointer; border-radius: 3px;
+    transition: opacity 0.15s;
+}
+.legend-item:hover { background: var(--bg3); }
+.legend-item.muted { opacity: 0.25; }
+.legend-dot {
+    width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0;
+}
+.legend-label { flex: 1; }
+.legend-count { color: var(--fg3); font-size: 11px; }
+.legend-divider {
+    font-size: 10px; color: var(--fg3); text-transform: uppercase;
+    letter-spacing: 0.5px; padding: 6px 6px 2px;
+    margin-top: 4px; border-top: 1px solid var(--border);
+}
+.show-all-btn {
+    display: block; width: 100%; padding: 4px 8px; margin-top: 6px;
+    border: 1px solid var(--border); border-radius: 3px;
+    background: var(--bg2); color: var(--fg2); cursor: pointer;
+    font-size: 11px; text-align: center;
+}
+.show-all-btn:hover { background: var(--bg3); }
+
+/* Tooltip */
+#tooltip {
+    position: fixed; pointer-events: none; z-index: 1000;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 12px; font-size: 12px;
+    line-height: 1.4; max-width: 300px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: none;
+}
+#tooltip.show { display: block; }
+
+/* Sidebar (for network/presenter viz) */
+.sidebar {
+    width: 320px; min-width: 320px; padding: 12px;
+    border-left: 1px solid var(--border);
+    overflow-y: auto; font-size: 12px;
+    max-height: calc(100vh - 100px);
+}
+.sidebar h3 { font-size: 14px; margin-bottom: 8px; }
+.sidebar .stat { margin: 4px 0; }
+.sidebar .stat-label { color: var(--fg2); }
+
+/* Search */
+.search-box {
+    padding: 5px 10px; border: 1px solid var(--border);
+    border-radius: 4px; background: var(--bg); color: var(--fg);
+    font-size: 12px; width: 180px;
+}
+.search-box::placeholder { color: var(--fg3); }
+
+/* COVID annotation */
+.covid-marker {
+    font-size: 10px; color: var(--accent2); font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .chart-container { flex-direction: column; }
+    .legend-panel, .sidebar {
+        width: 100%; min-width: 100%;
+        max-height: 200px; border-left: none;
+        border-top: 1px solid var(--border);
+    }
+}
+
+
+/* Job market specific styles */
+.chart-wrapper {
+    padding: 20px;
+    min-height: calc(100vh - 160px);
+}
+
+/* Global filter bar */
+.global-filter {
+    display: flex; gap: 16px; padding: 8px 16px;
+    align-items: center; flex-wrap: wrap;
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+}
+.global-filter label {
+    font-size: 12px; color: var(--fg2); cursor: pointer;
+    display: flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 4px;
+    border: 1px solid var(--border); background: var(--bg);
+    transition: all 0.15s;
+}
+.global-filter label:hover { background: var(--bg3); }
+.global-filter label.active-filter {
+    background: var(--accent); color: #fff; border-color: var(--accent);
+}
+.global-filter input[type="checkbox"] { cursor: pointer; }
+.filter-hint {
+    font-size: 11px; color: var(--fg3); font-style: italic;
+    margin-left: auto;
+}
+
+/* Historical Trends */
+.trends-controls {
+    display: flex; gap: 16px; padding: 10px 20px;
+    align-items: center; flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+}
+.trends-controls label {
+    font-size: 12px; color: var(--fg2); cursor: pointer;
+    display: flex; align-items: center; gap: 4px;
+}
+.trends-controls input[type="checkbox"] { cursor: pointer; }
+
+.annotation-line {
+    stroke: var(--fg3); stroke-width: 1; stroke-dasharray: 4,3;
+}
+.annotation-label {
+    font-size: 10px; fill: var(--fg3); text-anchor: middle;
+}
+
+/* Topics */
+.sparkline-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px; padding: 16px 0;
+}
+.sparkline-card {
+    background: var(--bg2); border-radius: 6px; padding: 10px;
+    border: 1px solid var(--border); cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+.sparkline-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-color: var(--accent);
+}
+.sparkline-card h4 {
+    font-size: 12px; font-weight: 600; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 6px;
+}
+.sparkline-card .spark-dot {
+    width: 10px; height: 10px; border-radius: 2px; display: inline-block;
+}
+.sparkline-card .spark-total {
+    color: var(--fg3); font-size: 11px; font-weight: 400;
+    margin-left: auto;
+}
+
+/* Expanded sparkline modal */
+.spark-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); z-index: 900;
+    display: flex; align-items: center; justify-content: center;
+}
+.spark-modal {
+    background: var(--bg); border-radius: 10px;
+    padding: 24px 28px 20px; width: 90%; max-width: 800px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+    position: relative;
+}
+.spark-modal h3 {
+    font-size: 16px; font-weight: 700; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+    color: var(--fg);
+}
+.spark-modal h3 .spark-dot {
+    width: 14px; height: 14px; border-radius: 3px; display: inline-block;
+}
+.spark-modal h3 .spark-total {
+    color: var(--fg3); font-size: 13px; font-weight: 400;
+    margin-left: auto;
+}
+.spark-modal-close {
+    position: absolute; top: 12px; right: 16px;
+    background: none; border: none; color: var(--fg3);
+    font-size: 20px; cursor: pointer; padding: 4px 8px;
+    border-radius: 4px;
+}
+.spark-modal-close:hover { background: var(--bg3); color: var(--fg); }
+
+/* Institutions */
+.inst-chart-area {
+    display: flex; gap: 20px; flex-wrap: wrap;
+}
+.inst-bar-section { flex: 1; min-width: 400px; }
+.inst-heat-section { flex: 1; min-width: 400px; }
+.section-title {
+    font-size: 14px; font-weight: 600; margin-bottom: 10px;
+    color: var(--fg);
+}
+
+/* Raw Data */
+.stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px; margin-bottom: 24px;
+}
+.stat-card {
+    background: var(--bg2); border-radius: 8px; padding: 16px;
+    text-align: center; border: 1px solid var(--border);
+}
+.stat-card .stat-value {
+    font-size: 28px; font-weight: 700; color: var(--accent);
+}
+.stat-card .stat-label {
+    font-size: 11px; color: var(--fg2); margin-top: 4px;
+}
+.decade-table {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+    margin-bottom: 24px;
+}
+.decade-table th, .decade-table td {
+    padding: 8px 12px; border: 1px solid var(--border); text-align: center;
+}
+.decade-table th {
+    background: var(--bg2); font-weight: 600; color: var(--fg);
+}
+.decade-table td { color: var(--fg2); }
+.decade-table tr:hover td { background: var(--bg2); }
+
+.raw-charts {
+    display: flex; gap: 20px; flex-wrap: wrap;
+}
+.raw-chart-section { flex: 1; min-width: 300px; }
+
+</style>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
+</head>
+<body>
+
+<div id="toolbar">
+    <h1>Japanese Literature, Culture, and Language Job Market (1966-2025)</h1>
+    <div class="spacer"></div>
+    <button class="info-btn" onclick="toggleInfoModal()" title="About this visualization">&#8505;</button>
+    <button onclick="exportPng()">Export PNG</button>
+    <button onclick="exportCsv()">Export CSV</button>
+    <button id="themeBtn" onclick="toggleTheme()">&#9790; Dark</button>
+</div>
+
+<div class="tabs"><button class="tab-btn active" data-tab="trends">Historical Trends</button>
+<button class="tab-btn" data-tab="topics">Disciplines & Topics</button>
+<button class="tab-btn" data-tab="institutions">Institutions</button>
+<button class="tab-btn" data-tab="raw">Raw Data</button></div>
+
+
+<!-- Global filter bar (above tabs) -->
+<div class="global-filter">
+    <label id="naLabel"><input type="checkbox" id="naOnly" checked> North America only</label>
+    <label><input type="checkbox" id="confirmedOnly"> Confirmed only</label>
+    <label><input type="checkbox" id="ttOnly"> Tenure-track only</label>
+    <span class="filter-hint" id="filterHint">Showing: US &amp; Canada (3,460 listings)</span>
+</div>
+
+<!-- Tab 1: Historical Trends -->
+<div id="tab-trends" class="tab-content active">
+    <div class="chart-wrapper" id="trends-chart"></div>
+</div>
+
+<!-- Tab 2: Disciplines & Topics -->
+<div id="tab-topics" class="tab-content">
+    <div class="chart-wrapper">
+        <div id="topics-stacked"></div>
+        <div class="section-title" style="margin-top:20px;">Individual Tag Trends</div>
+        <div class="sparkline-grid" id="sparklines"></div>
+    </div>
+</div>
+
+<!-- Tab 3: Institutions -->
+<div id="tab-institutions" class="tab-content">
+    <div class="chart-wrapper">
+        <div class="inst-chart-area">
+            <div class="inst-bar-section">
+                <div class="section-title">Top 25 Hiring Institutions (confirmed)</div>
+                <div id="inst-bars"></div>
+            </div>
+            <div class="inst-heat-section">
+                <div class="section-title">Top 15 Institutions by Decade</div>
+                <div id="inst-heatmap"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sparkline expanded modal -->
+<div id="spark-overlay" class="spark-overlay" style="display:none;">
+    <div class="spark-modal">
+        <button class="spark-modal-close" id="spark-close">&times;</button>
+        <h3 id="spark-modal-title"></h3>
+        <div id="spark-modal-chart"></div>
+    </div>
+</div>
+
+<!-- Tab 4: Raw Data -->
+<div id="tab-raw" class="tab-content">
+    <div class="chart-wrapper">
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="section-title">Decade Breakdown</div>
+        <div id="decade-table-container"></div>
+        <div class="raw-charts">
+            <div class="raw-chart-section">
+                <div class="section-title" style="margin-top:20px;">Data Sources</div>
+                <div id="source-chart"></div>
+            </div>
+            <div class="raw-chart-section">
+                <div class="section-title" style="margin-top:20px;">Period Focus (confirmed)</div>
+                <div id="period-chart"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="tooltip"></div>
+
+<script>
+const ALL_DATA = {"all": {"yearly": [{"year": 1966, "confirmed": 3, "review_needed": 17, "total": 20, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 0, "ntt_review": 3}, {"year": 1967, "confirmed": 1, "review_needed": 5, "total": 6, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 1, "ntt_review": 1}, {"year": 1968, "confirmed": 1, "review_needed": 3, "total": 4, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 1, "ntt_review": 1}, {"year": 1969, "confirmed": 0, "review_needed": 7, "total": 7, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 0, "ntt_review": 4}, {"year": 1970, "confirmed": 2, "review_needed": 4, "total": 6, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 2, "ntt_review": 2}, {"year": 1971, "confirmed": 11, "review_needed": 7, "total": 18, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 4, "ntt_review": 4}, {"year": 1972, "confirmed": 8, "review_needed": 5, "total": 13, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 0, "ntt_review": 2}, {"year": 1973, "confirmed": 18, "review_needed": 11, "total": 29, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 3, "ntt_review": 6}, {"year": 1974, "confirmed": 55, "review_needed": 31, "total": 86, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 9, "ntt_review": 9}, {"year": 1975, "confirmed": 23, "review_needed": 17, "total": 40, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 3, "ntt_review": 1}, {"year": 1976, "confirmed": 29, "review_needed": 14, "total": 43, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 9, "ntt_review": 8}, {"year": 1977, "confirmed": 46, "review_needed": 36, "total": 82, "tt_confirmed": 0, "tt_review": 1, "ntt_confirmed": 8, "ntt_review": 9}, {"year": 1978, "confirmed": 56, "review_needed": 34, "total": 90, "tt_confirmed": 5, "tt_review": 1, "ntt_confirmed": 15, "ntt_review": 9}, {"year": 1979, "confirmed": 53, "review_needed": 30, "total": 83, "tt_confirmed": 10, "tt_review": 5, "ntt_confirmed": 15, "ntt_review": 5}, {"year": 1980, "confirmed": 51, "review_needed": 43, "total": 94, "tt_confirmed": 8, "tt_review": 5, "ntt_confirmed": 12, "ntt_review": 5}, {"year": 1981, "confirmed": 29, "review_needed": 42, "total": 71, "tt_confirmed": 6, "tt_review": 11, "ntt_confirmed": 7, "ntt_review": 12}, {"year": 1982, "confirmed": 37, "review_needed": 28, "total": 65, "tt_confirmed": 13, "tt_review": 7, "ntt_confirmed": 11, "ntt_review": 9}, {"year": 1983, "confirmed": 37, "review_needed": 29, "total": 66, "tt_confirmed": 18, "tt_review": 9, "ntt_confirmed": 4, "ntt_review": 13}, {"year": 1984, "confirmed": 34, "review_needed": 25, "total": 59, "tt_confirmed": 16, "tt_review": 4, "ntt_confirmed": 6, "ntt_review": 7}, {"year": 1985, "confirmed": 66, "review_needed": 38, "total": 104, "tt_confirmed": 37, "tt_review": 12, "ntt_confirmed": 13, "ntt_review": 18}, {"year": 1986, "confirmed": 57, "review_needed": 44, "total": 101, "tt_confirmed": 40, "tt_review": 24, "ntt_confirmed": 13, "ntt_review": 15}, {"year": 1987, "confirmed": 76, "review_needed": 61, "total": 137, "tt_confirmed": 45, "tt_review": 19, "ntt_confirmed": 15, "ntt_review": 28}, {"year": 1988, "confirmed": 79, "review_needed": 63, "total": 142, "tt_confirmed": 50, "tt_review": 28, "ntt_confirmed": 12, "ntt_review": 19}, {"year": 1989, "confirmed": 79, "review_needed": 62, "total": 141, "tt_confirmed": 59, "tt_review": 26, "ntt_confirmed": 12, "ntt_review": 25}, {"year": 1990, "confirmed": 55, "review_needed": 45, "total": 100, "tt_confirmed": 44, "tt_review": 20, "ntt_confirmed": 6, "ntt_review": 17}, {"year": 1991, "confirmed": 73, "review_needed": 42, "total": 115, "tt_confirmed": 51, "tt_review": 21, "ntt_confirmed": 10, "ntt_review": 11}, {"year": 1992, "confirmed": 24, "review_needed": 8, "total": 32, "tt_confirmed": 16, "tt_review": 3, "ntt_confirmed": 2, "ntt_review": 2}, {"year": 1993, "confirmed": 5, "review_needed": 6, "total": 11, "tt_confirmed": 2, "tt_review": 2, "ntt_confirmed": 2, "ntt_review": 3}, {"year": 1994, "confirmed": 38, "review_needed": 24, "total": 62, "tt_confirmed": 24, "tt_review": 13, "ntt_confirmed": 5, "ntt_review": 2}, {"year": 1995, "confirmed": 15, "review_needed": 1, "total": 16, "tt_confirmed": 11, "tt_review": 1, "ntt_confirmed": 1, "ntt_review": 0}, {"year": 1996, "confirmed": 36, "review_needed": 2, "total": 38, "tt_confirmed": 28, "tt_review": 0, "ntt_confirmed": 3, "ntt_review": 1}, {"year": 1997, "confirmed": 33, "review_needed": 4, "total": 37, "tt_confirmed": 27, "tt_review": 3, "ntt_confirmed": 3, "ntt_review": 0}, {"year": 1998, "confirmed": 24, "review_needed": 10, "total": 34, "tt_confirmed": 18, "tt_review": 3, "ntt_confirmed": 3, "ntt_review": 2}, {"year": 1999, "confirmed": 33, "review_needed": 3, "total": 36, "tt_confirmed": 22, "tt_review": 1, "ntt_confirmed": 2, "ntt_review": 0}, {"year": 2000, "confirmed": 28, "review_needed": 3, "total": 31, "tt_confirmed": 21, "tt_review": 0, "ntt_confirmed": 3, "ntt_review": 0}, {"year": 2001, "confirmed": 26, "review_needed": 6, "total": 32, "tt_confirmed": 19, "tt_review": 4, "ntt_confirmed": 4, "ntt_review": 1}, {"year": 2002, "confirmed": 25, "review_needed": 6, "total": 31, "tt_confirmed": 15, "tt_review": 2, "ntt_confirmed": 7, "ntt_review": 1}, {"year": 2003, "confirmed": 26, "review_needed": 3, "total": 29, "tt_confirmed": 20, "tt_review": 2, "ntt_confirmed": 5, "ntt_review": 1}, {"year": 2004, "confirmed": 32, "review_needed": 5, "total": 37, "tt_confirmed": 26, "tt_review": 1, "ntt_confirmed": 4, "ntt_review": 1}, {"year": 2005, "confirmed": 39, "review_needed": 7, "total": 46, "tt_confirmed": 28, "tt_review": 2, "ntt_confirmed": 3, "ntt_review": 3}, {"year": 2006, "confirmed": 41, "review_needed": 6, "total": 47, "tt_confirmed": 26, "tt_review": 3, "ntt_confirmed": 7, "ntt_review": 0}, {"year": 2007, "confirmed": 31, "review_needed": 10, "total": 41, "tt_confirmed": 17, "tt_review": 4, "ntt_confirmed": 4, "ntt_review": 2}, {"year": 2008, "confirmed": 32, "review_needed": 7, "total": 39, "tt_confirmed": 22, "tt_review": 1, "ntt_confirmed": 4, "ntt_review": 2}, {"year": 2009, "confirmed": 23, "review_needed": 8, "total": 31, "tt_confirmed": 10, "tt_review": 3, "ntt_confirmed": 9, "ntt_review": 4}, {"year": 2010, "confirmed": 29, "review_needed": 13, "total": 42, "tt_confirmed": 15, "tt_review": 5, "ntt_confirmed": 9, "ntt_review": 5}, {"year": 2011, "confirmed": 35, "review_needed": 21, "total": 56, "tt_confirmed": 24, "tt_review": 11, "ntt_confirmed": 5, "ntt_review": 2}, {"year": 2012, "confirmed": 40, "review_needed": 52, "total": 92, "tt_confirmed": 22, "tt_review": 24, "ntt_confirmed": 8, "ntt_review": 25}, {"year": 2013, "confirmed": 80, "review_needed": 27, "total": 107, "tt_confirmed": 43, "tt_review": 10, "ntt_confirmed": 22, "ntt_review": 10}, {"year": 2014, "confirmed": 48, "review_needed": 14, "total": 62, "tt_confirmed": 32, "tt_review": 8, "ntt_confirmed": 7, "ntt_review": 1}, {"year": 2015, "confirmed": 65, "review_needed": 33, "total": 98, "tt_confirmed": 41, "tt_review": 15, "ntt_confirmed": 16, "ntt_review": 10}, {"year": 2016, "confirmed": 71, "review_needed": 26, "total": 97, "tt_confirmed": 46, "tt_review": 5, "ntt_confirmed": 17, "ntt_review": 11}, {"year": 2017, "confirmed": 30, "review_needed": 5, "total": 35, "tt_confirmed": 24, "tt_review": 4, "ntt_confirmed": 6, "ntt_review": 1}, {"year": 2018, "confirmed": 44, "review_needed": 17, "total": 61, "tt_confirmed": 27, "tt_review": 3, "ntt_confirmed": 11, "ntt_review": 5}, {"year": 2019, "confirmed": 23, "review_needed": 4, "total": 27, "tt_confirmed": 18, "tt_review": 1, "ntt_confirmed": 2, "ntt_review": 0}, {"year": 2020, "confirmed": 2, "review_needed": 0, "total": 2, "tt_confirmed": 1, "tt_review": 0, "ntt_confirmed": 1, "ntt_review": 0}, {"year": 2021, "confirmed": 2, "review_needed": 0, "total": 2, "tt_confirmed": 1, "tt_review": 0, "ntt_confirmed": 1, "ntt_review": 0}, {"year": 2022, "confirmed": 1, "review_needed": 0, "total": 1, "tt_confirmed": 1, "tt_review": 0, "ntt_confirmed": 0, "ntt_review": 0}, {"year": 2023, "confirmed": 125, "review_needed": 153, "total": 278, "tt_confirmed": 68, "tt_review": 38, "ntt_confirmed": 44, "ntt_review": 95}, {"year": 2024, "confirmed": 134, "review_needed": 200, "total": 334, "tt_confirmed": 86, "tt_review": 59, "ntt_confirmed": 42, "ntt_review": 119}, {"year": 2025, "confirmed": 122, "review_needed": 224, "total": 346, "tt_confirmed": 70, "tt_review": 72, "ntt_confirmed": 46, "ntt_review": 129}], "tag_bins": [{"label": "1966-1970", "start": 1966, "end": 1970, "tags": {"literature": 3, "language": 7, "culture": 4, "modern": 4, "premodern": 5, "history": 0, "media": 0, "film": 0, "translation": 1, "drama": 3, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, "total": 43}, {"label": "1971-1975", "start": 1971, "end": 1975, "tags": {"literature": 113, "language": 144, "culture": 11, "modern": 85, "premodern": 38, "history": 8, "media": 15, "film": 7, "translation": 9, "drama": 10, "poetry": 6, "anime": 0, "manga": 0, "videogames": 0}, "total": 186}, {"label": "1976-1980", "start": 1976, "end": 1980, "tags": {"literature": 233, "language": 328, "culture": 43, "modern": 161, "premodern": 87, "history": 30, "media": 46, "film": 14, "translation": 21, "drama": 12, "poetry": 11, "anime": 0, "manga": 0, "videogames": 0}, "total": 392}, {"label": "1981-1985", "start": 1981, "end": 1985, "tags": {"literature": 173, "language": 287, "culture": 62, "modern": 120, "premodern": 60, "history": 27, "media": 52, "film": 8, "translation": 40, "drama": 15, "poetry": 7, "anime": 0, "manga": 0, "videogames": 0}, "total": 365}, {"label": "1986-1990", "start": 1986, "end": 1990, "tags": {"literature": 271, "language": 454, "culture": 155, "modern": 116, "premodern": 61, "history": 42, "media": 62, "film": 29, "translation": 53, "drama": 18, "poetry": 12, "anime": 0, "manga": 0, "videogames": 0}, "total": 621}, {"label": "1991-1995", "start": 1991, "end": 1995, "tags": {"literature": 142, "language": 195, "culture": 77, "modern": 56, "premodern": 28, "history": 20, "media": 29, "film": 25, "translation": 18, "drama": 10, "poetry": 5, "anime": 0, "manga": 0, "videogames": 0}, "total": 236}, {"label": "1996-2000", "start": 1996, "end": 2000, "tags": {"literature": 150, "language": 141, "culture": 86, "modern": 68, "premodern": 30, "history": 27, "media": 31, "film": 26, "translation": 17, "drama": 14, "poetry": 6, "anime": 0, "manga": 0, "videogames": 0}, "total": 176}, {"label": "2001-2005", "start": 2001, "end": 2005, "tags": {"literature": 143, "language": 126, "culture": 83, "modern": 80, "premodern": 32, "history": 33, "media": 41, "film": 32, "translation": 11, "drama": 13, "poetry": 10, "anime": 0, "manga": 0, "videogames": 0}, "total": 175}, {"label": "2006-2010", "start": 2006, "end": 2010, "tags": {"literature": 143, "language": 176, "culture": 109, "modern": 76, "premodern": 39, "history": 36, "media": 54, "film": 41, "translation": 14, "drama": 5, "poetry": 6, "anime": 0, "manga": 0, "videogames": 0}, "total": 200}, {"label": "2011-2015", "start": 2011, "end": 2015, "tags": {"literature": 244, "language": 319, "culture": 224, "modern": 150, "premodern": 59, "history": 66, "media": 96, "film": 78, "translation": 30, "drama": 19, "poetry": 4, "anime": 1, "manga": 1, "videogames": 1}, "total": 415}, {"label": "2016-2020", "start": 2016, "end": 2020, "tags": {"literature": 152, "language": 201, "culture": 158, "modern": 88, "premodern": 37, "history": 50, "media": 76, "film": 67, "translation": 27, "drama": 16, "poetry": 3, "anime": 12, "manga": 3, "videogames": 0}, "total": 222}, {"label": "2021-2025", "start": 2021, "end": 2025, "tags": {"literature": 306, "language": 567, "culture": 389, "modern": 219, "premodern": 118, "history": 254, "media": 65, "film": 53, "translation": 43, "drama": 16, "poetry": 4, "anime": 10, "manga": 7, "videogames": 5}, "total": 961}], "tags_yearly": [{"year": 1966, "literature": 2, "language": 4, "culture": 0, "modern": 4, "premodern": 5, "history": 0, "media": 0, "film": 0, "translation": 0, "drama": 2, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1967, "literature": 0, "language": 0, "culture": 2, "modern": 0, "premodern": 0, "history": 0, "media": 0, "film": 0, "translation": 0, "drama": 0, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1968, "literature": 1, "language": 1, "culture": 0, "modern": 0, "premodern": 0, "history": 0, "media": 0, "film": 0, "translation": 0, "drama": 1, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1969, "literature": 0, "language": 0, "culture": 0, "modern": 0, "premodern": 0, "history": 0, "media": 0, "film": 0, "translation": 1, "drama": 0, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1970, "literature": 0, "language": 2, "culture": 2, "modern": 0, "premodern": 0, "history": 0, "media": 0, "film": 0, "translation": 0, "drama": 0, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1971, "literature": 11, "language": 15, "culture": 2, "modern": 9, "premodern": 3, "history": 1, "media": 2, "film": 0, "translation": 0, "drama": 0, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1972, "literature": 7, "language": 10, "culture": 0, "modern": 8, "premodern": 0, "history": 0, "media": 2, "film": 0, "translation": 0, "drama": 1, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1973, "literature": 18, "language": 21, "culture": 0, "modern": 10, "premodern": 3, "history": 4, "media": 2, "film": 1, "translation": 2, "drama": 1, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1974, "literature": 54, "language": 73, "culture": 6, "modern": 43, "premodern": 22, "history": 2, "media": 6, "film": 6, "translation": 6, "drama": 6, "poetry": 3, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1975, "literature": 23, "language": 25, "culture": 3, "modern": 15, "premodern": 10, "history": 1, "media": 3, "film": 0, "translation": 1, "drama": 2, "poetry": 1, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1976, "literature": 29, "language": 40, "culture": 4, "modern": 22, "premodern": 14, "history": 0, "media": 6, "film": 0, "translation": 2, "drama": 1, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1977, "literature": 46, "language": 72, "culture": 8, "modern": 38, "premodern": 18, "history": 6, "media": 9, "film": 0, "translation": 5, "drama": 4, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1978, "literature": 56, "language": 79, "culture": 10, "modern": 44, "premodern": 24, "history": 5, "media": 17, "film": 4, "translation": 4, "drama": 4, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1979, "literature": 51, "language": 68, "culture": 12, "modern": 29, "premodern": 15, "history": 10, "media": 10, "film": 5, "translation": 2, "drama": 0, "poetry": 3, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1980, "literature": 51, "language": 69, "culture": 9, "modern": 28, "premodern": 16, "history": 9, "media": 4, "film": 5, "translation": 8, "drama": 3, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1981, "literature": 28, "language": 55, "culture": 8, "modern": 23, "premodern": 15, "history": 6, "media": 8, "film": 2, "translation": 5, "drama": 2, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1982, "literature": 30, "language": 48, "culture": 13, "modern": 18, "premodern": 11, "history": 5, "media": 11, "film": 2, "translation": 7, "drama": 0, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1983, "literature": 31, "language": 53, "culture": 12, "modern": 25, "premodern": 11, "history": 6, "media": 10, "film": 2, "translation": 5, "drama": 2, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1984, "literature": 29, "language": 46, "culture": 10, "modern": 19, "premodern": 12, "history": 5, "media": 7, "film": 0, "translation": 7, "drama": 4, "poetry": 1, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1985, "literature": 55, "language": 85, "culture": 19, "modern": 35, "premodern": 11, "history": 5, "media": 16, "film": 2, "translation": 16, "drama": 7, "poetry": 4, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1986, "literature": 46, "language": 78, "culture": 28, "modern": 22, "premodern": 12, "history": 12, "media": 9, "film": 7, "translation": 10, "drama": 2, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1987, "literature": 64, "language": 104, "culture": 30, "modern": 20, "premodern": 14, "history": 10, "media": 20, "film": 3, "translation": 12, "drama": 4, "poetry": 5, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1988, "literature": 56, "language": 92, "culture": 32, "modern": 27, "premodern": 15, "history": 4, "media": 10, "film": 9, "translation": 16, "drama": 3, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1989, "literature": 58, "language": 97, "culture": 38, "modern": 28, "premodern": 10, "history": 14, "media": 14, "film": 8, "translation": 12, "drama": 5, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1990, "literature": 47, "language": 83, "culture": 27, "modern": 19, "premodern": 10, "history": 2, "media": 9, "film": 2, "translation": 3, "drama": 4, "poetry": 3, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1991, "literature": 64, "language": 96, "culture": 31, "modern": 28, "premodern": 9, "history": 7, "media": 13, "film": 8, "translation": 9, "drama": 3, "poetry": 1, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1992, "literature": 24, "language": 25, "culture": 9, "modern": 10, "premodern": 7, "history": 6, "media": 4, "film": 3, "translation": 2, "drama": 2, "poetry": 1, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1993, "literature": 4, "language": 8, "culture": 3, "modern": 3, "premodern": 0, "history": 1, "media": 3, "film": 1, "translation": 1, "drama": 0, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1994, "literature": 36, "language": 53, "culture": 21, "modern": 10, "premodern": 9, "history": 3, "media": 5, "film": 4, "translation": 4, "drama": 3, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1995, "literature": 14, "language": 13, "culture": 13, "modern": 5, "premodern": 3, "history": 3, "media": 4, "film": 9, "translation": 2, "drama": 2, "poetry": 1, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1996, "literature": 36, "language": 31, "culture": 20, "modern": 16, "premodern": 9, "history": 7, "media": 8, "film": 10, "translation": 4, "drama": 4, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1997, "literature": 32, "language": 34, "culture": 19, "modern": 9, "premodern": 6, "history": 5, "media": 3, "film": 2, "translation": 5, "drama": 2, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1998, "literature": 22, "language": 24, "culture": 15, "modern": 12, "premodern": 3, "history": 5, "media": 7, "film": 3, "translation": 3, "drama": 1, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1999, "literature": 32, "language": 29, "culture": 18, "modern": 15, "premodern": 8, "history": 9, "media": 6, "film": 7, "translation": 3, "drama": 5, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2000, "literature": 28, "language": 23, "culture": 14, "modern": 16, "premodern": 4, "history": 1, "media": 7, "film": 4, "translation": 2, "drama": 2, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2001, "literature": 25, "language": 23, "culture": 14, "modern": 9, "premodern": 5, "history": 7, "media": 3, "film": 1, "translation": 1, "drama": 2, "poetry": 1, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2002, "literature": 25, "language": 26, "culture": 16, "modern": 17, "premodern": 7, "history": 4, "media": 8, "film": 10, "translation": 4, "drama": 0, "poetry": 1, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2003, "literature": 25, "language": 21, "culture": 13, "modern": 17, "premodern": 8, "history": 7, "media": 6, "film": 5, "translation": 0, "drama": 4, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2004, "literature": 31, "language": 22, "culture": 17, "modern": 16, "premodern": 9, "history": 5, "media": 5, "film": 7, "translation": 4, "drama": 2, "poetry": 3, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2005, "literature": 37, "language": 34, "culture": 23, "modern": 21, "premodern": 3, "history": 10, "media": 19, "film": 9, "translation": 2, "drama": 5, "poetry": 3, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2006, "literature": 39, "language": 43, "culture": 27, "modern": 19, "premodern": 10, "history": 12, "media": 12, "film": 10, "translation": 4, "drama": 0, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2007, "literature": 28, "language": 36, "culture": 16, "modern": 15, "premodern": 10, "history": 8, "media": 10, "film": 10, "translation": 1, "drama": 2, "poetry": 1, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2008, "literature": 27, "language": 32, "culture": 25, "modern": 12, "premodern": 7, "history": 6, "media": 15, "film": 11, "translation": 2, "drama": 2, "poetry": 1, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2009, "literature": 22, "language": 27, "culture": 16, "modern": 15, "premodern": 4, "history": 3, "media": 8, "film": 3, "translation": 5, "drama": 0, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2010, "literature": 27, "language": 38, "culture": 25, "modern": 15, "premodern": 8, "history": 7, "media": 9, "film": 7, "translation": 2, "drama": 1, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2011, "literature": 31, "language": 35, "culture": 28, "modern": 24, "premodern": 7, "history": 9, "media": 15, "film": 10, "translation": 2, "drama": 3, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2012, "literature": 36, "language": 43, "culture": 34, "modern": 19, "premodern": 10, "history": 10, "media": 16, "film": 11, "translation": 7, "drama": 3, "poetry": 1, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2013, "literature": 73, "language": 91, "culture": 58, "modern": 44, "premodern": 17, "history": 18, "media": 24, "film": 25, "translation": 6, "drama": 6, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2014, "literature": 43, "language": 57, "culture": 39, "modern": 34, "premodern": 11, "history": 11, "media": 14, "film": 13, "translation": 10, "drama": 1, "poetry": 0, "anime": 0, "manga": 0, "videogames": 1}, {"year": 2015, "literature": 61, "language": 93, "culture": 65, "modern": 29, "premodern": 14, "history": 18, "media": 27, "film": 19, "translation": 5, "drama": 6, "poetry": 1, "anime": 1, "manga": 1, "videogames": 0}, {"year": 2016, "literature": 62, "language": 89, "culture": 66, "modern": 35, "premodern": 8, "history": 15, "media": 29, "film": 27, "translation": 14, "drama": 5, "poetry": 0, "anime": 9, "manga": 2, "videogames": 0}, {"year": 2017, "literature": 28, "language": 35, "culture": 29, "modern": 20, "premodern": 16, "history": 11, "media": 10, "film": 11, "translation": 5, "drama": 4, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2018, "literature": 38, "language": 53, "culture": 38, "modern": 19, "premodern": 4, "history": 11, "media": 25, "film": 17, "translation": 4, "drama": 4, "poetry": 1, "anime": 3, "manga": 1, "videogames": 0}, {"year": 2019, "literature": 22, "language": 22, "culture": 23, "modern": 13, "premodern": 8, "history": 11, "media": 10, "film": 10, "translation": 3, "drama": 3, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2020, "literature": 2, "language": 2, "culture": 2, "modern": 1, "premodern": 1, "history": 2, "media": 2, "film": 2, "translation": 1, "drama": 0, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2021, "literature": 2, "language": 2, "culture": 2, "modern": 2, "premodern": 2, "history": 2, "media": 1, "film": 1, "translation": 0, "drama": 0, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2022, "literature": 1, "language": 1, "culture": 1, "modern": 1, "premodern": 1, "history": 1, "media": 1, "film": 1, "translation": 1, "drama": 0, "poetry": 0, "anime": 1, "manga": 0, "videogames": 0}, {"year": 2023, "literature": 102, "language": 173, "culture": 119, "modern": 69, "premodern": 32, "history": 63, "media": 22, "film": 22, "translation": 13, "drama": 5, "poetry": 2, "anime": 4, "manga": 2, "videogames": 1}, {"year": 2024, "literature": 111, "language": 191, "culture": 141, "modern": 76, "premodern": 38, "history": 83, "media": 17, "film": 17, "translation": 16, "drama": 6, "poetry": 1, "anime": 1, "manga": 1, "videogames": 2}, {"year": 2025, "literature": 90, "language": 200, "culture": 126, "modern": 71, "premodern": 45, "history": 105, "media": 24, "film": 12, "translation": 13, "drama": 5, "poetry": 1, "anime": 4, "manga": 4, "videogames": 2}], "top_institutions": [{"name": "University of California", "count": 37}, {"name": "California State University", "count": 24}, {"name": "Northwestern University", "count": 20}, {"name": "Stanford University", "count": 16}, {"name": "University of Wisconsin", "count": 15}, {"name": "State University of New York", "count": 15}, {"name": "New York University", "count": 15}, {"name": "Indiana University", "count": 15}, {"name": "Yale University", "count": 13}, {"name": "University of Minnesota", "count": 13}, {"name": "University of Michigan", "count": 13}, {"name": "Harvard University", "count": 13}, {"name": "University of Maryland", "count": 12}, {"name": "Columbia University", "count": 12}, {"name": "Vassar College", "count": 11}, {"name": "University of Texas", "count": 11}, {"name": "University of Southern California", "count": 11}, {"name": "Rutgers University", "count": 11}, {"name": "Boston University", "count": 11}, {"name": "Arizona State University", "count": 11}, {"name": "Washington University in St. Louis", "count": 10}, {"name": "University of Hawai'i at Manoa", "count": 10}, {"name": "University of Florida", "count": 10}, {"name": "Ohio State University", "count": 10}, {"name": "Kenyon College", "count": 10}], "inst_decades": {"California State University": {"1970": 2, "1980": 7, "1990": 3, "2000": 2, "2010": 8, "2020": 1}, "Columbia University": {"1970": 2, "1980": 1, "1990": 1, "2000": 2, "2010": 3, "2020": 3}, "Harvard University": {"1980": 1, "1990": 3, "2010": 5, "2020": 3}, "Indiana University": {"1970": 4, "1980": 5, "2000": 2, "2010": 2, "2020": 2}, "New York University": {"1990": 4, "2000": 3, "2010": 7, "2020": 1}, "Northwestern University": {"1970": 1, "1980": 2, "1990": 4, "2000": 3, "2010": 9}, "Stanford University": {"1970": 6, "1980": 5, "1990": 1, "2010": 3, "2020": 1}, "State University of New York": {"1970": 3, "1980": 2, "1990": 4, "2000": 2, "2010": 4}, "University of California": {"1970": 5, "1980": 18, "1990": 2, "2000": 6, "2010": 6}, "University of Maryland": {"1970": 4, "1980": 3, "1990": 2, "2000": 1, "2010": 2}, "University of Michigan": {"1970": 3, "1980": 6, "1990": 3, "2010": 1}, "University of Minnesota": {"1980": 8, "1990": 2, "2000": 1, "2010": 1, "2020": 1}, "University of Wisconsin": {"1970": 5, "1980": 3, "1990": 1, "2000": 2, "2010": 4}, "Vassar College": {"1970": 1, "1980": 3, "1990": 1, "2000": 1, "2010": 3, "2020": 2}, "Yale University": {"1980": 2, "2000": 1, "2010": 6, "2020": 4}}, "source_totals": {"mla_jil_pdf": 1654, "mla_jil_xlsx": 1046, "curtis": 952, "wiki_fandom": 162, "academic_wiki_xlsx": 110, "aatj": 47, "h_japan": 11, "mla_jil": 10}, "period_focus": [{"label": "unspecified", "count": 1032}, {"label": "modern", "count": 723}, {"label": "both", "count": 392}, {"label": "premodern", "count": 224}], "stats": {"total": 4024, "confirmed": 2371, "tenure_track": 1801, "non_tt": 1180, "sources": 8, "min_year": 1966, "max_year": 2025, "years_covered": 60}, "decades": [{"label": "1960s", "start": 1960, "total": 37, "confirmed": 5, "tt": 0, "ntt": 11, "top_tags": ["premodern", "language", "modern"]}, {"label": "1970s", "start": 1970, "total": 490, "confirmed": 301, "tt": 22, "ntt": 123, "top_tags": ["language", "literature", "modern"]}, {"label": "1980s", "start": 1980, "total": 980, "confirmed": 545, "tt": 437, "ntt": 256, "top_tags": ["language", "literature", "modern"]}, {"label": "1990s", "start": 1990, "total": 481, "confirmed": 336, "tt": 310, "ntt": 75, "top_tags": ["language", "literature", "culture"]}, {"label": "2000s", "start": 2000, "total": 364, "confirmed": 303, "tt": 226, "ntt": 65, "top_tags": ["literature", "language", "culture"]}, {"label": "2010s", "start": 2010, "total": 677, "confirmed": 465, "tt": 378, "ntt": 173, "top_tags": ["language", "literature", "culture"]}, {"label": "2020s", "start": 2020, "total": 963, "confirmed": 386, "tt": 396, "ntt": 477, "top_tags": ["language", "culture", "literature"]}]}, "na": {"yearly": [{"year": 1966, "confirmed": 3, "review_needed": 17, "total": 20, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 0, "ntt_review": 3}, {"year": 1967, "confirmed": 1, "review_needed": 5, "total": 6, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 1, "ntt_review": 1}, {"year": 1968, "confirmed": 1, "review_needed": 3, "total": 4, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 1, "ntt_review": 1}, {"year": 1969, "confirmed": 0, "review_needed": 7, "total": 7, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 0, "ntt_review": 4}, {"year": 1970, "confirmed": 2, "review_needed": 4, "total": 6, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 2, "ntt_review": 2}, {"year": 1971, "confirmed": 11, "review_needed": 7, "total": 18, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 4, "ntt_review": 4}, {"year": 1972, "confirmed": 8, "review_needed": 5, "total": 13, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 0, "ntt_review": 2}, {"year": 1973, "confirmed": 18, "review_needed": 11, "total": 29, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 3, "ntt_review": 6}, {"year": 1974, "confirmed": 53, "review_needed": 31, "total": 84, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 8, "ntt_review": 9}, {"year": 1975, "confirmed": 23, "review_needed": 16, "total": 39, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 3, "ntt_review": 1}, {"year": 1976, "confirmed": 29, "review_needed": 14, "total": 43, "tt_confirmed": 0, "tt_review": 0, "ntt_confirmed": 9, "ntt_review": 8}, {"year": 1977, "confirmed": 46, "review_needed": 35, "total": 81, "tt_confirmed": 0, "tt_review": 1, "ntt_confirmed": 8, "ntt_review": 8}, {"year": 1978, "confirmed": 56, "review_needed": 33, "total": 89, "tt_confirmed": 5, "tt_review": 1, "ntt_confirmed": 15, "ntt_review": 9}, {"year": 1979, "confirmed": 53, "review_needed": 30, "total": 83, "tt_confirmed": 10, "tt_review": 5, "ntt_confirmed": 15, "ntt_review": 5}, {"year": 1980, "confirmed": 51, "review_needed": 42, "total": 93, "tt_confirmed": 8, "tt_review": 5, "ntt_confirmed": 12, "ntt_review": 5}, {"year": 1981, "confirmed": 29, "review_needed": 41, "total": 70, "tt_confirmed": 6, "tt_review": 11, "ntt_confirmed": 7, "ntt_review": 12}, {"year": 1982, "confirmed": 36, "review_needed": 28, "total": 64, "tt_confirmed": 13, "tt_review": 7, "ntt_confirmed": 11, "ntt_review": 9}, {"year": 1983, "confirmed": 37, "review_needed": 27, "total": 64, "tt_confirmed": 18, "tt_review": 9, "ntt_confirmed": 4, "ntt_review": 12}, {"year": 1984, "confirmed": 34, "review_needed": 25, "total": 59, "tt_confirmed": 16, "tt_review": 4, "ntt_confirmed": 6, "ntt_review": 7}, {"year": 1985, "confirmed": 65, "review_needed": 38, "total": 103, "tt_confirmed": 37, "tt_review": 12, "ntt_confirmed": 12, "ntt_review": 18}, {"year": 1986, "confirmed": 57, "review_needed": 44, "total": 101, "tt_confirmed": 40, "tt_review": 24, "ntt_confirmed": 13, "ntt_review": 15}, {"year": 1987, "confirmed": 75, "review_needed": 60, "total": 135, "tt_confirmed": 45, "tt_review": 19, "ntt_confirmed": 15, "ntt_review": 28}, {"year": 1988, "confirmed": 79, "review_needed": 63, "total": 142, "tt_confirmed": 50, "tt_review": 28, "ntt_confirmed": 12, "ntt_review": 19}, {"year": 1989, "confirmed": 79, "review_needed": 61, "total": 140, "tt_confirmed": 59, "tt_review": 26, "ntt_confirmed": 12, "ntt_review": 24}, {"year": 1990, "confirmed": 54, "review_needed": 45, "total": 99, "tt_confirmed": 43, "tt_review": 20, "ntt_confirmed": 6, "ntt_review": 17}, {"year": 1991, "confirmed": 72, "review_needed": 40, "total": 112, "tt_confirmed": 50, "tt_review": 21, "ntt_confirmed": 10, "ntt_review": 10}, {"year": 1992, "confirmed": 23, "review_needed": 7, "total": 30, "tt_confirmed": 16, "tt_review": 3, "ntt_confirmed": 2, "ntt_review": 2}, {"year": 1993, "confirmed": 5, "review_needed": 5, "total": 10, "tt_confirmed": 2, "tt_review": 2, "ntt_confirmed": 2, "ntt_review": 3}, {"year": 1994, "confirmed": 38, "review_needed": 24, "total": 62, "tt_confirmed": 24, "tt_review": 13, "ntt_confirmed": 5, "ntt_review": 2}, {"year": 1995, "confirmed": 15, "review_needed": 1, "total": 16, "tt_confirmed": 11, "tt_review": 1, "ntt_confirmed": 1, "ntt_review": 0}, {"year": 1996, "confirmed": 36, "review_needed": 2, "total": 38, "tt_confirmed": 28, "tt_review": 0, "ntt_confirmed": 3, "ntt_review": 1}, {"year": 1997, "confirmed": 33, "review_needed": 4, "total": 37, "tt_confirmed": 27, "tt_review": 3, "ntt_confirmed": 3, "ntt_review": 0}, {"year": 1998, "confirmed": 24, "review_needed": 10, "total": 34, "tt_confirmed": 18, "tt_review": 3, "ntt_confirmed": 3, "ntt_review": 2}, {"year": 1999, "confirmed": 33, "review_needed": 3, "total": 36, "tt_confirmed": 22, "tt_review": 1, "ntt_confirmed": 2, "ntt_review": 0}, {"year": 2000, "confirmed": 28, "review_needed": 3, "total": 31, "tt_confirmed": 21, "tt_review": 0, "ntt_confirmed": 3, "ntt_review": 0}, {"year": 2001, "confirmed": 26, "review_needed": 6, "total": 32, "tt_confirmed": 19, "tt_review": 4, "ntt_confirmed": 4, "ntt_review": 1}, {"year": 2002, "confirmed": 25, "review_needed": 6, "total": 31, "tt_confirmed": 15, "tt_review": 2, "ntt_confirmed": 7, "ntt_review": 1}, {"year": 2003, "confirmed": 26, "review_needed": 3, "total": 29, "tt_confirmed": 20, "tt_review": 2, "ntt_confirmed": 5, "ntt_review": 1}, {"year": 2004, "confirmed": 32, "review_needed": 5, "total": 37, "tt_confirmed": 26, "tt_review": 1, "ntt_confirmed": 4, "ntt_review": 1}, {"year": 2005, "confirmed": 39, "review_needed": 7, "total": 46, "tt_confirmed": 28, "tt_review": 2, "ntt_confirmed": 3, "ntt_review": 3}, {"year": 2006, "confirmed": 41, "review_needed": 6, "total": 47, "tt_confirmed": 26, "tt_review": 3, "ntt_confirmed": 7, "ntt_review": 0}, {"year": 2007, "confirmed": 31, "review_needed": 10, "total": 41, "tt_confirmed": 17, "tt_review": 4, "ntt_confirmed": 4, "ntt_review": 2}, {"year": 2008, "confirmed": 32, "review_needed": 7, "total": 39, "tt_confirmed": 22, "tt_review": 1, "ntt_confirmed": 4, "ntt_review": 2}, {"year": 2009, "confirmed": 23, "review_needed": 8, "total": 31, "tt_confirmed": 10, "tt_review": 3, "ntt_confirmed": 9, "ntt_review": 4}, {"year": 2010, "confirmed": 28, "review_needed": 13, "total": 41, "tt_confirmed": 15, "tt_review": 5, "ntt_confirmed": 8, "ntt_review": 5}, {"year": 2011, "confirmed": 34, "review_needed": 20, "total": 54, "tt_confirmed": 23, "tt_review": 10, "ntt_confirmed": 5, "ntt_review": 2}, {"year": 2012, "confirmed": 39, "review_needed": 52, "total": 91, "tt_confirmed": 21, "tt_review": 24, "ntt_confirmed": 8, "ntt_review": 25}, {"year": 2013, "confirmed": 80, "review_needed": 27, "total": 107, "tt_confirmed": 43, "tt_review": 10, "ntt_confirmed": 22, "ntt_review": 10}, {"year": 2014, "confirmed": 48, "review_needed": 14, "total": 62, "tt_confirmed": 32, "tt_review": 8, "ntt_confirmed": 7, "ntt_review": 1}, {"year": 2015, "confirmed": 64, "review_needed": 32, "total": 96, "tt_confirmed": 41, "tt_review": 15, "ntt_confirmed": 15, "ntt_review": 10}, {"year": 2016, "confirmed": 69, "review_needed": 26, "total": 95, "tt_confirmed": 44, "tt_review": 5, "ntt_confirmed": 17, "ntt_review": 11}, {"year": 2017, "confirmed": 29, "review_needed": 5, "total": 34, "tt_confirmed": 23, "tt_review": 4, "ntt_confirmed": 6, "ntt_review": 1}, {"year": 2018, "confirmed": 43, "review_needed": 14, "total": 57, "tt_confirmed": 27, "tt_review": 2, "ntt_confirmed": 11, "ntt_review": 4}, {"year": 2019, "confirmed": 19, "review_needed": 1, "total": 20, "tt_confirmed": 17, "tt_review": 0, "ntt_confirmed": 1, "ntt_review": 0}, {"year": 2020, "confirmed": 2, "review_needed": 0, "total": 2, "tt_confirmed": 1, "tt_review": 0, "ntt_confirmed": 1, "ntt_review": 0}, {"year": 2021, "confirmed": 2, "review_needed": 0, "total": 2, "tt_confirmed": 1, "tt_review": 0, "ntt_confirmed": 1, "ntt_review": 0}, {"year": 2022, "confirmed": 1, "review_needed": 0, "total": 1, "tt_confirmed": 1, "tt_review": 0, "ntt_confirmed": 0, "ntt_review": 0}, {"year": 2023, "confirmed": 66, "review_needed": 97, "total": 163, "tt_confirmed": 29, "tt_review": 15, "ntt_confirmed": 33, "ntt_review": 70}, {"year": 2024, "confirmed": 60, "review_needed": 74, "total": 134, "tt_confirmed": 32, "tt_review": 11, "ntt_confirmed": 24, "ntt_review": 51}, {"year": 2025, "confirmed": 43, "review_needed": 64, "total": 107, "tt_confirmed": 16, "tt_review": 7, "ntt_confirmed": 24, "ntt_review": 52}], "tag_bins": [{"label": "1966-1970", "start": 1966, "end": 1970, "tags": {"literature": 3, "language": 7, "culture": 4, "modern": 4, "premodern": 5, "history": 0, "media": 0, "film": 0, "translation": 1, "drama": 3, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, "total": 43}, {"label": "1971-1975", "start": 1971, "end": 1975, "tags": {"literature": 112, "language": 142, "culture": 11, "modern": 85, "premodern": 38, "history": 8, "media": 15, "film": 5, "translation": 9, "drama": 8, "poetry": 6, "anime": 0, "manga": 0, "videogames": 0}, "total": 183}, {"label": "1976-1980", "start": 1976, "end": 1980, "tags": {"literature": 233, "language": 325, "culture": 43, "modern": 158, "premodern": 87, "history": 29, "media": 46, "film": 14, "translation": 21, "drama": 12, "poetry": 11, "anime": 0, "manga": 0, "videogames": 0}, "total": 389}, {"label": "1981-1985", "start": 1981, "end": 1985, "tags": {"literature": 172, "language": 286, "culture": 62, "modern": 117, "premodern": 60, "history": 27, "media": 52, "film": 8, "translation": 40, "drama": 15, "poetry": 7, "anime": 0, "manga": 0, "videogames": 0}, "total": 360}, {"label": "1986-1990", "start": 1986, "end": 1990, "tags": {"literature": 271, "language": 453, "culture": 154, "modern": 115, "premodern": 61, "history": 42, "media": 61, "film": 29, "translation": 53, "drama": 18, "poetry": 12, "anime": 0, "manga": 0, "videogames": 0}, "total": 617}, {"label": "1991-1995", "start": 1991, "end": 1995, "tags": {"literature": 140, "language": 191, "culture": 77, "modern": 54, "premodern": 26, "history": 20, "media": 27, "film": 25, "translation": 17, "drama": 10, "poetry": 5, "anime": 0, "manga": 0, "videogames": 0}, "total": 230}, {"label": "1996-2000", "start": 1996, "end": 2000, "tags": {"literature": 150, "language": 141, "culture": 86, "modern": 68, "premodern": 30, "history": 27, "media": 31, "film": 26, "translation": 17, "drama": 14, "poetry": 6, "anime": 0, "manga": 0, "videogames": 0}, "total": 176}, {"label": "2001-2005", "start": 2001, "end": 2005, "tags": {"literature": 143, "language": 126, "culture": 83, "modern": 80, "premodern": 32, "history": 33, "media": 41, "film": 32, "translation": 11, "drama": 13, "poetry": 10, "anime": 0, "manga": 0, "videogames": 0}, "total": 175}, {"label": "2006-2010", "start": 2006, "end": 2010, "tags": {"literature": 142, "language": 175, "culture": 108, "modern": 76, "premodern": 39, "history": 36, "media": 54, "film": 41, "translation": 14, "drama": 5, "poetry": 6, "anime": 0, "manga": 0, "videogames": 0}, "total": 199}, {"label": "2011-2015", "start": 2011, "end": 2015, "tags": {"literature": 241, "language": 315, "culture": 220, "modern": 150, "premodern": 57, "history": 64, "media": 94, "film": 77, "translation": 30, "drama": 19, "poetry": 4, "anime": 1, "manga": 1, "videogames": 1}, "total": 410}, {"label": "2016-2020", "start": 2016, "end": 2020, "tags": {"literature": 147, "language": 190, "culture": 148, "modern": 86, "premodern": 36, "history": 44, "media": 70, "film": 64, "translation": 24, "drama": 15, "poetry": 3, "anime": 12, "manga": 3, "videogames": 0}, "total": 208}, {"label": "2021-2025", "start": 2021, "end": 2025, "tags": {"literature": 134, "language": 291, "culture": 166, "modern": 84, "premodern": 37, "history": 72, "media": 44, "film": 43, "translation": 34, "drama": 6, "poetry": 0, "anime": 7, "manga": 4, "videogames": 4}, "total": 407}], "tags_yearly": [{"year": 1966, "literature": 2, "language": 4, "culture": 0, "modern": 4, "premodern": 5, "history": 0, "media": 0, "film": 0, "translation": 0, "drama": 2, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1967, "literature": 0, "language": 0, "culture": 2, "modern": 0, "premodern": 0, "history": 0, "media": 0, "film": 0, "translation": 0, "drama": 0, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1968, "literature": 1, "language": 1, "culture": 0, "modern": 0, "premodern": 0, "history": 0, "media": 0, "film": 0, "translation": 0, "drama": 1, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1969, "literature": 0, "language": 0, "culture": 0, "modern": 0, "premodern": 0, "history": 0, "media": 0, "film": 0, "translation": 1, "drama": 0, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1970, "literature": 0, "language": 2, "culture": 2, "modern": 0, "premodern": 0, "history": 0, "media": 0, "film": 0, "translation": 0, "drama": 0, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1971, "literature": 11, "language": 15, "culture": 2, "modern": 9, "premodern": 3, "history": 1, "media": 2, "film": 0, "translation": 0, "drama": 0, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1972, "literature": 7, "language": 10, "culture": 0, "modern": 8, "premodern": 0, "history": 0, "media": 2, "film": 0, "translation": 0, "drama": 1, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1973, "literature": 18, "language": 21, "culture": 0, "modern": 10, "premodern": 3, "history": 4, "media": 2, "film": 1, "translation": 2, "drama": 1, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1974, "literature": 53, "language": 71, "culture": 6, "modern": 43, "premodern": 22, "history": 2, "media": 6, "film": 4, "translation": 6, "drama": 4, "poetry": 3, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1975, "literature": 23, "language": 25, "culture": 3, "modern": 15, "premodern": 10, "history": 1, "media": 3, "film": 0, "translation": 1, "drama": 2, "poetry": 1, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1976, "literature": 29, "language": 40, "culture": 4, "modern": 22, "premodern": 14, "history": 0, "media": 6, "film": 0, "translation": 2, "drama": 1, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1977, "literature": 46, "language": 71, "culture": 8, "modern": 37, "premodern": 18, "history": 6, "media": 9, "film": 0, "translation": 5, "drama": 4, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1978, "literature": 56, "language": 78, "culture": 10, "modern": 43, "premodern": 24, "history": 5, "media": 17, "film": 4, "translation": 4, "drama": 4, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1979, "literature": 51, "language": 68, "culture": 12, "modern": 29, "premodern": 15, "history": 10, "media": 10, "film": 5, "translation": 2, "drama": 0, "poetry": 3, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1980, "literature": 51, "language": 68, "culture": 9, "modern": 27, "premodern": 16, "history": 8, "media": 4, "film": 5, "translation": 8, "drama": 3, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1981, "literature": 28, "language": 55, "culture": 8, "modern": 22, "premodern": 15, "history": 6, "media": 8, "film": 2, "translation": 5, "drama": 2, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1982, "literature": 29, "language": 48, "culture": 13, "modern": 18, "premodern": 11, "history": 5, "media": 11, "film": 2, "translation": 7, "drama": 0, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1983, "literature": 31, "language": 52, "culture": 12, "modern": 24, "premodern": 11, "history": 6, "media": 10, "film": 2, "translation": 5, "drama": 2, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1984, "literature": 29, "language": 46, "culture": 10, "modern": 19, "premodern": 12, "history": 5, "media": 7, "film": 0, "translation": 7, "drama": 4, "poetry": 1, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1985, "literature": 55, "language": 85, "culture": 19, "modern": 34, "premodern": 11, "history": 5, "media": 16, "film": 2, "translation": 16, "drama": 7, "poetry": 4, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1986, "literature": 46, "language": 78, "culture": 28, "modern": 22, "premodern": 12, "history": 12, "media": 9, "film": 7, "translation": 10, "drama": 2, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1987, "literature": 64, "language": 104, "culture": 30, "modern": 20, "premodern": 14, "history": 10, "media": 19, "film": 3, "translation": 12, "drama": 4, "poetry": 5, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1988, "literature": 56, "language": 92, "culture": 32, "modern": 27, "premodern": 15, "history": 4, "media": 10, "film": 9, "translation": 16, "drama": 3, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1989, "literature": 58, "language": 96, "culture": 38, "modern": 27, "premodern": 10, "history": 14, "media": 14, "film": 8, "translation": 12, "drama": 5, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1990, "literature": 47, "language": 83, "culture": 26, "modern": 19, "premodern": 10, "history": 2, "media": 9, "film": 2, "translation": 3, "drama": 4, "poetry": 3, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1991, "literature": 63, "language": 95, "culture": 31, "modern": 27, "premodern": 8, "history": 7, "media": 12, "film": 8, "translation": 9, "drama": 3, "poetry": 1, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1992, "literature": 23, "language": 23, "culture": 9, "modern": 9, "premodern": 6, "history": 6, "media": 4, "film": 3, "translation": 1, "drama": 2, "poetry": 1, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1993, "literature": 4, "language": 7, "culture": 3, "modern": 3, "premodern": 0, "history": 1, "media": 2, "film": 1, "translation": 1, "drama": 0, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1994, "literature": 36, "language": 53, "culture": 21, "modern": 10, "premodern": 9, "history": 3, "media": 5, "film": 4, "translation": 4, "drama": 3, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1995, "literature": 14, "language": 13, "culture": 13, "modern": 5, "premodern": 3, "history": 3, "media": 4, "film": 9, "translation": 2, "drama": 2, "poetry": 1, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1996, "literature": 36, "language": 31, "culture": 20, "modern": 16, "premodern": 9, "history": 7, "media": 8, "film": 10, "translation": 4, "drama": 4, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1997, "literature": 32, "language": 34, "culture": 19, "modern": 9, "premodern": 6, "history": 5, "media": 3, "film": 2, "translation": 5, "drama": 2, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1998, "literature": 22, "language": 24, "culture": 15, "modern": 12, "premodern": 3, "history": 5, "media": 7, "film": 3, "translation": 3, "drama": 1, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 1999, "literature": 32, "language": 29, "culture": 18, "modern": 15, "premodern": 8, "history": 9, "media": 6, "film": 7, "translation": 3, "drama": 5, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2000, "literature": 28, "language": 23, "culture": 14, "modern": 16, "premodern": 4, "history": 1, "media": 7, "film": 4, "translation": 2, "drama": 2, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2001, "literature": 25, "language": 23, "culture": 14, "modern": 9, "premodern": 5, "history": 7, "media": 3, "film": 1, "translation": 1, "drama": 2, "poetry": 1, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2002, "literature": 25, "language": 26, "culture": 16, "modern": 17, "premodern": 7, "history": 4, "media": 8, "film": 10, "translation": 4, "drama": 0, "poetry": 1, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2003, "literature": 25, "language": 21, "culture": 13, "modern": 17, "premodern": 8, "history": 7, "media": 6, "film": 5, "translation": 0, "drama": 4, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2004, "literature": 31, "language": 22, "culture": 17, "modern": 16, "premodern": 9, "history": 5, "media": 5, "film": 7, "translation": 4, "drama": 2, "poetry": 3, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2005, "literature": 37, "language": 34, "culture": 23, "modern": 21, "premodern": 3, "history": 10, "media": 19, "film": 9, "translation": 2, "drama": 5, "poetry": 3, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2006, "literature": 39, "language": 43, "culture": 27, "modern": 19, "premodern": 10, "history": 12, "media": 12, "film": 10, "translation": 4, "drama": 0, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2007, "literature": 28, "language": 36, "culture": 16, "modern": 15, "premodern": 10, "history": 8, "media": 10, "film": 10, "translation": 1, "drama": 2, "poetry": 1, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2008, "literature": 27, "language": 32, "culture": 25, "modern": 12, "premodern": 7, "history": 6, "media": 15, "film": 11, "translation": 2, "drama": 2, "poetry": 1, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2009, "literature": 22, "language": 27, "culture": 16, "modern": 15, "premodern": 4, "history": 3, "media": 8, "film": 3, "translation": 5, "drama": 0, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2010, "literature": 26, "language": 37, "culture": 24, "modern": 15, "premodern": 8, "history": 7, "media": 9, "film": 7, "translation": 2, "drama": 1, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2011, "literature": 30, "language": 34, "culture": 27, "modern": 24, "premodern": 6, "history": 8, "media": 14, "film": 10, "translation": 2, "drama": 3, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2012, "literature": 35, "language": 42, "culture": 33, "modern": 19, "premodern": 9, "history": 10, "media": 16, "film": 11, "translation": 7, "drama": 3, "poetry": 1, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2013, "literature": 73, "language": 91, "culture": 58, "modern": 44, "premodern": 17, "history": 18, "media": 24, "film": 25, "translation": 6, "drama": 6, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2014, "literature": 43, "language": 57, "culture": 39, "modern": 34, "premodern": 11, "history": 11, "media": 14, "film": 13, "translation": 10, "drama": 1, "poetry": 0, "anime": 0, "manga": 0, "videogames": 1}, {"year": 2015, "literature": 60, "language": 91, "culture": 63, "modern": 29, "premodern": 14, "history": 17, "media": 26, "film": 18, "translation": 5, "drama": 6, "poetry": 1, "anime": 1, "manga": 1, "videogames": 0}, {"year": 2016, "literature": 61, "language": 87, "culture": 64, "modern": 35, "premodern": 8, "history": 14, "media": 28, "film": 26, "translation": 13, "drama": 5, "poetry": 0, "anime": 9, "manga": 2, "videogames": 0}, {"year": 2017, "literature": 28, "language": 34, "culture": 28, "modern": 20, "premodern": 16, "history": 11, "media": 10, "film": 10, "translation": 4, "drama": 4, "poetry": 2, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2018, "literature": 38, "language": 49, "culture": 36, "modern": 19, "premodern": 4, "history": 10, "media": 24, "film": 17, "translation": 4, "drama": 4, "poetry": 1, "anime": 3, "manga": 1, "videogames": 0}, {"year": 2019, "literature": 18, "language": 18, "culture": 18, "modern": 11, "premodern": 7, "history": 7, "media": 6, "film": 9, "translation": 2, "drama": 2, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2020, "literature": 2, "language": 2, "culture": 2, "modern": 1, "premodern": 1, "history": 2, "media": 2, "film": 2, "translation": 1, "drama": 0, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2021, "literature": 2, "language": 2, "culture": 2, "modern": 2, "premodern": 2, "history": 2, "media": 1, "film": 1, "translation": 0, "drama": 0, "poetry": 0, "anime": 0, "manga": 0, "videogames": 0}, {"year": 2022, "literature": 1, "language": 1, "culture": 1, "modern": 1, "premodern": 1, "history": 1, "media": 1, "film": 1, "translation": 1, "drama": 0, "poetry": 0, "anime": 1, "manga": 0, "videogames": 0}, {"year": 2023, "literature": 55, "language": 124, "culture": 63, "modern": 29, "premodern": 13, "history": 26, "media": 15, "film": 18, "translation": 11, "drama": 3, "poetry": 0, "anime": 3, "manga": 1, "videogames": 0}, {"year": 2024, "literature": 48, "language": 93, "culture": 61, "modern": 33, "premodern": 9, "history": 21, "media": 12, "film": 15, "translation": 12, "drama": 2, "poetry": 0, "anime": 1, "manga": 1, "videogames": 2}, {"year": 2025, "literature": 28, "language": 71, "culture": 39, "modern": 19, "premodern": 12, "history": 22, "media": 15, "film": 8, "translation": 10, "drama": 1, "poetry": 0, "anime": 2, "manga": 2, "videogames": 2}], "top_institutions": [{"name": "University of California", "count": 37}, {"name": "California State University", "count": 24}, {"name": "Northwestern University", "count": 20}, {"name": "Stanford University", "count": 16}, {"name": "University of Wisconsin", "count": 15}, {"name": "State University of New York", "count": 15}, {"name": "New York University", "count": 15}, {"name": "Indiana University", "count": 15}, {"name": "Yale University", "count": 13}, {"name": "University of Minnesota", "count": 13}, {"name": "University of Michigan", "count": 13}, {"name": "University of Maryland", "count": 12}, {"name": "Columbia University", "count": 12}, {"name": "Vassar College", "count": 11}, {"name": "University of Texas", "count": 11}, {"name": "University of Southern California", "count": 11}, {"name": "Rutgers University", "count": 11}, {"name": "Harvard University", "count": 11}, {"name": "Boston University", "count": 11}, {"name": "Arizona State University", "count": 11}, {"name": "Washington University in St. Louis", "count": 10}, {"name": "University of Hawai'i at Manoa", "count": 10}, {"name": "University of Florida", "count": 10}, {"name": "Ohio State University", "count": 10}, {"name": "Kenyon College", "count": 10}], "inst_decades": {"California State University": {"1970": 2, "1980": 7, "1990": 3, "2000": 2, "2010": 8, "2020": 1}, "Columbia University": {"1970": 2, "1980": 1, "1990": 1, "2000": 2, "2010": 3, "2020": 3}, "Indiana University": {"1970": 4, "1980": 5, "2000": 2, "2010": 2, "2020": 2}, "New York University": {"1990": 4, "2000": 3, "2010": 7, "2020": 1}, "Northwestern University": {"1970": 1, "1980": 2, "1990": 4, "2000": 3, "2010": 9}, "Stanford University": {"1970": 6, "1980": 5, "1990": 1, "2010": 3, "2020": 1}, "State University of New York": {"1970": 3, "1980": 2, "1990": 4, "2000": 2, "2010": 4}, "University of California": {"1970": 5, "1980": 18, "1990": 2, "2000": 6, "2010": 6}, "University of Maryland": {"1970": 4, "1980": 3, "1990": 2, "2000": 1, "2010": 2}, "University of Michigan": {"1970": 3, "1980": 6, "1990": 3, "2010": 1}, "University of Minnesota": {"1980": 8, "1990": 2, "2000": 1, "2010": 1, "2020": 1}, "University of Texas": {"1970": 1, "1980": 5, "1990": 1, "2000": 4}, "University of Wisconsin": {"1970": 5, "1980": 3, "1990": 1, "2000": 2, "2010": 4}, "Vassar College": {"1970": 1, "1980": 3, "1990": 1, "2000": 1, "2010": 3, "2020": 2}, "Yale University": {"1980": 2, "2000": 1, "2010": 6, "2020": 4}}, "source_totals": {"mla_jil_pdf": 1650, "mla_jil_xlsx": 1026, "curtis": 398, "wiki_fandom": 153, "academic_wiki_xlsx": 106, "aatj": 43, "h_japan": 11, "mla_jil": 10}, "period_focus": [{"label": "unspecified", "count": 991}, {"label": "modern", "count": 659}, {"label": "both", "count": 334}, {"label": "premodern", "count": 153}], "stats": {"total": 3426, "confirmed": 2137, "tenure_track": 1504, "non_tt": 949, "sources": 8, "min_year": 1966, "max_year": 2025, "years_covered": 60}, "decades": [{"label": "1960s", "start": 1960, "total": 37, "confirmed": 5, "tt": 0, "ntt": 11, "top_tags": ["premodern", "language", "modern"]}, {"label": "1970s", "start": 1970, "total": 485, "confirmed": 299, "tt": 22, "ntt": 121, "top_tags": ["language", "literature", "modern"]}, {"label": "1980s", "start": 1980, "total": 971, "confirmed": 542, "tt": 437, "ntt": 253, "top_tags": ["language", "literature", "modern"]}, {"label": "1990s", "start": 1990, "total": 474, "confirmed": 333, "tt": 308, "ntt": 74, "top_tags": ["language", "literature", "culture"]}, {"label": "2000s", "start": 2000, "total": 364, "confirmed": 303, "tt": 226, "ntt": 65, "top_tags": ["literature", "language", "culture"]}, {"label": "2010s", "start": 2010, "total": 657, "confirmed": 453, "tt": 369, "ntt": 169, "top_tags": ["language", "literature", "culture"]}, {"label": "2020s", "start": 2020, "total": 409, "confirmed": 174, "tt": 113, "ntt": 256, "top_tags": ["language", "culture", "literature"]}]}, "tag_order": ["literature", "language", "culture", "modern", "premodern", "history", "media", "film", "translation", "drama", "poetry", "anime", "manga", "videogames"], "tag_colors": {"literature": "#4e79a7", "language": "#f28e2b", "culture": "#e15759", "modern": "#76b7b2", "premodern": "#59a14f", "history": "#edc949", "media": "#af7aa1", "film": "#ff9da7", "translation": "#9c755f", "drama": "#bab0ab", "poetry": "#86bcb6", "anime": "#d37295", "manga": "#b07aa1", "videogames": "#a0cbe8"}, "source_colors": {"mla_jil_pdf": "#4e79a7", "mla_jil_xlsx": "#76b7b2", "mla_jil": "#a0cbe8", "curtis": "#f28e2b", "wiki_fandom": "#e15759", "academic_wiki_xlsx": "#59a14f", "aatj": "#edc949", "h_japan": "#af7aa1"}};
+const CONF_KEY = 'jobs';
+
+
+const tooltip = document.getElementById('tooltip');
+function showTooltip(evt, html) {
+    tooltip.innerHTML = html;
+    tooltip.classList.add('show');
+    const r = tooltip.getBoundingClientRect();
+    let tx = evt.clientX + 14, ty = evt.clientY + 14;
+    if (tx + r.width > window.innerWidth) tx = evt.clientX - r.width - 10;
+    if (ty + r.height > window.innerHeight) ty = evt.clientY - r.height - 10;
+    tooltip.style.left = tx + 'px';
+    tooltip.style.top = ty + 'px';
+}
+function hideTooltip() { tooltip.classList.remove('show'); }
+
+
+
+let isDark = false;
+function toggleTheme() {
+    isDark = !isDark;
+    document.body.classList.toggle('dark-mode', isDark);
+    document.getElementById('themeBtn').textContent = isDark ? '☀ Light' : '☾ Dark';
+    if (typeof onThemeChange === 'function') onThemeChange();
+}
+function cssVar(v) { return getComputedStyle(document.body).getPropertyValue(v).trim(); }
+
+
+
+function exportPng() {
+    const svgEl = document.querySelector('.chart-area svg');
+    if (!svgEl) { alert('No chart to export'); return; }
+    const serializer = new XMLSerializer();
+    const svgStr = serializer.serializeToString(svgEl);
+    const canvas = document.createElement('canvas');
+    const bb = svgEl.getBoundingClientRect();
+    canvas.width = bb.width * 2; canvas.height = bb.height * 2;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(2, 2);
+    ctx.fillStyle = cssVar('--bg');
+    ctx.fillRect(0, 0, bb.width, bb.height);
+    const img = new Image();
+    const blob = new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+        ctx.drawImage(img, 0, 0, bb.width, bb.height);
+        URL.revokeObjectURL(url);
+        const link = document.createElement('a');
+        link.download = 'jobs_' + (activeTab || 'chart') + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    };
+    img.src = url;
+}
+function exportCsv() {
+    if (typeof buildCsvContent !== 'function') { alert('No CSV export defined'); return; }
+    const csvContent = buildCsvContent();
+    const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = 'jobs_' + (activeTab || 'data') + '.csv';
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+}
+
+
+
+const TAB_IDS = ["trends", "topics", "institutions", "raw"];
+let activeTab = TAB_IDS[0];
+
+function switchTab(tabId) {
+    activeTab = tabId;
+    TAB_IDS.forEach(id => {
+        const btn = document.querySelector('[data-tab="' + id + '"]');
+        const content = document.getElementById('tab-' + id);
+        if (id === tabId) {
+            if (btn) btn.classList.add('active');
+            if (content) content.classList.add('active');
+        } else {
+            if (btn) btn.classList.remove('active');
+            if (content) content.classList.remove('active');
+        }
+    });
+    if (typeof renderTab === 'function') renderTab(tabId);
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+
+
+// ── Data & State ─────────────────────────────────────────────────────────
+const RAW = ALL_DATA;
+const TAG_ORDER = RAW.tag_order;
+const TAG_COLORS = RAW.tag_colors;
+const SOURCE_COLORS = RAW.source_colors;
+
+// Current dataset pointer — switches between RAW.all and RAW.na
+function DS() {
+    return document.getElementById('naOnly').checked ? RAW.na : RAW.all;
+}
+
+const margin = {top: 30, right: 30, bottom: 50, left: 55};
+
+const ANNOTATIONS = [
+    {year: 1988, label: 'Japan Bubble Peak', color: '#e6194b'},
+    {year: 1992, label: 'Post-Bubble Collapse', color: '#4363d8'},
+    {year: 2008, label: 'Financial Crisis', color: '#f58231'},
+    {year: 2020, label: 'COVID-19', color: '#911eb4'},
+];
+
+// Track which tabs have been rendered (invalidated on filter change)
+let renderedTabs = {};
+
+function updateFilterHint() {
+    const ds = DS();
+    const na = document.getElementById('naOnly').checked;
+    const total = ds.stats.total;
+    const region = na ? 'US & Canada' : 'All countries';
+    document.getElementById('filterHint').textContent =
+        `Showing: ${region} (${total.toLocaleString()} listings)`;
+    // Style the NA label
+    const lbl = document.getElementById('naLabel');
+    if (na) lbl.classList.add('active-filter');
+    else lbl.classList.remove('active-filter');
+}
+
+function onFilterChange() {
+    renderedTabs = {};
+    // Clear all chart containers
+    ['trends-chart', 'topics-stacked', 'sparklines',
+     'inst-bars', 'inst-heatmap',
+     'stats-grid', 'decade-table-container', 'source-chart', 'period-chart'
+    ].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
+    updateFilterHint();
+    renderTab(activeTab);
+}
+
+function renderTab(tabId) {
+    if (renderedTabs[tabId]) return;
+    renderedTabs[tabId] = true;
+    switch (tabId) {
+        case 'trends': renderTrends(); break;
+        case 'topics': renderTopics(); break;
+        case 'institutions': renderInstitutions(); break;
+        case 'raw': renderRaw(); break;
+    }
+}
+
+function onThemeChange() {
+    renderedTabs = {};
+    ['trends-chart', 'topics-stacked', 'sparklines',
+     'inst-bars', 'inst-heatmap',
+     'stats-grid', 'decade-table-container', 'source-chart', 'period-chart'
+    ].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
+    renderTab(activeTab);
+}
+
+// Wire up global filters
+document.getElementById('naOnly').addEventListener('change', onFilterChange);
+document.getElementById('confirmedOnly').addEventListener('change', onFilterChange);
+document.getElementById('ttOnly').addEventListener('change', onFilterChange);
+
+// ── Tab 1: Historical Trends ─────────────────────────────────────────────
+function renderTrends() {
+    const container = document.getElementById('trends-chart');
+    container.innerHTML = '';
+
+    const ds = DS();
+    const confirmedOnly = document.getElementById('confirmedOnly').checked;
+    const ttOnly = document.getElementById('ttOnly').checked;
+
+    const data = ds.yearly.map(d => {
+        let conf, rev;
+        if (ttOnly) {
+            conf = d.tt_confirmed;
+            rev = confirmedOnly ? 0 : d.tt_review;
+        } else {
+            conf = d.confirmed;
+            rev = confirmedOnly ? 0 : d.review_needed;
+        }
+        return {year: d.year, confirmed: conf, review_needed: rev,
+                total: conf + rev};
+    });
+
+    const W = Math.min(container.clientWidth || 1000, 1200);
+    const H = 500;
+    const w = W - margin.left - margin.right;
+    const h = H - margin.top - margin.bottom;
+
+    const svg = d3.select(container).append('svg')
+        .attr('width', W).attr('height', H);
+    const g = svg.append('g')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    const maxY = d3.max(data, d => d.total) || 10;
+
+    const x = d3.scaleBand()
+        .domain(data.map(d => d.year))
+        .range([0, w]).padding(0.15);
+    const y = d3.scaleLinear()
+        .domain([0, maxY * 1.1]).range([h, 0]);
+
+    // Grid lines
+    g.append('g').selectAll('line')
+        .data(y.ticks(6)).enter().append('line')
+        .attr('x1', 0).attr('x2', w)
+        .attr('y1', d => y(d)).attr('y2', d => y(d))
+        .attr('stroke', cssVar('--grid'));
+
+    // Stacked bars
+    const stack = d3.stack()
+        .keys(['confirmed', 'review_needed'])
+        .order(d3.stackOrderNone);
+    const series = stack(data);
+
+    const colors = {
+        'confirmed': cssVar('--accent'),
+        'review_needed': cssVar('--fg3'),
+    };
+
+    g.selectAll('.layer').data(series).enter().append('g')
+        .attr('class', 'layer')
+        .attr('fill', d => colors[d.key])
+        .selectAll('rect').data(d => d).enter().append('rect')
+        .attr('x', d => x(d.data.year))
+        .attr('y', d => y(d[1]))
+        .attr('height', d => y(d[0]) - y(d[1]))
+        .attr('width', x.bandwidth())
+        .attr('opacity', 0.85)
+        .on('mouseover', function(evt, d) {
+            d3.select(this).attr('opacity', 1);
+            const yr = d.data.year;
+            const row = data.find(r => r.year === yr);
+            showTooltip(evt,
+                `<strong>${yr}</strong><br>` +
+                `Confirmed: ${row.confirmed}<br>` +
+                `Review needed: ${row.review_needed}<br>` +
+                `Total: ${row.total}`
+            );
+        })
+        .on('mousemove', (evt) => showTooltip(evt, tooltip.innerHTML))
+        .on('mouseout', function() {
+            d3.select(this).attr('opacity', 0.85);
+            hideTooltip();
+        });
+
+    // Annotations
+    ANNOTATIONS.forEach(a => {
+        const xPos = x(a.year);
+        if (xPos === undefined) return;
+        const cx = xPos + x.bandwidth() / 2;
+        g.append('line')
+            .attr('x1', cx).attr('x2', cx)
+            .attr('y1', 0).attr('y2', h)
+            .attr('class', 'annotation-line')
+            .attr('stroke', a.color);
+        const labelW = a.label.length * 5.5 + 8;
+        g.append('rect')
+            .attr('x', cx - labelW/2).attr('y', -14)
+            .attr('width', labelW).attr('height', 14)
+            .attr('rx', 3).attr('fill', cssVar('--bg')).attr('opacity', 0.9);
+        g.append('text')
+            .attr('x', cx).attr('y', -3)
+            .attr('class', 'annotation-label')
+            .attr('fill', a.color)
+            .text(a.label);
+    });
+
+    // Axes
+    const xTicks = data.filter(d => d.year % 5 === 0).map(d => d.year);
+    g.append('g')
+        .attr('transform', `translate(0,${h})`)
+        .call(d3.axisBottom(x).tickValues(xTicks).tickSizeOuter(0))
+        .selectAll('text')
+        .attr('fill', cssVar('--fg2'))
+        .attr('font-size', '10px')
+        .attr('transform', 'rotate(-45)')
+        .attr('text-anchor', 'end');
+
+    g.append('g')
+        .call(d3.axisLeft(y).ticks(6))
+        .selectAll('text').attr('fill', cssVar('--fg2')).attr('font-size', '11px');
+
+    g.append('text')
+        .attr('transform', 'rotate(-90)')
+        .attr('y', -40).attr('x', -h/2)
+        .attr('text-anchor', 'middle')
+        .attr('fill', cssVar('--fg2'))
+        .attr('font-size', '12px')
+        .text('Job Listings');
+
+    // Legend
+    const legend = svg.append('g')
+        .attr('transform', `translate(${margin.left + 10}, ${margin.top + 10})`);
+    [{key: 'Confirmed', color: cssVar('--accent')},
+     {key: 'Review needed', color: cssVar('--fg3')}].forEach((d, i) => {
+        const lg = legend.append('g').attr('transform', `translate(0, ${i * 18})`);
+        lg.append('rect').attr('width', 12).attr('height', 12)
+            .attr('rx', 2).attr('fill', d.color).attr('opacity', 0.85);
+        lg.append('text').attr('x', 16).attr('y', 10)
+            .attr('fill', cssVar('--fg2')).attr('font-size', '11px')
+            .text(d.key);
+    });
+}
+
+// ── Tab 2: Disciplines & Topics ──────────────────────────────────────────
+function renderTopics() {
+    const ds = DS();
+    const container = document.getElementById('topics-stacked');
+    container.innerHTML = '';
+
+    const tagBins = ds.tag_bins;
+    const tagsYearly = ds.tags_yearly;
+
+    const W = Math.min(container.clientWidth || 1000, 1100);
+    const H = 420;
+    const w = W - margin.left - margin.right - 180;
+    const h = H - margin.top - margin.bottom;
+
+    const svg = d3.select(container).append('svg')
+        .attr('width', W).attr('height', H);
+    const g = svg.append('g')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    const displayOrder = TAG_ORDER.slice().reverse();
+    const stack = d3.stack()
+        .keys(displayOrder)
+        .value((d, key) => d.tags[key] || 0)
+        .order(d3.stackOrderNone)
+        .offset(d3.stackOffsetNone);
+
+    const series = stack(tagBins);
+
+    const x = d3.scaleBand()
+        .domain(tagBins.map(d => d.label))
+        .range([0, w]).padding(0.05);
+    const maxY = d3.max(series[series.length - 1] || [{1:0}], d => d[1]) || 10;
+    const y = d3.scaleLinear()
+        .domain([0, maxY]).range([h, 0]);
+
+    // Grid
+    g.append('g').selectAll('line')
+        .data(y.ticks(5)).enter().append('line')
+        .attr('x1', 0).attr('x2', w)
+        .attr('y1', d => y(d)).attr('y2', d => y(d))
+        .attr('stroke', cssVar('--grid'));
+
+    // Stacked bars
+    series.forEach(s => {
+        g.selectAll('.bar-' + s.key).data(s).enter().append('rect')
+            .attr('x', d => x(d.data.label))
+            .attr('y', d => y(d[1]))
+            .attr('height', d => y(d[0]) - y(d[1]))
+            .attr('width', x.bandwidth())
+            .attr('fill', TAG_COLORS[s.key] || '#999')
+            .attr('opacity', 0.8)
+            .on('mouseover', function(evt, d) {
+                d3.select(this).attr('opacity', 1);
+                const val = (d[1] - d[0]);
+                showTooltip(evt,
+                    `<strong>${s.key}</strong><br>` +
+                    `${d.data.label}: ${val} tag assignments`
+                );
+            })
+            .on('mousemove', (evt) => showTooltip(evt, tooltip.innerHTML))
+            .on('mouseout', function() {
+                d3.select(this).attr('opacity', 0.8);
+                hideTooltip();
+            });
+    });
+
+    // Axes
+    g.append('g')
+        .attr('transform', `translate(0,${h})`)
+        .call(d3.axisBottom(x).tickSizeOuter(0))
+        .selectAll('text')
+        .attr('fill', cssVar('--fg2')).attr('font-size', '10px')
+        .attr('transform', 'rotate(-30)')
+        .attr('text-anchor', 'end');
+    g.append('g')
+        .call(d3.axisLeft(y).ticks(6))
+        .selectAll('text').attr('fill', cssVar('--fg2')).attr('font-size', '11px');
+    g.append('text')
+        .attr('transform', 'rotate(-90)')
+        .attr('y', -40).attr('x', -h/2)
+        .attr('text-anchor', 'middle')
+        .attr('fill', cssVar('--fg2')).attr('font-size', '12px')
+        .text('Tag Assignments');
+
+    // Legend
+    const legendG = svg.append('g')
+        .attr('transform', `translate(${margin.left + w + 20}, ${margin.top})`);
+    TAG_ORDER.forEach((tag, i) => {
+        const lg = legendG.append('g')
+            .attr('transform', `translate(0, ${i * 17})`);
+        lg.append('rect').attr('width', 11).attr('height', 11)
+            .attr('rx', 2).attr('fill', TAG_COLORS[tag]);
+        lg.append('text').attr('x', 15).attr('y', 9)
+            .attr('fill', cssVar('--fg2')).attr('font-size', '10px')
+            .text(tag);
+    });
+
+    // Sparklines
+    const sparkContainer = document.getElementById('sparklines');
+    sparkContainer.innerHTML = '';
+    const sparkW = 200, sparkH = 40;
+    const allYears = tagsYearly.map(d => d.year);
+
+    TAG_ORDER.forEach(tag => {
+        const tagData = tagsYearly.map(d => ({year: d.year, count: d[tag] || 0}));
+        const total = tagData.reduce((s, d) => s + d.count, 0);
+
+        const card = document.createElement('div');
+        card.className = 'sparkline-card';
+        card.setAttribute('data-tag', tag);
+        card.innerHTML = `<h4><span class="spark-dot" style="background:${TAG_COLORS[tag]}"></span>` +
+            `${tag}<span class="spark-total">${total.toLocaleString()}</span></h4>`;
+        card.addEventListener('click', () => expandSparkline(tag));
+        sparkContainer.appendChild(card);
+
+        const svg2 = d3.select(card).append('svg')
+            .attr('width', sparkW).attr('height', sparkH);
+        const sx = d3.scaleLinear()
+            .domain(d3.extent(allYears)).range([4, sparkW - 4]);
+        const sy = d3.scaleLinear()
+            .domain([0, d3.max(tagData, d => d.count) || 1]).range([sparkH - 4, 4]);
+        const line = d3.line()
+            .x(d => sx(d.year)).y(d => sy(d.count))
+            .curve(d3.curveMonotoneX);
+        const area = d3.area()
+            .x(d => sx(d.year))
+            .y0(sparkH - 4)
+            .y1(d => sy(d.count))
+            .curve(d3.curveMonotoneX);
+        svg2.append('path').datum(tagData)
+            .attr('d', area)
+            .attr('fill', TAG_COLORS[tag]).attr('opacity', 0.15);
+        svg2.append('path').datum(tagData)
+            .attr('d', line)
+            .attr('fill', 'none').attr('stroke', TAG_COLORS[tag])
+            .attr('stroke-width', 1.5);
+    });
+}
+
+// ── Expanded Sparkline Modal ────────────────────────────────────────────
+function expandSparkline(tag) {
+    const ds = DS();
+    const tagsYearly = ds.tags_yearly;
+    const tagData = tagsYearly.map(d => ({year: d.year, count: d[tag] || 0}));
+    const total = tagData.reduce((s, d) => s + d.count, 0);
+    const color = TAG_COLORS[tag];
+
+    // Set title
+    const titleEl = document.getElementById('spark-modal-title');
+    titleEl.innerHTML = `<span class="spark-dot" style="background:${color}"></span>` +
+        `${tag}<span class="spark-total">${total.toLocaleString()} total tag assignments</span>`;
+
+    // Build expanded chart
+    const chartEl = document.getElementById('spark-modal-chart');
+    chartEl.innerHTML = '';
+
+    const M = {top: 20, right: 20, bottom: 45, left: 50};
+    const W = Math.min(chartEl.clientWidth || 740, 740);
+    const H = 320;
+    const w = W - M.left - M.right;
+    const h = H - M.top - M.bottom;
+
+    const svg = d3.select(chartEl).append('svg')
+        .attr('width', W).attr('height', H);
+    const g = svg.append('g')
+        .attr('transform', `translate(${M.left},${M.top})`);
+
+    const maxY = d3.max(tagData, d => d.count) || 1;
+
+    const x = d3.scaleLinear()
+        .domain(d3.extent(tagData, d => d.year))
+        .range([0, w]);
+    const y = d3.scaleLinear()
+        .domain([0, maxY * 1.1]).range([h, 0]);
+
+    // Grid lines
+    g.append('g').selectAll('line')
+        .data(y.ticks(6)).enter().append('line')
+        .attr('x1', 0).attr('x2', w)
+        .attr('y1', d => y(d)).attr('y2', d => y(d))
+        .attr('stroke', cssVar('--grid'))
+        .attr('stroke-dasharray', '2,2');
+
+    // Area fill
+    const area = d3.area()
+        .x(d => x(d.year))
+        .y0(h)
+        .y1(d => y(d.count))
+        .curve(d3.curveMonotoneX);
+    g.append('path').datum(tagData)
+        .attr('d', area)
+        .attr('fill', color).attr('opacity', 0.12);
+
+    // Line
+    const line = d3.line()
+        .x(d => x(d.year)).y(d => y(d.count))
+        .curve(d3.curveMonotoneX);
+    g.append('path').datum(tagData)
+        .attr('d', line)
+        .attr('fill', 'none').attr('stroke', color)
+        .attr('stroke-width', 2.5);
+
+    // Data points
+    g.selectAll('circle').data(tagData.filter(d => d.count > 0))
+        .enter().append('circle')
+        .attr('cx', d => x(d.year)).attr('cy', d => y(d.count))
+        .attr('r', 3).attr('fill', color).attr('stroke', cssVar('--bg'))
+        .attr('stroke-width', 1.5)
+        .on('mouseover', function(evt, d) {
+            d3.select(this).attr('r', 5);
+            showTooltip(evt, `<strong>${d.year}</strong><br>${d.count} listings with "${tag}"`);
+        })
+        .on('mousemove', (evt) => showTooltip(evt, tooltip.innerHTML))
+        .on('mouseout', function() {
+            d3.select(this).attr('r', 3);
+            hideTooltip();
+        });
+
+    // X axis with year labels
+    const yearTicks = tagData.filter(d => d.year % 5 === 0).map(d => d.year);
+    g.append('g')
+        .attr('transform', `translate(0,${h})`)
+        .call(d3.axisBottom(x)
+            .tickValues(yearTicks)
+            .tickFormat(d => String(d))
+            .tickSizeOuter(0))
+        .selectAll('text')
+        .attr('fill', cssVar('--fg2'))
+        .attr('font-size', '11px')
+        .attr('transform', 'rotate(-45)')
+        .attr('text-anchor', 'end');
+
+    // Y axis
+    g.append('g')
+        .call(d3.axisLeft(y).ticks(6).tickFormat(d3.format('d')))
+        .selectAll('text').attr('fill', cssVar('--fg2')).attr('font-size', '11px');
+
+    // Y axis label
+    g.append('text')
+        .attr('transform', 'rotate(-90)')
+        .attr('y', -36).attr('x', -h/2)
+        .attr('text-anchor', 'middle')
+        .attr('fill', cssVar('--fg3')).attr('font-size', '11px')
+        .text('Listings');
+
+    // Annotations
+    ANNOTATIONS.forEach(a => {
+        const xPos = x(a.year);
+        if (xPos < 0 || xPos > w) return;
+        g.append('line')
+            .attr('x1', xPos).attr('x2', xPos)
+            .attr('y1', 0).attr('y2', h)
+            .attr('stroke', a.color).attr('stroke-width', 0.8)
+            .attr('stroke-dasharray', '3,3').attr('opacity', 0.6);
+        g.append('text')
+            .attr('x', xPos).attr('y', -4)
+            .attr('text-anchor', 'middle')
+            .attr('fill', a.color).attr('font-size', '8px')
+            .text(a.label);
+    });
+
+    // Show overlay
+    document.getElementById('spark-overlay').style.display = 'flex';
+}
+
+function closeSparkModal() {
+    document.getElementById('spark-overlay').style.display = 'none';
+    hideTooltip();
+}
+document.getElementById('spark-close').addEventListener('click', closeSparkModal);
+document.getElementById('spark-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeSparkModal();
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeSparkModal();
+});
+
+// ── Tab 3: Institutions ──────────────────────────────────────────────────
+function renderInstitutions() {
+    const ds = DS();
+    const topInst = ds.top_institutions;
+    const instDecades = ds.inst_decades;
+
+    // Horizontal bar chart
+    const barContainer = document.getElementById('inst-bars');
+    barContainer.innerHTML = '';
+
+    const barW = Math.min(barContainer.clientWidth || 500, 550);
+    const barH = topInst.length * 22 + margin.top + margin.bottom;
+    const bw = barW - 220 - margin.right;
+
+    const svg = d3.select(barContainer).append('svg')
+        .attr('width', barW).attr('height', barH);
+    const g = svg.append('g').attr('transform', `translate(210,${margin.top})`);
+
+    const maxVal = d3.max(topInst, d => d.count) || 10;
+    const x = d3.scaleLinear().domain([0, maxVal]).range([0, bw]);
+    const y = d3.scaleBand()
+        .domain(topInst.map(d => d.name))
+        .range([0, topInst.length * 22]).padding(0.25);
+
+    g.append('g').selectAll('line')
+        .data(x.ticks(5)).enter().append('line')
+        .attr('x1', d => x(d)).attr('x2', d => x(d))
+        .attr('y1', 0).attr('y2', topInst.length * 22)
+        .attr('stroke', cssVar('--grid'));
+
+    g.selectAll('rect').data(topInst).enter().append('rect')
+        .attr('x', 0)
+        .attr('y', d => y(d.name))
+        .attr('width', d => x(d.count))
+        .attr('height', y.bandwidth())
+        .attr('fill', cssVar('--accent'))
+        .attr('opacity', 0.75).attr('rx', 2)
+        .on('mouseover', function(evt, d) {
+            d3.select(this).attr('opacity', 1);
+            showTooltip(evt, `<strong>${d.name}</strong><br>${d.count} confirmed listings`);
+        })
+        .on('mouseout', function() {
+            d3.select(this).attr('opacity', 0.75); hideTooltip();
+        });
+
+    g.selectAll('.count-label').data(topInst).enter().append('text')
+        .attr('x', d => x(d.count) + 4)
+        .attr('y', d => y(d.name) + y.bandwidth() / 2 + 4)
+        .attr('fill', cssVar('--fg3')).attr('font-size', '10px')
+        .text(d => d.count);
+
+    g.selectAll('.inst-label').data(topInst).enter().append('text')
+        .attr('x', -4)
+        .attr('y', d => y(d.name) + y.bandwidth() / 2 + 4)
+        .attr('fill', cssVar('--fg2')).attr('font-size', '10px')
+        .attr('text-anchor', 'end')
+        .text(d => d.name.length > 30 ? d.name.substring(0, 28) + '...' : d.name);
+
+    // Heatmap
+    const heatContainer = document.getElementById('inst-heatmap');
+    heatContainer.innerHTML = '';
+    const heatInsts = topInst.slice(0, 15).map(d => d.name);
+    const heatDecades = ['1960', '1970', '1980', '1990', '2000', '2010', '2020'];
+
+    const cellW = 50, cellH = 22, labelW = 180;
+    const heatW = labelW + heatDecades.length * cellW + 20;
+    const heatH = heatInsts.length * cellH + 40;
+
+    const svg2 = d3.select(heatContainer).append('svg')
+        .attr('width', heatW).attr('height', heatH);
+    const g2 = svg2.append('g').attr('transform', `translate(${labelW}, 25)`);
+
+    let heatMax = 0;
+    heatInsts.forEach(inst => {
+        heatDecades.forEach(dec => {
+            const v = (instDecades[inst] || {})[dec] || 0;
+            if (v > heatMax) heatMax = v;
+        });
+    });
+
+    const colorScale = d3.scaleSequential(d3.interpolateBlues)
+        .domain([0, heatMax || 1]);
+
+    heatDecades.forEach((dec, i) => {
+        g2.append('text')
+            .attr('x', i * cellW + cellW / 2).attr('y', -6)
+            .attr('text-anchor', 'middle')
+            .attr('fill', cssVar('--fg2')).attr('font-size', '10px')
+            .text(dec + 's');
+    });
+
+    heatInsts.forEach((inst, row) => {
+        g2.append('text')
+            .attr('x', -4).attr('y', row * cellH + cellH / 2 + 4)
+            .attr('text-anchor', 'end')
+            .attr('fill', cssVar('--fg2')).attr('font-size', '10px')
+            .text(inst.length > 25 ? inst.substring(0, 23) + '...' : inst);
+
+        heatDecades.forEach((dec, col) => {
+            const v = (instDecades[inst] || {})[dec] || 0;
+            g2.append('rect')
+                .attr('x', col * cellW + 1).attr('y', row * cellH + 1)
+                .attr('width', cellW - 2).attr('height', cellH - 2)
+                .attr('rx', 2)
+                .attr('fill', v > 0 ? colorScale(v) : cssVar('--bg2'))
+                .attr('stroke', cssVar('--border')).attr('stroke-width', 0.5)
+                .on('mouseover', function(evt) {
+                    showTooltip(evt, `<strong>${inst}</strong><br>${dec}s: ${v} listings`);
+                })
+                .on('mouseout', hideTooltip);
+
+            if (v > 0) {
+                g2.append('text')
+                    .attr('x', col * cellW + cellW / 2)
+                    .attr('y', row * cellH + cellH / 2 + 4)
+                    .attr('text-anchor', 'middle')
+                    .attr('fill', v > heatMax * 0.6 ? '#fff' : cssVar('--fg2'))
+                    .attr('font-size', '10px').text(v);
+            }
+        });
+    });
+}
+
+// ── Tab 4: Raw Data ──────────────────────────────────────────────────────
+function renderRaw() {
+    const ds = DS();
+    const stats = ds.stats;
+    const decades = ds.decades;
+    const sourceTotals = ds.source_totals;
+    const periodFocus = ds.period_focus;
+
+    // Summary stats
+    const grid = document.getElementById('stats-grid');
+    grid.innerHTML = '';
+    const cards = [
+        {value: stats.total.toLocaleString(), label: 'Total Listings'},
+        {value: stats.confirmed.toLocaleString(), label: 'Confirmed Lit/Culture'},
+        {value: stats.tenure_track.toLocaleString(), label: 'Tenure-Track'},
+        {value: stats.years_covered, label: 'Years Covered'},
+        {value: stats.sources, label: 'Data Sources'},
+        {value: `${stats.min_year}-${stats.max_year}`, label: 'Year Range'},
+    ];
+    cards.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'stat-card';
+        div.innerHTML = `<div class="stat-value">${c.value}</div>` +
+                        `<div class="stat-label">${c.label}</div>`;
+        grid.appendChild(div);
+    });
+
+    // Decade table
+    const tableContainer = document.getElementById('decade-table-container');
+    let html = '<table class="decade-table"><thead><tr>' +
+        '<th>Decade</th><th>Total</th><th>Confirmed</th><th>TT</th><th>Non-TT</th><th>Top Tags</th>' +
+        '</tr></thead><tbody>';
+    decades.forEach(d => {
+        html += `<tr><td><strong>${d.label}</strong></td>` +
+            `<td>${d.total}</td><td>${d.confirmed}</td>` +
+            `<td>${d.tt}</td><td>${d.ntt}</td>` +
+            `<td>${d.top_tags.join(', ')}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    tableContainer.innerHTML = html;
+
+    // Source breakdown
+    const srcContainer = document.getElementById('source-chart');
+    srcContainer.innerHTML = '';
+    const srcEntries = Object.entries(sourceTotals).sort((a, b) => b[1] - a[1]);
+    const srcW = 400, srcH = srcEntries.length * 28 + 20;
+    const svg = d3.select(srcContainer).append('svg')
+        .attr('width', srcW).attr('height', srcH);
+    const sg = svg.append('g').attr('transform', 'translate(140, 10)');
+    const maxSrc = d3.max(srcEntries, d => d[1]) || 10;
+    const sx = d3.scaleLinear().domain([0, maxSrc]).range([0, srcW - 170]);
+
+    srcEntries.forEach(([src, cnt], i) => {
+        sg.append('rect')
+            .attr('x', 0).attr('y', i * 28)
+            .attr('width', sx(cnt)).attr('height', 20)
+            .attr('fill', SOURCE_COLORS[src] || '#999')
+            .attr('opacity', 0.8).attr('rx', 2);
+        sg.append('text')
+            .attr('x', -4).attr('y', i * 28 + 14)
+            .attr('text-anchor', 'end')
+            .attr('fill', cssVar('--fg2')).attr('font-size', '11px')
+            .text(src);
+        sg.append('text')
+            .attr('x', sx(cnt) + 4).attr('y', i * 28 + 14)
+            .attr('fill', cssVar('--fg3')).attr('font-size', '10px')
+            .text(cnt.toLocaleString());
+    });
+
+    // Period focus donut
+    const pieContainer = document.getElementById('period-chart');
+    pieContainer.innerHTML = '';
+    if (periodFocus.length === 0) {
+        pieContainer.innerHTML = '<p style="color:var(--fg3);font-size:12px;">No period focus data</p>';
+        return;
+    }
+    const pieW = 300, pieH = 260;
+    const radius = 90;
+    const pieColors = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc949'];
+
+    const pieSvg = d3.select(pieContainer).append('svg')
+        .attr('width', pieW).attr('height', pieH);
+    const pg = pieSvg.append('g')
+        .attr('transform', `translate(${pieW/2}, ${pieH/2 - 10})`);
+
+    const pie = d3.pie().value(d => d.count).sort(null);
+    const arc = d3.arc().innerRadius(40).outerRadius(radius);
+    const arcs = pie(periodFocus);
+
+    pg.selectAll('path').data(arcs).enter().append('path')
+        .attr('d', arc)
+        .attr('fill', (d, i) => pieColors[i % pieColors.length])
+        .attr('opacity', 0.85)
+        .attr('stroke', cssVar('--bg')).attr('stroke-width', 2)
+        .on('mouseover', function(evt, d) {
+            d3.select(this).attr('opacity', 1);
+            showTooltip(evt, `<strong>${d.data.label}</strong><br>${d.data.count} listings`);
+        })
+        .on('mouseout', function() {
+            d3.select(this).attr('opacity', 0.85); hideTooltip();
+        });
+
+    const pLeg = pieSvg.append('g')
+        .attr('transform', `translate(10, ${pieH - 40})`);
+    periodFocus.forEach((d, i) => {
+        const lg = pLeg.append('g').attr('transform', `translate(${i * 85}, 0)`);
+        lg.append('rect').attr('width', 10).attr('height', 10)
+            .attr('rx', 2).attr('fill', pieColors[i % pieColors.length]);
+        lg.append('text').attr('x', 14).attr('y', 9)
+            .attr('fill', cssVar('--fg2')).attr('font-size', '10px')
+            .text(d.label);
+    });
+}
+
+// ── CSV Export ────────────────────────────────────────────────────────────
+function buildCsvContent() {
+    const ds = DS();
+    if (activeTab === 'trends') {
+        let csv = 'year,confirmed,review_needed,total,tt_confirmed,tt_review\n';
+        ds.yearly.forEach(d => {
+            csv += `${d.year},${d.confirmed},${d.review_needed},${d.total},` +
+                   `${d.tt_confirmed},${d.tt_review}\n`;
+        });
+        return csv;
+    }
+    if (activeTab === 'topics') {
+        let csv = 'period,' + TAG_ORDER.join(',') + '\n';
+        ds.tag_bins.forEach(b => {
+            csv += b.label + ',' + TAG_ORDER.map(t => b.tags[t] || 0).join(',') + '\n';
+        });
+        return csv;
+    }
+    if (activeTab === 'institutions') {
+        let csv = 'institution,count\n';
+        ds.top_institutions.forEach(d => { csv += `"${d.name}",${d.count}\n`; });
+        return csv;
+    }
+    if (activeTab === 'raw') {
+        let csv = 'decade,total,confirmed,tt,non_tt,top_tags\n';
+        ds.decades.forEach(d => {
+            csv += `${d.label},${d.total},${d.confirmed},${d.tt},${d.ntt},` +
+                   `"${d.top_tags.join('; ')}"\n`;
+        });
+        return csv;
+    }
+    return '';
+}
+
+// ── Initial render ───────────────────────────────────────────────────────
+updateFilterHint();
+renderTab('trends');
+
+
+</script>
+
+
+<style>
+.info-btn { font-size:16px; font-weight:bold; min-width:32px; cursor:pointer; }
+#info-overlay {
+  display:none; position:fixed; inset:0; z-index:9999;
+  background:rgba(0,0,0,.55); justify-content:center; align-items:center;
+}
+#info-overlay.show { display:flex; }
+#info-box {
+  background:var(--bg,#fff); color:var(--fg,#222); border:1px solid var(--border,#ccc);
+  border-radius:10px; max-width:720px; width:92vw; max-height:85vh;
+  display:flex; flex-direction:column; box-shadow:0 8px 32px rgba(0,0,0,.3);
+}
+#info-header {
+  display:flex; align-items:center; padding:14px 20px 0; gap:12px;
+}
+#info-header .info-tab {
+  padding:8px 18px; cursor:pointer; border-radius:6px 6px 0 0;
+  border:1px solid var(--border,#ccc); border-bottom:none;
+  background:var(--bg2,#f5f5f5); font-size:13px; font-weight:600;
+}
+#info-header .info-tab.active {
+  background:var(--bg,#fff); border-bottom:1px solid var(--bg,#fff);
+  margin-bottom:-1px; position:relative; z-index:1;
+}
+#info-close {
+  margin-left:auto; background:none; border:none; font-size:22px;
+  cursor:pointer; color:var(--fg,#222); padding:4px 8px; line-height:1;
+}
+#info-body {
+  padding:20px 24px; overflow-y:auto; border-top:1px solid var(--border,#ccc);
+  font-size:14px; line-height:1.65;
+}
+#info-body h3 { margin:16px 0 8px; font-size:15px; }
+#info-body p { margin:0 0 10px; }
+#info-body ul { margin:4px 0 10px 20px; }
+#info-body li { margin:0 0 4px; }
+.info-pane { display:none; }
+.info-pane.active { display:block; }
+</style>
+<div id="info-overlay" onclick="if(event.target===this)toggleInfoModal()">
+  <div id="info-box">
+    <div id="info-header">
+      <div class="info-tab active" data-pane="about" onclick="switchInfoTab(this)">About This Visualization</div>
+      <div class="info-tab" data-pane="method" onclick="switchInfoTab(this)">Methodology</div>
+      <button id="info-close" onclick="toggleInfoModal()">&times;</button>
+    </div>
+    <div id="info-body">
+      <div class="info-pane active" id="info-about">
+<p>This visualization presents 60 years of job market data for Japanese Literature
+and Culture positions in higher education (1966&ndash;2025).</p>
+
+<p><strong>Data sources (8):</strong></p>
+<ul>
+<li>MLA Job Information List &mdash; OCR'd JSTOR PDFs (1,729 listings, 1966&ndash;2017)</li>
+<li>MLA JIL XLSX &mdash; PI hand-coded extraction (1,072 listings, 1967&ndash;2017)</li>
+<li>Paula Curtis Job Market Spreadsheets (1,063 listings, 2023&ndash;2025)</li>
+<li>Academic Jobs Wiki / Fandom (167 listings + 325 hiring outcomes, 2012&ndash;2020)</li>
+<li>Academic Wiki XLSX (144 listings)</li>
+<li>AATJ Job Board (51 listings)</li>
+<li>H-Japan email list (44 listings)</li>
+<li>MLA JIL CSV (10 listings)</li>
+</ul>
+
+<p><strong>Key findings:</strong> Peak hiring occurred 1985&ndash;1992 during the Japan
+economic bubble (averaging 120+ listings/year). A sharp cliff in 1992&ndash;93 reduced
+postings to under 30/year for the remainder of the 1990s. Recent years (2023&ndash;2025)
+show strong recovery to 300+ listings/year, though this partly reflects broader data
+capture (including international positions) via Paula Curtis&rsquo;s tracking project.
+Use the &ldquo;North America only&rdquo; filter for a more consistent comparison with
+the historical MLA JIL data.</p>
+</div>
+      <div class="info-pane" id="info-method">
+<p><strong>North America filter:</strong> The MLA JIL data (1966&ndash;2017) covers
+almost exclusively US and Canadian institutions. The Curtis data (2023&ndash;2025)
+tracks positions worldwide, including ~490 Japan-based positions. To enable
+apples-to-apples comparison across the full 60-year span, use the &ldquo;North
+America only&rdquo; toggle, which restricts to US and Canadian listings.</p>
+
+<p><strong>Relevance classification:</strong> Each listing is classified as
+<em>confirmed</em> (clearly Japanese literature/culture), <em>review_needed</em>
+(mentions Japan but may be language-only or tangential), or <em>excluded</em>
+(not relevant). The visualization shows both confirmed and review_needed listings
+by default, with a toggle to show confirmed only.</p>
+
+<p><strong>Discipline tags:</strong> Each listing receives zero or more of 14 tags
+(literature, language, culture, modern, premodern, history, media, film, translation,
+drama, poetry, anime, manga, videogames) based on keyword matching against the
+listing title and description text. This is simple substring/keyword matching, not
+machine learning or transformer-based classification. Tags are multi-valued: a
+single listing may have 3&ndash;5 tags.</p>
+
+<p><strong>Tenure-track status:</strong> Extracted from position title and description
+keywords. ~45% are tenure-track, ~30% non-tenure-track, ~25% unknown (especially in
+older OCR'd listings where full position details are not captured).</p>
+
+<p><strong>Institution normalization:</strong> A 180-entry dictionary normalizes
+institution names across OCR variants, abbreviations, and multi-campus systems.
+&ldquo;University of California&rdquo; aggregates all UC campuses when campus is
+not specified in the original listing.</p>
+
+<p><strong>Historical annotations:</strong> Reference lines mark key economic and
+social events that affected hiring: the 1988 Japan bubble peak, the 1992 post-bubble
+collapse, the 2008 financial crisis, and the 2020&ndash;2022 COVID-19 pandemic.</p>
+</div>
+    </div>
+  </div>
+</div>
+<script>
+function toggleInfoModal(){
+  document.getElementById('info-overlay').classList.toggle('show');
+}
+function switchInfoTab(el){
+  document.querySelectorAll('#info-header .info-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#info-body .info-pane').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('info-'+el.dataset.pane).classList.add('active');
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.getElementById('info-overlay').classList.remove('show'); });
+</script>
+
+</body>
+</html>

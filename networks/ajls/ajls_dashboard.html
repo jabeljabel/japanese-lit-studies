@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AJLS Conference Analytics</title>
+<style>
+:root {
+    --bg: #ffffff; --bg2: #f5f5f5; --bg3: #e8e8e8;
+    --fg: #1a1a2e; --fg2: #555; --fg3: #888;
+    --accent: #2563eb; --accent2: #dc2626; --accent-light: #dbeafe;
+    --grid: rgba(0,0,0,0.08); --border: #ddd;
+}
+.dark-mode {
+    --bg: #0a0a1a; --bg2: #141428; --bg3: #1e1e3a;
+    --fg: #e0e0e0; --fg2: #aaa; --fg3: #777;
+    --accent: #4a9eff; --accent2: #ff6b6b; --accent-light: #1a2a4a;
+    --grid: rgba(255,255,255,0.05); --border: #333;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--fg);
+    line-height: 1.6;
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+/* Header */
+header {
+    text-align: center; padding: 40px 20px 30px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 30px;
+}
+header h1 { font-size: 2em; margin-bottom: 8px; }
+header .subtitle { color: var(--fg2); font-size: 1.1em; }
+
+/* Theme toggle */
+.theme-toggle {
+    position: fixed; top: 12px; right: 12px; z-index: 100;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 12px; cursor: pointer;
+    color: var(--fg); font-size: 14px;
+}
+.theme-toggle:hover { background: var(--bg3); }
+
+/* Hero stats */
+.hero-stats {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 8px 24px; padding: 20px 0 30px;
+    font-size: 1.1em; color: var(--fg2);
+}
+.hero-stats .stat {
+    display: flex; align-items: baseline; gap: 6px;
+}
+.hero-stats .stat-num {
+    font-size: 1.8em; font-weight: 700; color: var(--accent);
+}
+.hero-stats .stat-sep {
+    font-size: 1.5em; color: var(--fg3); margin: 0 4px;
+}
+
+/* Viz cards */
+.viz-cards {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 20px; margin-bottom: 40px;
+}
+.viz-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 24px;
+    transition: transform 0.15s, box-shadow 0.15s;
+    cursor: pointer; text-decoration: none; color: var(--fg);
+    display: block;
+}
+.viz-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+.dark-mode .viz-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+.viz-card .icon { font-size: 2em; margin-bottom: 10px; }
+.viz-card h3 { font-size: 1.15em; margin-bottom: 6px; }
+.viz-card p { color: var(--fg2); font-size: 0.92em; }
+
+/* Insights */
+.insights {
+    background: var(--accent-light); border-radius: 10px;
+    padding: 24px; margin-bottom: 40px;
+}
+.insights h2 { margin-bottom: 16px; font-size: 1.3em; }
+.insight-item {
+    display: flex; gap: 12px; margin-bottom: 12px;
+    align-items: flex-start;
+}
+.insight-item .bullet {
+    flex-shrink: 0; width: 8px; height: 8px;
+    border-radius: 50%; background: var(--accent);
+    margin-top: 8px;
+}
+.insight-item .text { font-size: 0.95em; }
+.insight-item .text strong { color: var(--accent); }
+
+/* Conference table */
+.conf-section { margin-bottom: 40px; }
+.conf-section h2 { margin-bottom: 16px; font-size: 1.3em; }
+.conf-table {
+    width: 100%; border-collapse: collapse; font-size: 0.9em;
+}
+.conf-table th {
+    background: var(--bg3); padding: 8px 12px;
+    text-align: left; border-bottom: 2px solid var(--border);
+    position: sticky; top: 0;
+}
+.conf-table td {
+    padding: 6px 12px; border-bottom: 1px solid var(--border);
+}
+.conf-table tr:hover td { background: var(--accent-light); }
+.conf-table .num { text-align: right; }
+
+/* Downloads */
+.downloads { margin-bottom: 40px; }
+.downloads h2 { margin-bottom: 16px; font-size: 1.3em; }
+.download-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 8px;
+}
+.download-item {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 10px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.88em;
+}
+.download-item .name { font-weight: 600; }
+.download-item .desc { color: var(--fg3); font-size: 0.85em; }
+
+/* Methodology */
+.methodology {
+    background: var(--bg2); border-radius: 10px;
+    padding: 24px; margin-bottom: 40px;
+    font-size: 0.92em; color: var(--fg2);
+}
+.methodology h2 { margin-bottom: 12px; font-size: 1.2em; color: var(--fg); }
+
+footer {
+    text-align: center; padding: 20px;
+    color: var(--fg3); font-size: 0.85em;
+    border-top: 1px solid var(--border);
+}
+</style>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()">Dark Mode</button>
+<button class="info-btn" onclick="toggleInfoModal()" title="About this project" style="position:fixed;top:12px;right:120px;z-index:100;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:6px 12px;cursor:pointer;color:var(--fg);font-size:16px;font-weight:bold;">&#x2139;</button>
+
+<div class="container">
+<header>
+    <h1><img src="data:image/png;base64,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" height="48" alt="AJLS logo" style="vertical-align:middle; margin-right:12px">AJLS Conference Analytics</h1>
+    <div class="subtitle">Association for Japanese Literary Studies &mdash; 26 Years of Conference Data</div>
+</header>
+
+<div class="hero-stats">
+    <div class="stat"><span class="stat-num">26</span> Conferences</div>
+    <span class="stat-sep">&middot;</span>
+    <div class="stat"><span class="stat-num">1,115</span> Presentations</div>
+    <span class="stat-sep">&middot;</span>
+    <div class="stat"><span class="stat-num">621</span> Scholars</div>
+    <span class="stat-sep">&middot;</span>
+    <div class="stat"><span class="stat-num">360</span> Panels</div>
+    <span class="stat-sep">&middot;</span>
+    <div class="stat"><span class="stat-num">271</span> Institutions</div>
+    <span class="stat-sep">&middot;</span>
+    <div class="stat"><span class="stat-num">1999&ndash;2025</span></div>
+</div>
+
+<div class="viz-cards">
+    <a class="viz-card" href="ajls_topic_evolution.html">
+        <div class="icon">&#x1F4CA;</div>
+        <h3>Topic Evolution</h3>
+        <p>How research themes, literary figures, genres, and historical periods have shifted across 26 years of AJLS presentations.</p>
+    </a>
+    <a class="viz-card" href="ajls_copanel_network.html">
+        <div class="icon">&#x1F517;</div>
+        <h3>Co-Paneling Network</h3>
+        <p>Who presents with whom at AJLS &mdash; a force-directed network of scholarly collaboration through shared panels.</p>
+    </a>
+    <a class="viz-card" href="ajls_institutional_presence.html">
+        <div class="icon">&#x1F3DB;</div>
+        <h3>Institutional Presence</h3>
+        <p>Which departments dominate the conference &mdash; heatmap of institutional participation over time with animated rankings.</p>
+    </a>
+    <a class="viz-card" href="ajls_presenter_careers.html">
+        <div class="icon">&#x1F464;</div>
+        <h3>Presenter Careers</h3>
+        <p>The regulars who shape the field's conference culture &mdash; dot timeline of repeat presenters and newcomer rates.</p>
+    </a>
+    <a class="viz-card" href="ajls_panel_themes.html">
+        <div class="icon">&#x1F4AC;</div>
+        <h3>Panel Themes</h3>
+        <p>What gets a panel at AJLS &mdash; treemap of panel topics, conference composition, and theme alignment analysis.</p>
+    </a>
+    <a class="viz-card" href="ajls_geography.html">
+        <div class="icon">&#x1F30D;</div>
+        <h3>Geographic Footprint</h3>
+        <p>Where AJLS scholars come from &mdash; packed circle map of institutional regions with diversity trend analysis.</p>
+    </a>
+</div>
+
+<div class="insights">
+    <h2>Quick Insights</h2>
+    <div class="insight-item">
+        <div class="bullet"></div>
+        <div class="text"><strong>Most frequent presenter:</strong> Atsuko Sakaki (12 appearances over 12 years, 2000&ndash;2024)</div>
+    </div>
+    <div class="insight-item">
+        <div class="bullet"></div>
+        <div class="text"><strong>Most represented institution:</strong> University of Chicago (36 total presentations)</div>
+    </div>
+    <div class="insight-item">
+        <div class="bullet"></div>
+        <div class="text"><strong>Most discussed literary figure:</strong> Genji monogatari (18 title mentions)</div>
+    </div>
+    <div class="insight-item">
+        <div class="bullet"></div>
+        <div class="text"><strong>Hottest rising theme:</strong> Technology & Media (grew from 15 mentions in 1999&ndash;2005 to 29 in 2020&ndash;2025)</div>
+    </div>
+    <div class="insight-item">
+        <div class="bullet"></div>
+        <div class="text"><strong>Most interconnected scholar:</strong> Atsuko Sakaki (31 unique co-panelists)</div>
+    </div>
+</div>
+
+<div class="conf-section">
+    <h2>All Conferences</h2>
+    <div style="max-height: 500px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
+    <table class="conf-table">
+        <thead>
+            <tr><th>Year</th><th>Location</th><th>Theme</th><th class="num">Panels</th><th class="num">Presentations</th><th class="num">Presenters</th></tr>
+        </thead>
+        <tbody id="confBody"></tbody>
+    </table>
+    </div>
+</div>
+
+<div class="downloads">
+    <h2>Data Downloads</h2>
+    <div class="download-grid">
+        <div class="download-item">
+            <div><div class="name">ajls_title_topic_assignments.csv</div><div class="desc">Topic assignments from paper and panel titles</div></div>
+        </div>
+        <div class="download-item">
+            <div><div class="name">ajls_term_by_year.csv</div><div class="desc">Term counts by year and category</div></div>
+        </div>
+        <div class="download-item">
+            <div><div class="name">ajls_literary_figures_by_year.csv</div><div class="desc">Literary figure mentions by year</div></div>
+        </div>
+        <div class="download-item">
+            <div><div class="name">ajls_periods_by_year.csv</div><div class="desc">Historical period mentions by year</div></div>
+        </div>
+        <div class="download-item">
+            <div><div class="name">ajls_copanel_edges.csv</div><div class="desc">Co-paneling edges (individual)</div></div>
+        </div>
+        <div class="download-item">
+            <div><div class="name">ajls_copanel_summary.csv</div><div class="desc">Co-paneling pairs (aggregated)</div></div>
+        </div>
+        <div class="download-item">
+            <div><div class="name">ajls_presenter_stats.csv</div><div class="desc">Presenter statistics</div></div>
+        </div>
+        <div class="download-item">
+            <div><div class="name">ajls_institution_stats.csv</div><div class="desc">Institution statistics</div></div>
+        </div>
+        <div class="download-item">
+            <div><div class="name">ajls_conference_stats.csv</div><div class="desc">Conference-level statistics</div></div>
+        </div>
+        <div class="download-item">
+            <div><div class="name">ajls_institution_by_year.csv</div><div class="desc">Institution participation matrix</div></div>
+        </div>
+    </div>
+    <p style="color: var(--fg3); font-size: 0.85em; margin-top: 12px;">
+        CSV files are located in <code>data/ajls/</code>. The analysis report is at <code>reports/ajls_analysis_report.txt</code>.
+    </p>
+</div>
+
+<div class="methodology">
+    <h2>Methodology</h2>
+    <p>
+        Data was scraped from the <a href="https://sites.google.com/view/ajls/annual-meeting/past-conferences" style="color:var(--accent)">AJLS Google Sites archive</a>
+        covering 26 annual conferences from 1999 to 2025. Three conferences (2022&ndash;2024)
+        were supplemented with program data from host institution websites and AJLS newsletters.
+    </p>
+    <p style="margin-top: 8px;">
+        <strong>Coverage:</strong> 88.4% of presentations have paper titles; 98.2% of presenters
+        are matched to the project's persons database. Topic extraction uses regex-based keyword matching
+        against paper titles and panel titles, with diacritics flattening for Japanese romanization variants.
+        Abstracts are not available from conference programs.
+    </p>
+    <p style="margin-top: 8px;">
+        <strong>Limitations:</strong> Older conferences (pre-2005) have lower title coverage due to
+        concatenated text formatting on Google Sites. The 2020 and 2021 conferences were merged into
+        a single virtual event due to COVID-19. Some institutions appear under variant names
+        (e.g., "UCLA" and "University of California, Los Angeles").
+    </p>
+</div>
+
+<footer>
+    AJLS Conference Analytics &mdash; Generated from japanese_lit_studies.db
+</footer>
+</div>
+
+<script>
+const confData = [{"year": 2025, "location": "Chicago", "theme": "Media Temporalities", "panels": 16, "presentations": 66, "presenters": 65}, {"year": 2024, "location": "Dartmouth", "theme": "Translating, Transfiguring, Transforming Japan", "panels": 18, "presentations": 65, "presenters": 60}, {"year": 2023, "location": "Yale", "theme": "Genres and Genre Theories in Japanese Literature", "panels": 16, "presentations": 62, "presenters": 61}, {"year": 2022, "location": "Pitt", "theme": "In step/out of step: performance/culture/location/dislocation", "panels": 12, "presentations": 35, "presenters": 35}, {"year": 2020, "location": "Ucla", "theme": "Turning Points", "panels": 15, "presentations": 68, "presenters": 67}, {"year": 2019, "location": "Emory", "theme": "Inclusivity and Exclusivity in Japanese Literature", "panels": 15, "presentations": 52, "presenters": 52}, {"year": 2018, "location": "Berkeley", "theme": "Past, Present, and Future: Evidence, Transmission, and Inheritance in Japanese Literature and Media", "panels": 13, "presentations": 47, "presenters": 45}, {"year": 2017, "location": "Oberlin", "theme": "Violence, Justice, & Honor in Japan\u2019s Literary Cultures", "panels": 11, "presentations": 32, "presenters": 32}, {"year": 2016, "location": "Penn State", "theme": "word/image/japan", "panels": 17, "presentations": 54, "presenters": 54}, {"year": 2015, "location": "Illinois", "theme": "The Senses and Sensory Experience in Japanese Literature and Culture", "panels": 13, "presentations": 47, "presenters": 47}, {"year": 2014, "location": "Western Washington", "theme": "Religion and Spirituality in Japanese Literature", "panels": 10, "presentations": 23, "presenters": 22}, {"year": 2013, "location": "Chicago", "theme": "Performance and Japanese Literature", "panels": 15, "presentations": 38, "presenters": 38}, {"year": 2012, "location": "Ohio State", "theme": "Rhetoric and Region: The Local Determinants of Literary Expression", "panels": 14, "presentations": 57, "presenters": 52}, {"year": 2011, "location": "Tufts", "theme": "The Poetics of Aging: Confronting, Resisting and Transcending Mortality in the Japanese Narrative Arts", "panels": 4, "presentations": 25, "presenters": 25}, {"year": 2010, "location": "Yale", "theme": "Technology and Japanese Literary, Film and Performance Studies", "panels": 12, "presentations": 57, "presenters": 48}, {"year": 2009, "location": "Rutgers", "theme": "Rethinking Gender in the Postgender Era", "panels": 12, "presentations": 39, "presenters": 39}, {"year": 2008, "location": "Ubc", "theme": "Parody", "panels": 11, "presentations": 34, "presenters": 34}, {"year": 2007, "location": "Princeton", "theme": "Literature and Literary Theory", "panels": 13, "presentations": 47, "presenters": 47}, {"year": 2006, "location": "Josai", "theme": "Travel in Japanese Representational Culture: its Past, Present, and Future", "panels": 17, "presentations": 43, "presenters": 43}, {"year": 2005, "location": "Dartmouth", "theme": "Reading Material: the Production of Narratives, Genres", "panels": 9, "presentations": 28, "presenters": 28}, {"year": 2004, "location": "U Washington", "theme": "Landscapes Imagined and Remembered", "panels": 10, "presentations": 27, "presenters": 27}, {"year": 2003, "location": "Ucla", "theme": "Hermeneutical Strategies: Methods of Interpretation in the Study of Japanese Literature", "panels": 18, "presentations": 54, "presenters": 54}, {"year": 2002, "location": "Purdue", "theme": "Japanese Poeticity and Narrativity Revisited", "panels": 9, "presentations": 31, "presenters": 31}, {"year": 2001, "location": "Tufts And Wellesley", "theme": "Japan From Somewhere Else", "panels": 7, "presentations": 27, "presenters": 26}, {"year": 2000, "location": "Washington", "theme": "Acts of Writing: Language and Identities in Japanese Literature", "panels": 8, "presentations": 25, "presenters": 25}, {"year": 1999, "location": "Colorado", "theme": "Issues of Canonicity and Canon Formation in Japanese Literary Studies", "panels": 9, "presentations": 32, "presenters": 32}];
+
+const tbody = document.getElementById('confBody');
+confData.forEach(c => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${c.year}</td><td>${c.location}</td><td>${c.theme || ''}</td>`
+        + `<td class="num">${c.panels}</td><td class="num">${c.presentations}</td>`
+        + `<td class="num">${c.presenters}</td>`;
+    tbody.appendChild(tr);
+});
+
+function toggleTheme() {
+    document.body.classList.toggle('dark-mode');
+    const btn = document.querySelector('.theme-toggle');
+    btn.textContent = document.body.classList.contains('dark-mode') ? 'Light Mode' : 'Dark Mode';
+}
+</script>
+
+<style>
+.info-btn { font-size:16px; font-weight:bold; min-width:32px; cursor:pointer; }
+#info-overlay {
+  display:none; position:fixed; inset:0; z-index:9999;
+  background:rgba(0,0,0,.55); justify-content:center; align-items:center;
+}
+#info-overlay.show { display:flex; }
+#info-box {
+  background:var(--bg,#fff); color:var(--fg,#222); border:1px solid var(--border,#ccc);
+  border-radius:10px; max-width:720px; width:92vw; max-height:85vh;
+  display:flex; flex-direction:column; box-shadow:0 8px 32px rgba(0,0,0,.3);
+}
+#info-header {
+  display:flex; align-items:center; padding:14px 20px 0; gap:12px;
+}
+#info-header .info-tab {
+  padding:8px 18px; cursor:pointer; border-radius:6px 6px 0 0;
+  border:1px solid var(--border,#ccc); border-bottom:none;
+  background:var(--bg2,#f5f5f5); font-size:13px; font-weight:600;
+}
+#info-header .info-tab.active {
+  background:var(--bg,#fff); border-bottom:1px solid var(--bg,#fff);
+  margin-bottom:-1px; position:relative; z-index:1;
+}
+#info-close {
+  margin-left:auto; background:none; border:none; font-size:22px;
+  cursor:pointer; color:var(--fg,#222); padding:4px 8px; line-height:1;
+}
+#info-body {
+  padding:20px 24px; overflow-y:auto; border-top:1px solid var(--border,#ccc);
+  font-size:14px; line-height:1.65;
+}
+#info-body h3 { margin:16px 0 8px; font-size:15px; }
+#info-body p { margin:0 0 10px; }
+#info-body ul { margin:4px 0 10px 20px; }
+#info-body li { margin:0 0 4px; }
+.info-pane { display:none; }
+.info-pane.active { display:block; }
+</style>
+<div id="info-overlay" onclick="if(event.target===this)toggleInfoModal()">
+  <div id="info-box">
+    <div id="info-header">
+      <div class="info-tab active" data-pane="about" onclick="switchInfoTab(this)">About This Visualization</div>
+      <div class="info-tab" data-pane="method" onclick="switchInfoTab(this)">Methodology</div>
+      <button id="info-close" onclick="toggleInfoModal()">&times;</button>
+    </div>
+    <div id="info-body">
+      <div class="info-pane active" id="info-about"><p>This dashboard provides an overview of the AJLS (Association for Japanese Literary Studies)
+conference data analysis project, covering 26 annual conferences from 1999 to 2025. The summary statistics
+show the scale of the dataset: conferences, presentations, unique scholars, panels, and institutions.</p>
+<p>Navigation cards link to six specialized visualizations, each examining a different facet of the
+conference data &mdash; topics discussed, co-paneling networks, institutional representation, presenter
+career trajectories, panel theme analysis, and geographic diversity. This project analyzes AJLS conference
+programs as a window into the evolution of Japanese literary studies as an academic field.</p></div>
+      <div class="info-pane" id="info-method"><h3>Data Source</h3>
+<p>The AJLS conference dataset was built by scraping and parsing program text from the association's
+Google Sites archive (1999&ndash;2025). A custom regex-based parser handles the diverse formatting across
+26 years of programs, extracting presenter names, institutional affiliations, paper titles, panel groupings,
+and roles (presenter, discussant, chair, keynote, etc.).</p>
+<h3>Data Processing</h3>
+<ul>
+<li><strong>Name normalization</strong>: Two-pass cleanup consolidated ~730 raw name variants to ~630 canonical
+forms, handling garbage entries (timestamps, room numbers), role-name concatenations, initial matching,
+and nickname expansion.</li>
+<li><strong>Institution normalization</strong>: ~530 raw institution strings mapped to ~275 canonical forms
+through 191 alias entries.</li>
+<li><strong>Person matching</strong>: ~78% of presenters linked to individuals in a broader database of
+Japanese literary studies scholars built from ProQuest dissertations, the Academic Family Tree, and
+other sources.</li>
+</ul>
+<h3>Panel Corrections</h3>
+<p>Panel assignments for some early conferences were corrected using PAJLS (Proceedings of AJLS) tables
+of contents from Brandeis University's digital archive, which provided authoritative section groupings
+for published proceedings.</p>
+<h3>Limitations</h3>
+<ul>
+<li>Conference program formats vary significantly across 26 years, leading to parsing quality differences.</li>
+<li>Not all presenters could be matched to the broader scholars database.</li>
+<li>Institution affiliations are self-reported and may change between conferences.</li>
+</ul></div>
+    </div>
+  </div>
+</div>
+<script>
+function toggleInfoModal(){
+  document.getElementById('info-overlay').classList.toggle('show');
+}
+function switchInfoTab(el){
+  document.querySelectorAll('#info-header .info-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#info-body .info-pane').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('info-'+el.dataset.pane).classList.add('active');
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.getElementById('info-overlay').classList.remove('show'); });
+</script>
+</body>
+</html>

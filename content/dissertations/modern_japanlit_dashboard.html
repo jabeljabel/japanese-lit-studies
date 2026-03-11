@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modern Japanese Literary Studies — Intellectual History Dashboard</title>
+<style>
+:root {
+  --bg: #1a1a2e; --bg2: #16213e; --fg: #e0e0e0; --fg2: #aaa;
+  --accent: #0f3460; --highlight: #e94560; --border: #333;
+  --card-bg: #16213e;
+}
+.light-mode {
+  --bg: #f5f5f5; --bg2: #fff; --fg: #222; --fg2: #666;
+  --accent: #e8e8e8; --highlight: #d63031; --border: #ddd;
+  --card-bg: #fff;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       background: var(--bg); color: var(--fg); }
+.container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+
+header {
+  text-align: center; padding: 40px 20px;
+  background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%);
+  border-bottom: 2px solid var(--highlight);
+}
+.light-mode header {
+  background: linear-gradient(135deg, #e8e8e8 0%, #f5f5f5 100%);
+}
+header h1 { font-size: 28px; margin-bottom: 8px; }
+header p { color: var(--fg2); font-size: 14px; }
+
+.stats-row {
+  display: flex; justify-content: center; gap: 30px;
+  padding: 24px; flex-wrap: wrap;
+}
+.stat-box { text-align: center; }
+.stat-number { font-size: 32px; font-weight: bold; color: var(--highlight); }
+.stat-label { font-size: 12px; color: var(--fg2); margin-top: 4px; }
+
+.cards {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px; padding: 20px 0;
+}
+.card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 20px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.card h3 { font-size: 16px; margin-bottom: 8px; color: var(--highlight); }
+.card p { font-size: 13px; color: var(--fg2); line-height: 1.5; }
+.card a {
+  display: inline-block; margin-top: 12px; padding: 6px 14px;
+  background: var(--highlight); color: #fff; border-radius: 4px;
+  text-decoration: none; font-size: 13px;
+}
+.card a:hover { opacity: 0.9; }
+
+.section { padding: 20px 0; border-top: 1px solid var(--border); }
+.section h2 { font-size: 18px; margin-bottom: 12px; }
+.section p { font-size: 13px; color: var(--fg2); line-height: 1.6; margin-bottom: 8px; }
+
+.downloads { columns: 2; column-gap: 20px; }
+.downloads a {
+  display: block; padding: 4px 0; color: var(--highlight);
+  text-decoration: none; font-size: 13px;
+}
+.downloads a:hover { text-decoration: underline; }
+
+#themeBtn {
+  position: fixed; top: 12px; right: 12px; z-index: 100;
+  padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border);
+  background: var(--bg2); color: var(--fg); cursor: pointer; font-size: 13px;
+}
+</style>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
+</head>
+<body>
+<button id="themeBtn">&#9788; Light Mode</button>
+
+<header>
+  <h1>Modern Japanese Literary Studies</h1>
+  <p>Intellectual History of the Field: Dissertations, Topics, and Institutional Networks (1915-2025)</p>
+</header>
+
+<div class="container">
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-number">6,875</div>
+      <div class="stat-label">Modern Dissertations</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-number">495</div>
+      <div class="stat-label">Institutions</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-number">20</div>
+      <div class="stat-label">Topic Clusters</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-number">2,316</div>
+      <div class="stat-label">Advisor-Advisee Pairs</div>
+    </div>
+  </div>
+
+  <div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--highlight);">📊 Dual-Source Topic Classification</h3>
+    <p style="font-size: 13px; color: var(--fg2); line-height: 1.6; margin-bottom: 12px;">
+      All analytical visualizations now support <strong>source toggling</strong> between keyword-based and NLP-based topic classifications:
+    </p>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 13px;">
+      <div>
+        <strong style="color: var(--fg);">Keyword Approach</strong>
+        <div style="color: var(--fg2); margin-top: 4px;">
+          2,360 dissertations (34.3%)<br>
+          Manually curated topic clusters<br>
+          High precision, lower coverage
+        </div>
+      </div>
+      <div>
+        <strong style="color: var(--fg);">NLP Approach</strong>
+        <div style="color: var(--fg2); margin-top: 4px;">
+          6,097 dissertations (88.7%)<br>
+          Semantic classification (Claude API)<br>
+          Comprehensive coverage (+54.6 pp)
+        </div>
+      </div>
+    </div>
+    <p style="font-size: 12px; color: var(--fg2); margin-top: 12px; font-style: italic;">
+      Use the [Keyword] [NLP] [Combined] buttons in each visualization to compare approaches.
+    </p>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Topic Diffusion Timeline</h3>
+      <p>How did each topic spread through institutions over time? Animated scatter plot showing
+         the geographic diffusion of 20 intellectual topics across 15 universities from 1950 to 2025.
+         <strong>Toggle between keyword and NLP classifications to compare coverage patterns.</strong></p>
+      <a href="topic_diffusion_timeline.html">Open Visualization</a>
+    </div>
+    <div class="card">
+      <h3>Institutional Signatures</h3>
+      <p>What are the intellectual signatures of the top 20 universities? Small multiples showing
+         topic profiles across four time periods, revealing how each institution's focus has evolved.
+         <strong>Compare keyword vs NLP institutional profiles.</strong></p>
+      <a href="institutional_signatures.html">Open Visualization</a>
+    </div>
+    <div class="card">
+      <h3>Advisee Drift Analysis</h3>
+      <p>How much do advisees drift from their advisor and institution? Scatter plot mapping
+         2,316 advisor-advisee pairs by topic similarity, revealing loyalists,
+         rebels, and independents. <strong>See how NLP changes similarity scores.</strong></p>
+      <a href="advisee_drift_analysis.html">Open Visualization</a>
+    </div>
+    <div class="card">
+      <h3>Schools & Clusters</h3>
+      <p>Are there distinct intellectual "schools" of institutions? Hierarchical clustering,
+         heatmap, and network visualization revealing how universities group by topic similarity.
+         <strong>Toggle sources to see different clustering patterns.</strong></p>
+      <a href="schools_and_clusters.html">Open Visualization</a>
+    </div>
+    <div class="card">
+      <h3>Field Evolution</h3>
+      <p>How have topics shifted across 1950-2025? Stacked area chart and bump chart showing
+         the rise and fall of 20 intellectual topics over 75 years of dissertation production.
+         <strong>Compare temporal trends across classification methods.</strong></p>
+      <a href="field_evolution.html">Open Visualization</a>
+    </div>
+  </div>
+
+  <h2 style="margin: 30px 0 12px; padding-top: 20px; border-top: 1px solid var(--border);">Network Hierarchy Visualizations</h2>
+  <div class="cards">
+    <div class="card">
+      <h3>Composite Authority Explorer</h3>
+      <p>Explore 2,316+ scholars mapped by authority metrics across advisor, review, and citation
+         networks. Dynamically size and color nodes by PageRank, HITS, degree counts, and more.
+         Toggle edge layers, switch to scatter plot mode, or filter to top-N scholars.</p>
+      <a href="authority_explorer.html">Open Visualization</a>
+    </div>
+    <div class="card">
+      <h3>Multiplex Network Explorer</h3>
+      <p>Visualize the three network layers (advisor, review, citation) as separable planes.
+         See which scholars bridge multiple networks, explore cross-layer connections,
+         and filter by network membership with Venn diagram overlay.</p>
+      <a href="multiplex_network.html">Open Visualization</a>
+    </div>
+    <div class="card">
+      <h3>Intellectual Flow Sankey</h3>
+      <p>Trace how topics flow through advisor lineages across generations, see which advisors
+         produce which topics, track institutional knowledge exchange, and watch topic evolution
+         over 75 years of the field. Four modes in one visualization.</p>
+      <a href="intellectual_flow.html">Open Visualization</a>
+    </div>
+    <div class="card">
+      <h3>Radial Hierarchy Explorer</h3>
+      <p>Select a founding scholar and watch their lineage radiate outward ring by ring.
+         Explore generation depth, expand/collapse subtrees, animate growth over time,
+         and trace lineage paths back to the roots of the discipline.</p>
+      <a href="radial_hierarchy.html">Open Visualization</a>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Data Downloads</h2>
+    <p style="font-size: 13px; color: var(--fg2); margin-bottom: 12px;">
+      <strong>Keyword-based datasets:</strong>
+    </p>
+    <div class="downloads">
+      <a href="../data/analysis/modern_japanlit_dissertations.csv">Modern dissertations (CSV)</a>
+      <a href="../data/analysis/topic_clusters.json">Topic cluster definitions (JSON)</a>
+      <a href="../data/analysis/topic_cluster_assignments.csv">Topic assignments (CSV)</a>
+      <a href="../data/analysis/institution_topic_matrix.csv">Institution-topic matrix (CSV)</a>
+      <a href="../data/analysis/scholar_topic_matrix.csv">Scholar-topic matrix (CSV)</a>
+      <a href="../data/analysis/topic_temporal_trends.csv">Topic temporal trends (CSV)</a>
+      <a href="../data/analysis/advisee_drift_scores.csv">Advisee drift scores (CSV)</a>
+      <a href="../data/analysis/inst_topic_by_period.csv">Inst. topics by period (CSV)</a>
+      <a href="../data/analysis/inst_distance_matrix.csv">Institution distances (CSV)</a>
+      <a href="../data/analysis/inst_clusters.json">Institution clusters (JSON)</a>
+    </div>
+    <p style="font-size: 13px; color: var(--fg2); margin: 16px 0 8px;">
+      <strong>NLP-based datasets:</strong>
+    </p>
+    <div class="downloads">
+      <a href="../data/analysis/dissertation_nlp_cache.json">NLP classifications (JSON, 6,835 entries)</a>
+      <a href="../data/analysis/topic_temporal_trends_nlp.csv">Topic temporal trends (NLP) (CSV)</a>
+      <a href="../data/analysis/advisee_drift_scores_nlp.csv">Advisee drift scores (NLP) (CSV)</a>
+      <a href="../data/analysis/inst_topic_by_period_nlp.csv">Inst. topics by period (NLP) (CSV)</a>
+      <a href="../data/analysis/inst_distance_matrix_nlp.csv">Institution distances (NLP) (CSV)</a>
+      <a href="../data/analysis/inst_clusters_nlp.json">Institution clusters (NLP) (JSON)</a>
+    </div>
+    <p style="font-size: 13px; color: var(--fg2); margin: 16px 0 8px;">
+      <strong>Network & authority data:</strong>
+    </p>
+    <div class="downloads">
+      <a href="../data/analysis/authority_metrics.csv">Authority metrics (CSV)</a>
+      <a href="../data/analysis/authority_metrics.json">Authority metrics (JSON)</a>
+    </div>
+    <p style="font-size: 13px; color: var(--fg2); margin: 16px 0 8px;">
+      <strong>Reports:</strong>
+    </p>
+    <div class="downloads">
+      <a href="../reports/modern_filter_report.txt">Literature filter report (TXT)</a>
+      <a href="../reports/topic_cluster_report.txt">Topic cluster report (TXT)</a>
+      <a href="../reports/nlp_vs_keyword_comparison.txt">NLP vs keyword comparison (TXT)</a>
+      <a href="../reports/session_2026_02_16_dissertation_nlp_complete.txt">NLP upgrade session report (TXT)</a>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Methodology</h2>
+    <p><strong>Data source:</strong> 6,875 dissertations from ProQuest Dissertations &amp; Theses Global,
+       enriched with Academic Family Tree advisor-advisee data and JSTOR/OpenAlex citation data.
+       Includes 4,376 Japanese-language dissertations from CiNii/NDL.</p>
+    <p><strong>Literature filter:</strong> Dissertations are classified as Japanese literature (modern and
+       premodern) using a three-stage process: subject code classification, text-based keyword
+       matching against titles and abstracts, and manual review of ambiguous cases.
+       This filter excludes non-literary disciplines (history, political science, anthropology, etc.)
+       while retaining the full scope of Japanese literary studies.</p>
+    <p><strong>Topic classification (Dual-source approach):</strong></p>
+    <p style="margin-left: 20px;"><em>Keyword approach:</em> 20 topic clusters defined by manually curated keyword lists,
+       matched against full text of titles and abstracts. Scores normalized by word count.
+       Coverage: 2,360 dissertations (34.3%).</p>
+    <p style="margin-left: 20px;"><em>NLP approach:</em> Semantic topic classification using Claude Sonnet 4.5 API.
+       Processes full titles and abstracts to assign themes, literary figures, periods, and genres.
+       Coverage: 6,097 dissertations (88.7%), including 94.2% of Japanese-language CiNii dissertations
+       (vs. 3.2% with keyword approach). Improvement: +54.6 percentage points overall coverage.</p>
+    <p><strong>Source toggling:</strong> All analytical visualizations support switching between keyword-based,
+       NLP-based, and combined topic classifications. Use the toolbar buttons to compare approaches
+       and see how classification method affects patterns, trends, and institutional profiles.</p>
+    <p><strong>Similarity:</strong> Cosine similarity between 20-dimensional topic vectors.
+       Advisor vectors aggregate their advisees' dissertation topics.
+       Institution vectors aggregate all dissertations at that institution.</p>
+    <p><strong>Clustering:</strong> Complete-linkage agglomerative clustering of institutions
+       by topic cosine distance, cut at 5 clusters.</p>
+    <p><strong>Network metrics:</strong> PageRank (d=0.85, 50 iterations), HITS authority/hub scores
+       (50 iterations), and generation depth (BFS from roots) computed across advisor, review,
+       and citation network layers for literature-filtered core scholars.</p>
+    <p><strong>Tools:</strong> Python 3.13 (stdlib only, no numpy/scipy), SQLite, D3.js v7,
+       HTML5 Canvas. All visualizations are self-contained HTML files. NLP classification via
+       Anthropic Claude API (Sonnet 4.5).</p>
+  </div>
+
+  <div class="section" style="text-align:center; padding: 30px 0; color: var(--fg2); font-size: 12px;">
+    <p>Japanese Literary Studies Digital Humanities Project</p>
+    <p>Data: ProQuest, Academic Family Tree (CC-BY 3.0), JSTOR, OpenAlex</p>
+  </div>
+</div>
+
+<script>
+const themeBtn = document.getElementById('themeBtn');
+let darkMode = true;
+themeBtn.addEventListener('click', () => {
+  darkMode = !darkMode;
+  document.body.classList.toggle('light-mode', !darkMode);
+  themeBtn.textContent = darkMode ? '\u2600 Light Mode' : '\uD83C\uDF19 Dark Mode';
+});
+</script>
+</body>
+</html>

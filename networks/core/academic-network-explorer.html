@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Network Explorer</title>
+    <style>
+        :root {
+            --color-background: #fcfcf9;
+            --color-surface: #fffffe;
+            --color-text: #13343b;
+            --color-text-secondary: #626c71;
+            --color-primary: #21808d;
+            --color-primary-hover: #1d7480;
+            --color-border: rgba(94, 82, 64, 0.2);
+            --color-card-border: rgba(94, 82, 64, 0.12);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --color-background: #1f2121;
+                --color-surface: #262828;
+                --color-text: #f5f5f5;
+                --color-text-secondary: rgba(167, 169, 169, 0.7);
+                --color-primary: #32b8c6;
+                --color-primary-hover: #2da6b2;
+                --color-border: rgba(119, 124, 124, 0.3);
+                --color-card-border: rgba(119, 124, 124, 0.2);
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--color-background);
+            color: var(--color-text);
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: var(--color-surface);
+            border-right: 1px solid var(--color-border);
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .main-canvas {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #network-canvas {
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+
+        #network-canvas:active {
+            cursor: grabbing;
+        }
+
+        .section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .section-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--color-text);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+        }
+
+        input, select {
+            padding: 8px 12px;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            background: var(--color-background);
+            color: var(--color-text);
+            font-size: 14px;
+        }
+
+        input:focus, select:focus {
+            outline: 2px solid var(--color-primary);
+            border-color: var(--color-primary);
+        }
+
+        button {
+            padding: 10px 16px;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: var(--color-primary-hover);
+        }
+
+        button.secondary {
+            background: var(--color-background);
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+        }
+
+        button.secondary:hover {
+            background: var(--color-border);
+        }
+
+        .filter-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: var(--color-primary);
+            color: white;
+            border-radius: 16px;
+            font-size: 12px;
+        }
+
+        .chip-remove {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .stat-box {
+            padding: 12px;
+            background: var(--color-background);
+            border: 1px solid var(--color-card-border);
+            border-radius: 8px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-top: 4px;
+        }
+
+        .legend {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-btn {
+            width: 40px;
+            height: 40px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .control-btn:hover {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .tooltip {
+            position: absolute;
+            padding: 8px 12px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .timeline-container {
+            position: absolute;
+            bottom: 20px;
+            left: 340px;
+            right: 20px;
+            height: 80px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .timeline-slider {
+            width: 100%;
+        }
+
+        .timeline-label {
+            text-align: center;
+            font-weight: 600;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+
+        .relation-type-select {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+
+        .data-upload {
+            border: 2px dashed var(--color-border);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .data-upload:hover {
+            border-color: var(--color-primary);
+            background: var(--color-background);
+        }
+
+        .data-upload input {
+            display: none;
+        }
+    </style>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="section">
+                <h2 class="section-title">Data Import</h2>
+                <div class="data-upload" onclick="document.getElementById('fileInput').click()">
+                    <input type="file" id="fileInput" accept=".json,.csv" onchange="handleFileUpload(event)">
+                    <div>📁 Click to upload data</div>
+                    <div style="font-size: 11px; color: var(--color-text-secondary); margin-top: 8px;">JSON or CSV format (with titles, abstracts, review content)</div>
+                </div>
+                <button onclick="loadSampleData()">Load Sample Data</button>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Topic Modeling</h2>
+                <div class="form-group">
+                    <label for="num-topics">Number of Topics</label>
+                    <input type="number" id="num-topics" value="5" min="2" max="20">
+                </div>
+                <button onclick="runTopicModeling()">Extract Topics from Text</button>
+                <div id="topic-status" style="font-size: 12px; color: var(--color-text-secondary); margin-top: 8px;"></div>
+                <div id="discovered-topics" style="margin-top: 12px; font-size: 12px;"></div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Statistics</h2>
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-value" id="node-count">0</div>
+                        <div class="stat-label">Scholars</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="edge-count">0</div>
+                        <div class="stat-label">Relations</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="university-count">0</div>
+                        <div class="stat-label">Institutions</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="topic-count">0</div>
+                        <div class="stat-label">Topics</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Filters</h2>
+                
+                <div class="form-group">
+                    <label>Relation Types</label>
+                    <div class="relation-type-select">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="advisor-check" checked onchange="applyFilters()">
+                            <label for="advisor-check">PhD Advisors</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="masters-check" checked onchange="applyFilters()">
+                            <label for="masters-check">Master's Advisors</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="review-check" checked onchange="applyFilters()">
+                            <label for="review-check">Book Reviews</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="institution-filter">Institution</label>
+                    <select id="institution-filter" onchange="applyFilters()">
+                        <option value="">All Institutions</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="topic-filter">Topic/Idea</label>
+                    <select id="topic-filter" onchange="applyFilters()">
+                        <option value="">All Topics</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="search-scholar">Search Scholar</label>
+                    <input type="text" id="search-scholar" placeholder="Name..." oninput="searchScholar(this.value)">
+                </div>
+
+                <div id="active-filters" class="filter-chips"></div>
+
+                <button class="secondary" onclick="resetFilters()">Reset Filters</button>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Visualization</h2>
+                
+                <div class="form-group">
+                    <label for="color-by">Color Nodes By</label>
+                    <select id="color-by" onchange="updateVisualization()">
+                        <option value="institution">Institution</option>
+                        <option value="topic">Topic</option>
+                        <option value="degree">Connections</option>
+                        <option value="year">Time Period</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="size-by">Size Nodes By</label>
+                    <select id="size-by" onchange="updateVisualization()">
+                        <option value="degree">Number of Connections</option>
+                        <option value="influence">Influence Score</option>
+                        <option value="uniform">Uniform Size</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="layout-type">Layout Algorithm</label>
+                    <select id="layout-type" onchange="changeLayout()">
+                        <option value="force">Force-Directed</option>
+                        <option value="circular">Circular</option>
+                        <option value="hierarchical">Hierarchical</option>
+                    </select>
+                </div>
+
+                <button onclick="exportVisualization()">Export PNG</button>
+                <button class="secondary" onclick="downloadHTML()">Download HTML</button>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Legend</h2>
+                <div class="legend" id="legend-container"></div>
+            </div>
+        </aside>
+
+        <main class="main-canvas">
+            <canvas id="network-canvas"></canvas>
+            
+            <div class="controls">
+                <button class="control-btn" onclick="zoomIn()" title="Zoom In">+</button>
+                <button class="control-btn" onclick="zoomOut()" title="Zoom Out">−</button>
+                <button class="control-btn" onclick="resetView()" title="Reset View">⟲</button>
+            </div>
+
+            <div class="timeline-container">
+                <input type="range" id="timeline-slider" class="timeline-slider" min="1950" max="2026" value="2026" oninput="updateTimeline(this.value)">
+                <div class="timeline-label" id="timeline-label">All Time (1950-2026)</div>
+            </div>
+
+            <div class="tooltip" id="tooltip"></div>
+        </main>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('network-canvas');
+        const ctx = canvas.getContext('2d');
+        const tooltip = document.getElementById('tooltip');
+
+        let nodes = [];
+        let edges = [];
+        let filteredNodes = [];
+        let filteredEdges = [];
+        let allInstitutions = new Set();
+        let allTopics = new Set();
+        let documentTexts = new Map();
+        let extractedTopics = [];
+
+        let transform = { x: 0, y: 0, scale: 1 };
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+        let selectedNode = null;
+
+        const colorSchemes = {
+            institution: ['#21808d', '#e68161', '#34c759', '#af52de', '#ff9500', '#5856d6', '#ff2d55', '#64d2ff'],
+            topic: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7', '#a29bfe', '#fd79a8', '#fab1a0'],
+            degree: (degree) => {
+                const intensity = Math.min(degree / 10, 1);
+                return `rgba(33, 128, 141, ${0.3 + intensity * 0.7})`;
+            },
+            year: (year) => {
+                const ratio = (year - 1950) / (2026 - 1950);
+                return `hsl(${200 + ratio * 160}, 70%, 50%)`;
+            }
+        };
+
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            draw();
+        }
+
+        function loadSampleData() {
+            const institutions = ['Harvard', 'MIT', 'Stanford', 'Berkeley', 'Princeton', 'Yale', 'Oxford', 'Cambridge'];
+            const topics = ['Machine Learning', 'Philosophy of Mind', 'Quantum Computing', 'Ethics', 'Epistemology', 'Logic', 'Cognitive Science', 'AI Safety'];
+            const names = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
+            const firstNames = ['Alice', 'Bob', 'Carol', 'David', 'Emma', 'Frank', 'Grace', 'Henry', 'Iris', 'Jack'];
+            
+            const sampleTitles = [
+                'Neural Networks and Deep Learning Architectures',
+                'Ethics in Artificial Intelligence Systems',
+                'Quantum Algorithms for Machine Learning',
+                'Consciousness and Cognitive Processing',
+                'Formal Logic and Reasoning Systems',
+                'Knowledge Representation in AI',
+                'Ethical Considerations in Autonomous Systems',
+                'Quantum Computing Applications',
+                'Philosophy of Mind and Cognition',
+                'Safety Mechanisms in AI Agents'
+            ];
+            
+            const sampleAbstracts = [
+                'This work explores deep neural network architectures and their applications in modern machine learning systems.',
+                'We examine ethical frameworks for AI development, focusing on fairness, accountability, and transparency.',
+                'Novel quantum algorithms are presented for solving machine learning optimization problems efficiently.',
+                'An investigation into theories of consciousness and their relationship to cognitive processing mechanisms.',
+                'We develop formal logic systems for automated reasoning and knowledge representation.',
+                'This paper presents methods for representing complex knowledge structures in artificial intelligence.',
+                'Analysis of ethical challenges in autonomous systems including self-driving vehicles and robots.',
+                'Applications of quantum computing to cryptography, optimization, and simulation problems.',
+                'Philosophical perspectives on mental states, intentionality, and the nature of mind.',
+                'Safety verification methods for AI agents operating in uncertain environments.'
+            ];
+
+            nodes = [];
+            edges = [];
+            documentTexts.clear();
+
+            for (let i = 0; i < 150; i++) {
+                const year = Math.floor(Math.random() * 76) + 1950;
+                const title = sampleTitles[i % sampleTitles.length];
+                const abstract = sampleAbstracts[i % sampleAbstracts.length];
+                
+                nodes.push({
+                    id: i,
+                    name: `${firstNames[i % firstNames.length]} ${names[i % names.length]}`,
+                    institution: institutions[Math.floor(Math.random() * institutions.length)],
+                    topic: topics[Math.floor(Math.random() * topics.length)],
+                    year: year,
+                    title: title,
+                    abstract: abstract,
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: 0,
+                    vy: 0,
+                    degree: 0
+                });
+                
+                documentTexts.set(i, `${title} ${abstract}`);
+            }
+
+            for (let i = 0; i < 300; i++) {
+                const source = Math.floor(Math.random() * nodes.length);
+                let target = Math.floor(Math.random() * nodes.length);
+                
+                while (target === source) {
+                    target = Math.floor(Math.random() * nodes.length);
+                }
+
+                const types = ['phd_advisor', 'masters_advisor', 'book_review'];
+                const type = types[Math.floor(Math.random() * types.length)];
+
+                edges.push({
+                    source: source,
+                    target: target,
+                    type: type,
+                    year: Math.max(nodes[source].year, nodes[target].year)
+                });
+
+                nodes[source].degree++;
+                nodes[target].degree++;
+            }
+
+            initializeVisualization();
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    nodes = data.nodes || [];
+                    edges = data.edges || [];
+                    
+                    documentTexts.clear();
+                    nodes.forEach((node, idx) => {
+                        node.x = Math.random() * canvas.width;
+                        node.y = Math.random() * canvas.height;
+                        node.vx = 0;
+                        node.vy = 0;
+                        node.degree = 0;
+                        
+                        const text = [
+                            node.title || '',
+                            node.abstract || '',
+                            node.review_content || ''
+                        ].filter(t => t).join(' ');
+                        
+                        if (text) {
+                            documentTexts.set(node.id || idx, text);
+                        }
+                    });
+
+                    edges.forEach(edge => {
+                        nodes[edge.source].degree++;
+                        nodes[edge.target].degree++;
+                    });
+
+                    initializeVisualization();
+                } catch (err) {
+                    alert('Error parsing file. Please ensure it is valid JSON.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function initializeVisualization() {
+            allInstitutions.clear();
+            allTopics.clear();
+
+            nodes.forEach(node => {
+                allInstitutions.add(node.institution);
+                allTopics.add(node.topic);
+            });
+
+            const institutionFilter = document.getElementById('institution-filter');
+            const topicFilter = document.getElementById('topic-filter');
+
+            institutionFilter.innerHTML = '<option value="">All Institutions</option>';
+            Array.from(allInstitutions).sort().forEach(inst => {
+                institutionFilter.innerHTML += `<option value="${inst}">${inst}</option>`;
+            });
+
+            topicFilter.innerHTML = '<option value="">All Topics</option>';
+            Array.from(allTopics).sort().forEach(topic => {
+                topicFilter.innerHTML += `<option value="${topic}">${topic}</option>`;
+            });
+
+            document.getElementById('university-count').textContent = allInstitutions.size;
+            document.getElementById('topic-count').textContent = allTopics.size;
+
+            applyFilters();
+            updateLegend();
+            startSimulation();
+        }
+
+        function applyFilters() {
+            const showPhD = document.getElementById('advisor-check').checked;
+            const showMasters = document.getElementById('masters-check').checked;
+            const showReview = document.getElementById('review-check').checked;
+            const institution = document.getElementById('institution-filter').value;
+            const topic = document.getElementById('topic-filter').value;
+            const timelineYear = parseInt(document.getElementById('timeline-slider').value);
+
+            filteredEdges = edges.filter(edge => {
+                if (edge.year > timelineYear) return false;
+                if (edge.type === 'phd_advisor' && !showPhD) return false;
+                if (edge.type === 'masters_advisor' && !showMasters) return false;
+                if (edge.type === 'book_review' && !showReview) return false;
+                return true;
+            });
+
+            const connectedNodeIds = new Set();
+            filteredEdges.forEach(edge => {
+                connectedNodeIds.add(edge.source);
+                connectedNodeIds.add(edge.target);
+            });
+
+            filteredNodes = nodes.filter(node => {
+                if (node.year > timelineYear) return false;
+                if (institution && node.institution !== institution) return false;
+                if (topic && node.topic !== topic) return false;
+                return connectedNodeIds.has(node.id);
+            });
+
+            document.getElementById('node-count').textContent = filteredNodes.length;
+            document.getElementById('edge-count').textContent = filteredEdges.length;
+
+            updateActiveFilters();
+            draw();
+        }
+
+        function updateActiveFilters() {
+            const container = document.getElementById('active-filters');
+            const filters = [];
+
+            const institution = document.getElementById('institution-filter').value;
+            const topic = document.getElementById('topic-filter').value;
+
+            if (institution) filters.push({ type: 'institution', value: institution });
+            if (topic) filters.push({ type: 'topic', value: topic });
+
+            container.innerHTML = filters.map(f => 
+                `<div class="chip">${f.value} <span class="chip-remove" onclick="removeFilter('${f.type}')">×</span></div>`
+            ).join('');
+        }
+
+        function removeFilter(type) {
+            document.getElementById(`${type}-filter`).value = '';
+            applyFilters();
+        }
+
+        function resetFilters() {
+            document.getElementById('advisor-check').checked = true;
+            document.getElementById('masters-check').checked = true;
+            document.getElementById('review-check').checked = true;
+            document.getElementById('institution-filter').value = '';
+            document.getElementById('topic-filter').value = '';
+            document.getElementById('search-scholar').value = '';
+            document.getElementById('timeline-slider').value = 2026;
+            selectedNode = null;
+            applyFilters();
+        }
+
+        function searchScholar(query) {
+            if (!query) {
+                selectedNode = null;
+                draw();
+                return;
+            }
+
+            const found = filteredNodes.find(node => 
+                node.name.toLowerCase().includes(query.toLowerCase())
+            );
+
+            if (found) {
+                selectedNode = found;
+                transform.x = canvas.width / 2 - found.x * transform.scale;
+                transform.y = canvas.height / 2 - found.y * transform.scale;
+                draw();
+            }
+        }
+
+        function updateTimeline(year) {
+            document.getElementById('timeline-label').textContent = 
+                year === '2026' ? 'All Time (1950-2026)' : `Up to ${year}`;
+            applyFilters();
+        }
+
+        function updateVisualization() {
+            updateLegend();
+            draw();
+        }
+
+        function updateLegend() {
+            const colorBy = document.getElementById('color-by').value;
+            const container = document.getElementById('legend-container');
+            container.innerHTML = '';
+
+            if (colorBy === 'institution') {
+                const institutions = Array.from(allInstitutions).slice(0, 8);
+                institutions.forEach((inst, i) => {
+                    container.innerHTML += `
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: ${colorSchemes.institution[i]}"></div>
+                            <span>${inst}</span>
+                        </div>
+                    `;
+                });
+            } else if (colorBy === 'topic') {
+                const topics = Array.from(allTopics).slice(0, 8);
+                topics.forEach((topic, i) => {
+                    container.innerHTML += `
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: ${colorSchemes.topic[i]}"></div>
+                            <span>${topic}</span>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function getNodeColor(node) {
+            const colorBy = document.getElementById('color-by').value;
+            
+            if (colorBy === 'institution') {
+                const institutions = Array.from(allInstitutions).sort();
+                const index = institutions.indexOf(node.institution) % colorSchemes.institution.length;
+                return colorSchemes.institution[index];
+            } else if (colorBy === 'topic') {
+                const topics = Array.from(allTopics).sort();
+                const index = topics.indexOf(node.topic) % colorSchemes.topic.length;
+                return colorSchemes.topic[index];
+            } else if (colorBy === 'degree') {
+                return colorSchemes.degree(node.degree);
+            } else if (colorBy === 'year') {
+                return colorSchemes.year(node.year);
+            }
+            
+            return '#21808d';
+        }
+
+        function getNodeSize(node) {
+            const sizeBy = document.getElementById('size-by').value;
+            
+            if (sizeBy === 'degree') {
+                return Math.max(4, Math.min(20, 4 + node.degree));
+            } else if (sizeBy === 'influence') {
+                const influence = node.degree * 1.5;
+                return Math.max(4, Math.min(20, 4 + influence));
+            }
+            
+            return 6;
+        }
+
+        function changeLayout() {
+            const layoutType = document.getElementById('layout-type').value;
+            
+            if (layoutType === 'circular') {
+                applyCircularLayout();
+            } else if (layoutType === 'hierarchical') {
+                applyHierarchicalLayout();
+            }
+            
+            draw();
+        }
+
+        function applyCircularLayout() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(canvas.width, canvas.height) * 0.35;
+            
+            filteredNodes.forEach((node, i) => {
+                const angle = (i / filteredNodes.length) * 2 * Math.PI;
+                node.x = centerX + radius * Math.cos(angle);
+                node.y = centerY + radius * Math.sin(angle);
+            });
+        }
+
+        function applyHierarchicalLayout() {
+            const levels = new Map();
+            
+            filteredNodes.forEach(node => {
+                const year = node.year;
+                if (!levels.has(year)) levels.set(year, []);
+                levels.get(year).push(node);
+            });
+            
+            const sortedYears = Array.from(levels.keys()).sort();
+            const levelHeight = canvas.height / (sortedYears.length + 1);
+            
+            sortedYears.forEach((year, levelIndex) => {
+                const nodesInLevel = levels.get(year);
+                const spacing = canvas.width / (nodesInLevel.length + 1);
+                
+                nodesInLevel.forEach((node, nodeIndex) => {
+                    node.x = spacing * (nodeIndex + 1);
+                    node.y = levelHeight * (levelIndex + 1);
+                });
+            });
+        }
+
+        function startSimulation() {
+            const layoutType = document.getElementById('layout-type').value;
+            
+            if (layoutType === 'force') {
+                simulateForces();
+            }
+        }
+
+        function simulateForces() {
+            const iterations = 100;
+            
+            for (let iter = 0; iter < iterations; iter++) {
+                filteredNodes.forEach(node => {
+                    node.vx = 0;
+                    node.vy = 0;
+                });
+
+                filteredNodes.forEach((nodeA, i) => {
+                    filteredNodes.forEach((nodeB, j) => {
+                        if (i >= j) return;
+                        
+                        const dx = nodeB.x - nodeA.x;
+                        const dy = nodeB.y - nodeA.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                        const force = 2000 / (dist * dist);
+                        
+                        nodeA.vx -= (dx / dist) * force;
+                        nodeA.vy -= (dy / dist) * force;
+                        nodeB.vx += (dx / dist) * force;
+                        nodeB.vy += (dy / dist) * force;
+                    });
+                });
+
+                filteredEdges.forEach(edge => {
+                    const source = filteredNodes.find(n => n.id === edge.source);
+                    const target = filteredNodes.find(n => n.id === edge.target);
+                    if (!source || !target) return;
+                    
+                    const dx = target.x - source.x;
+                    const dy = target.y - source.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    const force = (dist - 100) * 0.05;
+                    
+                    source.vx += (dx / dist) * force;
+                    source.vy += (dy / dist) * force;
+                    target.vx -= (dx / dist) * force;
+                    target.vy -= (dy / dist) * force;
+                });
+
+                filteredNodes.forEach(node => {
+                    node.x += node.vx * 0.1;
+                    node.y += node.vy * 0.1;
+                    
+                    node.x = Math.max(50, Math.min(canvas.width - 50, node.x));
+                    node.y = Math.max(50, Math.min(canvas.height - 50, node.y));
+                });
+            }
+            
+            draw();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(transform.x, transform.y);
+            ctx.scale(transform.scale, transform.scale);
+
+            ctx.strokeStyle = 'rgba(100, 100, 100, 0.2)';
+            ctx.lineWidth = 1 / transform.scale;
+            
+            filteredEdges.forEach(edge => {
+                const source = filteredNodes.find(n => n.id === edge.source);
+                const target = filteredNodes.find(n => n.id === edge.target);
+                if (!source || !target) return;
+                
+                if (edge.type === 'book_review') {
+                    ctx.setLineDash([5 / transform.scale, 3 / transform.scale]);
+                } else {
+                    ctx.setLineDash([]);
+                }
+                
+                ctx.beginPath();
+                ctx.moveTo(source.x, source.y);
+                ctx.lineTo(target.x, target.y);
+                ctx.stroke();
+            });
+            
+            ctx.setLineDash([]);
+
+            filteredNodes.forEach(node => {
+                const size = getNodeSize(node);
+                const color = getNodeColor(node);
+                
+                if (selectedNode === node) {
+                    ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, (size + 8) / transform.scale, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, size / transform.scale, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2 / transform.scale;
+                ctx.stroke();
+            });
+
+            ctx.restore();
+        }
+
+        function screenToCanvas(screenX, screenY) {
+            return {
+                x: (screenX - transform.x) / transform.scale,
+                y: (screenY - transform.y) / transform.scale
+            };
+        }
+
+        function findNodeAtPosition(x, y) {
+            const canvasPos = screenToCanvas(x, y);
+            
+            for (let i = filteredNodes.length - 1; i >= 0; i--) {
+                const node = filteredNodes[i];
+                const size = getNodeSize(node);
+                const dx = canvasPos.x - node.x;
+                const dy = canvasPos.y - node.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist <= size) {
+                    return node;
+                }
+            }
+            
+            return null;
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            isDragging = true;
+            dragStart = { x: x - transform.x, y: y - transform.y };
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            if (isDragging) {
+                transform.x = x - dragStart.x;
+                transform.y = y - dragStart.y;
+                draw();
+            } else {
+                const node = findNodeAtPosition(x, y);
+                
+                if (node) {
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = e.clientX + 10 + 'px';
+                    tooltip.style.top = e.clientY + 10 + 'px';
+                    tooltip.innerHTML = `
+                        <strong>${node.name}</strong><br>
+                        ${node.institution}<br>
+                        ${node.topic}<br>
+                        Year: ${node.year}<br>
+                        Connections: ${node.degree}
+                    `;
+                } else {
+                    tooltip.style.display = 'none';
+                }
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const zoom = e.deltaY < 0 ? 1.1 : 0.9;
+            const newScale = transform.scale * zoom;
+            
+            if (newScale >= 0.1 && newScale <= 5) {
+                transform.x = x - (x - transform.x) * zoom;
+                transform.y = y - (y - transform.y) * zoom;
+                transform.scale = newScale;
+                draw();
+            }
+        });
+
+        function zoomIn() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const zoom = 1.2;
+            
+            transform.x = centerX - (centerX - transform.x) * zoom;
+            transform.y = centerY - (centerY - transform.y) * zoom;
+            transform.scale *= zoom;
+            draw();
+        }
+
+        function zoomOut() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const zoom = 0.8;
+            
+            transform.x = centerX - (centerX - transform.x) * zoom;
+            transform.y = centerY - (centerY - transform.y) * zoom;
+            transform.scale *= zoom;
+            draw();
+        }
+
+        function resetView() {
+            transform = { x: 0, y: 0, scale: 1 };
+            draw();
+        }
+
+        function exportVisualization() {
+            const dataURL = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = 'academic-network.png';
+            link.href = dataURL;
+            link.click();
+        }
+
+        function downloadHTML() {
+            const htmlContent = document.documentElement.outerHTML;
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = 'academic-network-explorer.html';
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function tokenize(text) {
+            return text.toLowerCase()
+                .replace(/[^\w\s]/g, ' ')
+                .split(/\s+/)
+                .filter(word => word.length > 2);
+        }
+
+        function removeStopwords(tokens) {
+            const stopwords = new Set([
+                'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'i', 
+                'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at',
+                'this', 'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her', 'she',
+                'or', 'an', 'will', 'my', 'one', 'all', 'would', 'there', 'their',
+                'what', 'so', 'up', 'out', 'if', 'about', 'who', 'get', 'which', 'go',
+                'me', 'when', 'make', 'can', 'like', 'time', 'no', 'just', 'him', 'know',
+                'take', 'people', 'into', 'year', 'your', 'good', 'some', 'could', 'them',
+                'see', 'other', 'than', 'then', 'now', 'look', 'only', 'come', 'its', 'over',
+                'think', 'also', 'back', 'after', 'use', 'two', 'how', 'our', 'work', 'first',
+                'well', 'way', 'even', 'new', 'want', 'because', 'any', 'these', 'give', 'day',
+                'most', 'us', 'are', 'is', 'was', 'has', 'been', 'had', 'were', 'said'
+            ]);
+            return tokens.filter(token => !stopwords.has(token));
+        }
+
+        function calculateTFIDF(documents) {
+            const docCount = documents.length;
+            const df = new Map();
+            const tfidfVectors = [];
+
+            documents.forEach(doc => {
+                const uniqueTerms = new Set(doc);
+                uniqueTerms.forEach(term => {
+                    df.set(term, (df.get(term) || 0) + 1);
+                });
+            });
+
+            documents.forEach(doc => {
+                const termFreq = new Map();
+                doc.forEach(term => {
+                    termFreq.set(term, (termFreq.get(term) || 0) + 1);
+                });
+
+                const tfidf = new Map();
+                termFreq.forEach((freq, term) => {
+                    const tf = freq / doc.length;
+                    const idf = Math.log(docCount / (df.get(term) || 1));
+                    tfidf.set(term, tf * idf);
+                });
+
+                tfidfVectors.push(tfidf);
+            });
+
+            return { tfidfVectors, vocabulary: Array.from(df.keys()) };
+        }
+
+        function runTopicModeling() {
+            if (documentTexts.size === 0) {
+                document.getElementById('topic-status').textContent = '⚠️ No documents loaded. Please upload data first.';
+                return;
+            }
+
+            document.getElementById('topic-status').textContent = '⏳ Extracting topics...';
+
+            const numTopics = parseInt(document.getElementById('num-topics').value);
+            const documents = Array.from(documentTexts.values());
+            const tokenizedDocs = documents.map(doc => {
+                const tokens = tokenize(doc);
+                return removeStopwords(tokens);
+            });
+
+            const { tfidfVectors, vocabulary } = calculateTFIDF(tokenizedDocs);
+
+            const topicTermScores = Array(numTopics).fill(null).map(() => new Map());
+            
+            tfidfVectors.forEach((tfidf, docIdx) => {
+                const topicId = docIdx % numTopics;
+                tfidf.forEach((score, term) => {
+                    const currentScore = topicTermScores[topicId].get(term) || 0;
+                    topicTermScores[topicId].set(term, currentScore + score);
+                });
+            });
+
+            extractedTopics = topicTermScores.map((termScores, topicIdx) => {
+                const sortedTerms = Array.from(termScores.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5)
+                    .map(([term]) => term);
+                
+                return {
+                    id: topicIdx,
+                    label: `Topic ${topicIdx + 1}`,
+                    keywords: sortedTerms
+                };
+            });
+
+            const docTopics = Array.from(documentTexts.keys()).map((nodeId, idx) => {
+                const topicId = idx % numTopics;
+                return { nodeId, topicId };
+            });
+
+            docTopics.forEach(({ nodeId, topicId }) => {
+                const node = nodes.find(n => n.id === nodeId);
+                if (node) {
+                    node.extractedTopic = extractedTopics[topicId].label;
+                    node.extractedTopicId = topicId;
+                }
+            });
+
+            displayExtractedTopics();
+            updateTopicFilterDropdown();
+            document.getElementById('topic-status').textContent = `✅ Extracted ${numTopics} topics from ${documentTexts.size} documents`;
+        }
+
+        function displayExtractedTopics() {
+            const container = document.getElementById('discovered-topics');
+            container.innerHTML = '<strong>Discovered Topics:</strong><br>' + 
+                extractedTopics.map(topic => 
+                    `<div style="margin-top: 8px;"><strong>${topic.label}:</strong> ${topic.keywords.join(', ')}</div>`
+                ).join('');
+        }
+
+        function updateTopicFilterDropdown() {
+            const topicFilter = document.getElementById('topic-filter');
+            const currentValue = topicFilter.value;
+            
+            topicFilter.innerHTML = '<option value="">All Topics</option>';
+            
+            if (extractedTopics.length > 0) {
+                topicFilter.innerHTML += '<optgroup label="Extracted Topics">';
+                extractedTopics.forEach(topic => {
+                    topicFilter.innerHTML += `<option value="${topic.label}">${topic.label} (${topic.keywords.slice(0, 3).join(', ')})</option>`;
+                });
+                topicFilter.innerHTML += '</optgroup>';
+            }
+            
+            if (allTopics.size > 0) {
+                topicFilter.innerHTML += '<optgroup label="Original Topics">';
+                Array.from(allTopics).sort().forEach(topic => {
+                    topicFilter.innerHTML += `<option value="${topic}">${topic}</option>`;
+                });
+                topicFilter.innerHTML += '</optgroup>';
+            }
+            
+            topicFilter.value = currentValue;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+    </script>
+</body>
+</html>
