@@ -467,7 +467,7 @@ sup.fn-ref { font-size: 0.7em; color: var(--color-accent); cursor: help; padding
     <span class="viz-title">OpenAlex Comparative Literature: Article Counts by Field (1945–2024)</span>
     <button class="viz-expand-btn" onclick="expandViz(this)">⤢ Expand</button>
   </div>
-  <div class="viz-preview">
+  <div class="viz-preview" style="height: 720px;">
     <iframe data-src="openalex_comparative_lit.html" sandbox="allow-scripts allow-same-origin" frameborder="0" scrolling="no" title="OpenAlex Comparative Literature: Article Counts by Field (1945–2024)"></iframe>
     <div class="viz-loading">Loading visualization…</div>
   </div>
@@ -595,20 +595,6 @@ sup.fn-ref { font-size: 0.7em; color: var(--color-accent); cursor: help; padding
   </div>
 </div>
 <p>The composite authority metrics — PageRank, HITS, degree centrality, weighted combinations — produce a ranking that diverges from the raw advisee count in instructive ways. Scholars who trained few students but were widely reviewed and cited appear higher in the authority ranking than their dissertation footprint would suggest; scholars who trained many students but whose work circulated primarily within a single institutional tradition appear lower. The divergence between training authority and intellectual authority is, I think, one of the more honest findings the data produces, though also one of the harder ones to interpret without reinscribing the very hierarchies the analysis is meant to describe.</p>
-<div class="viz-card">
-  <div class="viz-card-header">
-    <span class="viz-title">Authority Explorer: Scholar Profiles</span>
-    <button class="viz-expand-btn" onclick="expandViz(this)">⤢ Expand</button>
-  </div>
-  <div class="viz-preview">
-    <iframe data-src="authority_explorer.html" sandbox="allow-scripts allow-same-origin" frameborder="0" scrolling="no" title="Authority Explorer: Scholar Profiles"></iframe>
-    <div class="viz-loading">Loading visualization…</div>
-  </div>
-  <div class="viz-card-footer">
-    <p class="viz-description">Interactive explorer for individual scholar profiles, affiliations, and connections.</p>
-    <a href="authority_explorer.html" target="_blank" class="viz-open-link">Open interactive visualization →</a>
-  </div>
-</div>
 <p>The intellectual flow Sankey adds a temporal dimension: generation-by-generation, the proportion of citation and review activity that crosses institutional and lineage lines versus stays within them. The field has become, by this measure, somewhat more promiscuously cross-lineage over time — citations in recent decades cross advisor lineage lines more often than citations in the 1970s and 1980s did. Whether this represents genuine intellectual openness or merely the diffusion of a few theoretical vocabularies across all lineages is not a distinction the citation data can make.</p>
 <div class="viz-card">
   <div class="viz-card-header">
@@ -616,12 +602,12 @@ sup.fn-ref { font-size: 0.7em; color: var(--color-accent); cursor: help; padding
     <button class="viz-expand-btn" onclick="expandViz(this)">⤢ Expand</button>
   </div>
   <div class="viz-preview">
-    <iframe data-src="intellectual_flow.html" sandbox="allow-scripts allow-same-origin" frameborder="0" scrolling="no" title="Intellectual Flow: Advisor–Advisee Sankey Diagram"></iframe>
+    <iframe data-src="networks/authority/intellectual_flow.html" sandbox="allow-scripts allow-same-origin" frameborder="0" scrolling="no" title="Intellectual Flow: Advisor–Advisee Sankey Diagram"></iframe>
     <div class="viz-loading">Loading visualization…</div>
   </div>
   <div class="viz-card-footer">
     <p class="viz-description">Sankey diagram showing flows of doctoral training between institutions.</p>
-    <a href="intellectual_flow.html" target="_blank" class="viz-open-link">Open interactive visualization →</a>
+    <a href="networks/authority/intellectual_flow.html" target="_blank" class="viz-open-link">Open interactive visualization →</a>
   </div>
 </div>
 <p>The radial hierarchy visualization approaches the same data from a different angle: each advisor lineage as a tree, rendered radially so that the relative density of different intellectual traditions becomes spatially apparent. The genealogical depth of the McClellan and Shirane trees — visible as radial arms extending four and five generations outward — is one of those things that is easier to see than to describe in prose.</p>
@@ -631,12 +617,12 @@ sup.fn-ref { font-size: 0.7em; color: var(--color-accent); cursor: help; padding
     <button class="viz-expand-btn" onclick="expandViz(this)">⤢ Expand</button>
   </div>
   <div class="viz-preview">
-    <iframe data-src="radial_hierarchy.html" sandbox="allow-scripts allow-same-origin" frameborder="0" scrolling="no" title="Radial Hierarchy: Generational Tree of the Field"></iframe>
+    <iframe data-src="networks/authority/radial_hierarchy.html" sandbox="allow-scripts allow-same-origin" frameborder="0" scrolling="no" title="Radial Hierarchy: Generational Tree of the Field"></iframe>
     <div class="viz-loading">Loading visualization…</div>
   </div>
   <div class="viz-card-footer">
     <p class="viz-description">Radial tree visualization of advisor-advisee lineages across six scholarly generations.</p>
-    <a href="radial_hierarchy.html" target="_blank" class="viz-open-link">Open interactive visualization →</a>
+    <a href="networks/authority/radial_hierarchy.html" target="_blank" class="viz-open-link">Open interactive visualization →</a>
   </div>
 </div>
 <p>One finding that sits at the junction of training and authority is the Japan connections data: the overlay of Japan Foundation fellowship recipients and transpacific mentorship edges onto the network graph. A meaningful subset of the scholars in the network trained partly in Japan, received fellowship support from Japanese institutional sources, or were advised by Japanese scholars not primarily affiliated with North American programs. The degree to which the North American field is genuinely transpacific rather than merely Japan-studying — the extent to which its intellectual infrastructure has Japanese institutional nodes, not just Japanese literary objects — is visible in this overlay in a way that neither the training data alone nor the publication data alone would show.</p>
@@ -646,12 +632,12 @@ sup.fn-ref { font-size: 0.7em; color: var(--color-accent); cursor: help; padding
     <button class="viz-expand-btn" onclick="expandViz(this)">⤢ Expand</button>
   </div>
   <div class="viz-preview">
-    <iframe data-src="japanese_lit_network_visualization.html" sandbox="allow-scripts allow-same-origin" frameborder="0" scrolling="no" title="Japan Connections: Institutional Network Map"></iframe>
+    <iframe data-src="networks/core/japanese_lit_network_visualization.html" sandbox="allow-scripts allow-same-origin" frameborder="0" scrolling="no" title="Japan Connections: Institutional Network Map"></iframe>
     <div class="viz-loading">Loading visualization…</div>
   </div>
   <div class="viz-card-footer">
     <p class="viz-description">Geographic network of scholar affiliations connecting Japanese and North American institutions.</p>
-    <a href="japanese_lit_network_visualization.html" target="_blank" class="viz-open-link">Open interactive visualization →</a>
+    <a href="networks/core/japanese_lit_network_visualization.html" target="_blank" class="viz-open-link">Open interactive visualization →</a>
   </div>
 </div>
   </div>
@@ -674,12 +660,12 @@ sup.fn-ref { font-size: 0.7em; color: var(--color-accent); cursor: help; padding
     <button class="viz-expand-btn" onclick="expandViz(this)">⤢ Expand</button>
   </div>
   <div class="viz-preview">
-    <iframe data-src="modern_japanlit_dashboard.html" sandbox="allow-scripts allow-same-origin" frameborder="0" scrolling="no" title="Dissertation Count by Year (1945–2025)"></iframe>
+    <iframe data-src="content/dissertations/modern_japanlit_dashboard.html" sandbox="allow-scripts allow-same-origin" frameborder="0" scrolling="no" title="Dissertation Count by Year (1945–2025)"></iframe>
     <div class="viz-loading">Loading visualization…</div>
   </div>
   <div class="viz-card-footer">
     <p class="viz-description">Annual dissertation output from CiNii and ProQuest across eight decades.</p>
-    <a href="modern_japanlit_dashboard.html" target="_blank" class="viz-open-link">Open interactive visualization →</a>
+    <a href="content/dissertations/modern_japanlit_dashboard.html" target="_blank" class="viz-open-link">Open interactive visualization →</a>
   </div>
 </div>
 <p>We might all have some predictions about how the advisor data would go: Keene, McClellan, McCullough, Miner, maybe followed by Miyoshi and Sakai, then Rubin, Tansman, Treat, Bourdaghs, and Shirane. Such hunches are to some extent borne out — the names are right, even if the order surprises.</p>
@@ -705,12 +691,12 @@ sup.fn-ref { font-size: 0.7em; color: var(--color-accent); cursor: help; padding
     <button class="viz-expand-btn" onclick="expandViz(this)">⤢ Expand</button>
   </div>
   <div class="viz-preview">
-    <iframe data-src="japanese_lit_network_visualization.html" sandbox="allow-scripts allow-same-origin" frameborder="0" scrolling="no" title="Advisor Genealogy Network"></iframe>
+    <iframe data-src="networks/core/japanese_lit_network_visualization.html" sandbox="allow-scripts allow-same-origin" frameborder="0" scrolling="no" title="Advisor Genealogy Network"></iframe>
     <div class="viz-loading">Loading visualization…</div>
   </div>
   <div class="viz-card-footer">
     <p class="viz-description">Force-directed graph of advisor-advisee chains across the field.</p>
-    <a href="japanese_lit_network_visualization.html" target="_blank" class="viz-open-link">Open interactive visualization →</a>
+    <a href="networks/core/japanese_lit_network_visualization.html" target="_blank" class="viz-open-link">Open interactive visualization →</a>
   </div>
 </div>
 <p>The more significant upgrade from 2018 is not the counts but what we can now do with them. The original analysis showed a flat bar chart of advisee totals. The 2025 version has full multi-generational genealogy chains derived from Academic Family Tree integration: Keene advises Rimer who advises X; Shirane advises Y who advises Z. The average advisor-advisee topical overlap score is 0.841 — high, suggesting that students largely work within their advisors' intellectual territory rather than departing from it. The field reproduces itself with considerable fidelity across generations, which is either a sign of intellectual coherence or of a training pipeline that narrows what counts as Japanese literary studies. The data cannot adjudicate between those interpretations; it can only make the pattern visible.</p>
@@ -720,12 +706,12 @@ sup.fn-ref { font-size: 0.7em; color: var(--color-accent); cursor: help; padding
     <button class="viz-expand-btn" onclick="expandViz(this)">⤢ Expand</button>
   </div>
   <div class="viz-preview">
-    <iframe data-src="field_evolution.html" sandbox="allow-scripts allow-same-origin" frameborder="0" scrolling="no" title="NLP Topic Heatmap: Dissertation Themes by Decade"></iframe>
+    <iframe data-src="content/dissertations/field_evolution.html" sandbox="allow-scripts allow-same-origin" frameborder="0" scrolling="no" title="NLP Topic Heatmap: Dissertation Themes by Decade"></iframe>
     <div class="viz-loading">Loading visualization…</div>
   </div>
   <div class="viz-card-footer">
     <p class="viz-description">Machine-classified topic clusters from dissertation titles and abstracts.</p>
-    <a href="field_evolution.html" target="_blank" class="viz-open-link">Open interactive visualization →</a>
+    <a href="content/dissertations/field_evolution.html" target="_blank" class="viz-open-link">Open interactive visualization →</a>
   </div>
 </div>
 <p>If we turn to the content of the dissertations themselves, the 2018 analysis tracked topics through title keyword frequency and abstract term counts — a methodology honest enough about its own limits. As I noted then, all of this frequency representation is more about mention than it is about substance or meaning; disclaimers in the abstract that announce "this dissertation will not focus on poetry" count as "poetry" to the same degree as statements of scope like "this dissertation will deal exclusively with poetry." The 2025 version uses NLP semantic classification across 20 topic clusters, achieving 88.9% coverage of the 7,922 records — up from the 34.3% coverage the keyword method managed. The difference is not merely quantitative. Semantic classification catches the dissertation about Bashō that never uses the word "poetry," and distinguishes the one about Meiji-era political novels from the one that happens to mention Meiji in passing.</p>
@@ -763,12 +749,12 @@ sup.fn-ref { font-size: 0.7em; color: var(--color-accent); cursor: help; padding
     <button class="viz-expand-btn" onclick="expandViz(this)">⤢ Expand</button>
   </div>
   <div class="viz-preview">
-    <iframe data-src="job_market_trends.html" sandbox="allow-scripts allow-same-origin" frameborder="0" scrolling="no" title="Job Market Trends: Listings by Year"></iframe>
+    <iframe data-src="career/job_market_trends.html" sandbox="allow-scripts allow-same-origin" frameborder="0" scrolling="no" title="Job Market Trends: Listings by Year"></iframe>
     <div class="viz-loading">Loading visualization…</div>
   </div>
   <div class="viz-card-footer">
     <p class="viz-description">Annual count of Japan-related academic job postings from MLA JIL.</p>
-    <a href="job_market_trends.html" target="_blank" class="viz-open-link">Open interactive visualization →</a>
+    <a href="career/job_market_trends.html" target="_blank" class="viz-open-link">Open interactive visualization →</a>
   </div>
 </div>
 <p>Job calls represent the institutional desires written often by people outside of the field for what the field should or might become. To that extent they are future-oriented but not particularly perceptive. But they are in a sense the culmination of perceptions as to where a field currently is, and therefore presentist or even nostalgic in their desire to sustain something of the past. In other words, like all genres, job ads are both descriptive and prescriptive.</p>
@@ -800,12 +786,12 @@ sup.fn-ref { font-size: 0.7em; color: var(--color-accent); cursor: help; padding
     <button class="viz-expand-btn" onclick="expandViz(this)">⤢ Expand</button>
   </div>
   <div class="viz-preview">
-    <iframe data-src="career_paths.html" sandbox="allow-scripts allow-same-origin" frameborder="0" scrolling="no" title="Career Paths: PhD to Tenure-Track Placement"></iframe>
+    <iframe data-src="career/career_paths.html" sandbox="allow-scripts allow-same-origin" frameborder="0" scrolling="no" title="Career Paths: PhD to Tenure-Track Placement"></iframe>
     <div class="viz-loading">Loading visualization…</div>
   </div>
   <div class="viz-card-footer">
     <p class="viz-description">Sankey diagram of doctoral graduates from training institution to first appointment.</p>
-    <a href="career_paths.html" target="_blank" class="viz-open-link">Open interactive visualization →</a>
+    <a href="career/career_paths.html" target="_blank" class="viz-open-link">Open interactive visualization →</a>
   </div>
 </div></div><div class="version-block hidden" data-ver="2018"><h4>Job Data</h4>
 <p>MLA gives out data for free, back to 2000. But I have been working with my research assistant and son to try to digitize job advertisement data back to 1967—the earliest extant job lists from the MLA and then to correlate advertisements with hires and publication data. The present study is preliminary, giving us only the first inklings of what might be done with such data.</p>

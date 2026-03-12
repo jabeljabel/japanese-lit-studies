@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Japanese Literary Studies — Interactive Visualizations</title>
+<title>Modern Japanese Literary Studies — Interactive Visualizations</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -539,8 +539,8 @@ h1 {
 
 <div class="container">
   <header>
-    <div class="ja">日本文学研究</div>
-    <h1>Japanese Literary Studies</h1>
+    <div class="ja">英語圏現代日本文学研究所</div>
+    <h1>Modern Japanese Literary Studies</h1>
     <p class="sub">Mapping an academic field through network analysis, content mining, and interactive visualization — 1915 to the present</p>
   </header>
 
@@ -647,7 +647,6 @@ h1 {
         <div class="tag-children" id="content-children">
           <span class="tag-child" data-child="dissertations">Dissertations</span>
           <span class="tag-child" data-child="journals">Journals</span>
-          <span class="tag-child" data-child="canon">Canon</span>
           <span class="tag-child" data-child="job listings">Job Listings</span>
         </div>
       </div>
@@ -662,20 +661,6 @@ h1 {
           <span class="tag-child" data-child="dissertations-time">Dissertations</span>
           <span class="tag-child" data-child="journals-time">Journals</span>
           <span class="tag-child" data-child="job market">Job Market</span>
-          <span class="tag-child" data-child="canon-time">Canon</span>
-        </div>
-      </div>
-
-      <div class="tag-category">
-        <span class="tag-parent" data-parent="canon">
-          Canon <span class="expand-icon">▾</span>
-        </span>
-        <div class="tag-children" id="canon-children">
-          <span class="tag-child" data-child="encyclopedia">Encyclopedia</span>
-          <span class="tag-child" data-child="translations">Translations</span>
-          <span class="tag-child" data-child="authors">Authors</span>
-          <span class="tag-child" data-child="works">Works</span>
-          <span class="tag-child" data-child="movements">Movements</span>
         </div>
       </div>
 
@@ -711,19 +696,9 @@ h1 {
         <h3>Which institutions dominate?</h3>
       </a>
 
-      <a href="tour_canon.html" class="tour-card">
-        <div class="tour-label">Guided Tour</div>
-        <h3>What counts as canonical?</h3>
-      </a>
-
       <a href="tour_who_studies.html" class="tour-card">
         <div class="tour-label">Guided Tour</div>
         <h3>Who studies what?</h3>
-      </a>
-
-      <a href="tour_global.html" class="tour-card">
-        <div class="tour-label">Guided Tour</div>
-        <h3>How global is the field?</h3>
       </a>
 
       <a href="tour_job_market.html" class="tour-card">
@@ -850,27 +825,7 @@ const VIZS = [
   {title: 'Job Market Trends', desc: 'Sixty years of Japanese literature job listings', href: 'career/job_market_trends.html', tags: ['content', 'job listings', 'timeline', 'job market']},
   {title: 'MLA Job Content Analysis', desc: 'Thematic analysis of job descriptions', href: 'career/mla_job_content.html', tags: ['content', 'job listings', 'timeline']},
 
-  // Encyclopedia
-  {title: 'Three-Axis Canonicity', desc: 'Japanese, academic, and translation reception scores', href: 'jlit/canon.html', tags: ['canon', 'encyclopedia', 'authors']},
-  {title: 'Author & Setting Geography', desc: 'Birthplaces and story locations', href: 'jlit/geography.html', tags: ['canon', 'encyclopedia', 'authors', 'works']},
-  {title: 'Translation Flows', desc: 'Chord diagram of authors and languages', href: 'jlit/translations.html', tags: ['canon', 'encyclopedia', 'translations', 'authors']},
-  {title: 'Literary Network', desc: 'Influence relationships among authors', href: 'jlit/network.html', tags: ['canon', 'encyclopedia', 'networks', 'authors']},
-  {title: 'Historical Timeline', desc: 'Author lifespans and major works 626-2029', href: 'jlit/timeline.html', tags: ['canon', 'encyclopedia', 'timeline', 'canon-time', 'authors', 'works']},
-  {title: 'Collected Works (Zenshū)', desc: 'Publisher trends in complete works editions', href: 'jlit/zenshu.html', tags: ['canon', 'encyclopedia', 'timeline', 'authors']},
-  {title: 'Literary Movements', desc: 'Schools and movements browser', href: 'jlit/movements.html', tags: ['canon', 'encyclopedia', 'movements', 'timeline']},
-  {title: 'Works Browser', desc: 'Searchable database of 17,000+ works', href: 'jlit/works.html', tags: ['canon', 'encyclopedia', 'works']},
-  {title: 'Genre Stream', desc: 'Genre popularity over time', href: 'jlit/genres.html', tags: ['canon', 'encyclopedia', 'works', 'timeline', 'canon-time']},
-  {title: 'Thematic Analysis', desc: 'NLP-based themes, tones, and motifs', href: 'jlit/themes.html', tags: ['canon', 'encyclopedia', 'works', 'content']},
-
-  // Translation suite (root level)
-  {title: 'Translation Dashboard', desc: 'Overview of Japanese literature in translation', href: 'translation_dashboard.html', tags: ['canon', 'translations', 'timeline']},
-  {title: 'Translation Author Flows', desc: 'Sankey diagram of translation pathways', href: 'translation_author_flows.html', tags: ['canon', 'translations', 'authors']},
-  {title: 'Translation Language Map', desc: 'Global reach of Japanese literature', href: 'translation_language_map.html', tags: ['canon', 'translations']},
-  {title: 'Translator Network', desc: 'Connections among translators', href: 'translator_network.html', tags: ['canon', 'translations', 'networks']},
-
   // Special visualizations
-  {title: 'Blind Spots Explorer', desc: 'Understudied authors in the encyclopedia', href: 'blind_spots_explorer.html', tags: ['canon', 'encyclopedia', 'authors', 'content']},
-  {title: 'Nobel Paradox', desc: 'Why Nobel laureates aren\'t canonical in Japan', href: 'nobel_paradox.html', tags: ['canon', 'encyclopedia', 'authors']},
   {title: 'Supply & Demand', desc: 'PhD production vs job openings', href: 'supply_demand.html', tags: ['content', 'job listings', 'timeline', 'job market']},
 ];
 
