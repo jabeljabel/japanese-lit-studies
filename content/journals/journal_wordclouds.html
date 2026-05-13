@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <title>Journal Word Clouds by Decade</title>
-<script src="https://d3js.org/d3.v7.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/d3-cloud@1.2.5/build/d3.layout.cloud.min.js"></script>
+<script src="../../lib/d3.v7.min.js"></script>
+<script src="../../lib/d3.layout.cloud.min.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--fg); }
@@ -22,24 +22,6 @@ button.active { background: #4a90d9; color: #fff; border-color: #357abd; }
 .compare-cell h3 { font-size: 12px; margin-bottom: 4px; opacity: 0.7; }
 .compare-cell:hover { border-color: #4a90d9; }
 </style>
-  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
-  <script>
-    window.addEventListener('load', function() {
-      fetch('https://ipinfo.io/json?token=992f2d449061e3')
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          if (typeof umami !== 'undefined' && data.org) {
-            umami.track('organization', {
-              org: data.org,
-              city: data.city || '',
-              region: data.region || '',
-              country: data.country || ''
-            });
-          }
-        })
-        .catch(function() {});
-    });
-  </script>
 </head>
 <body class="light-mode">
 <div id="header">

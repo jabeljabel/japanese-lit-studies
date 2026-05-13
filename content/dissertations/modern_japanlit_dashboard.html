@@ -78,24 +78,6 @@ header p { color: var(--fg2); font-size: 14px; }
   background: var(--bg2); color: var(--fg); cursor: pointer; font-size: 13px;
 }
 </style>
-  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
-  <script>
-    window.addEventListener('load', function() {
-      fetch('https://ipinfo.io/json?token=992f2d449061e3')
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          if (typeof umami !== 'undefined' && data.org) {
-            umami.track('organization', {
-              org: data.org,
-              city: data.city || '',
-              region: data.region || '',
-              country: data.country || ''
-            });
-          }
-        })
-        .catch(function() {});
-    });
-  </script>
 </head>
 <body>
 <button id="themeBtn">&#9788; Light Mode</button>
@@ -193,6 +175,13 @@ header p { color: var(--fg2); font-size: 14px; }
 
   <h2 style="margin: 30px 0 12px; padding-top: 20px; border-top: 1px solid var(--border);">Network Hierarchy Visualizations</h2>
   <div class="cards">
+    <div class="card">
+      <h3>Composite Authority Explorer</h3>
+      <p>Explore 2,316+ scholars mapped by authority metrics across advisor, review, and citation
+         networks. Dynamically size and color nodes by PageRank, HITS, degree counts, and more.
+         Toggle edge layers, switch to scatter plot mode, or filter to top-N scholars.</p>
+      <a href="authority_explorer.html">Open Visualization</a>
+    </div>
     <div class="card">
       <h3>Multiplex Network Explorer</h3>
       <p>Visualize the three network layers (advisor, review, citation) as separable planes.

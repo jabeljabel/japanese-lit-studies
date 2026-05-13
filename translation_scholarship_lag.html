@@ -6,7 +6,7 @@
 <title>Translation–Scholarship Lag Analysis</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Noto+Serif+JP&display=swap" rel="stylesheet">
-<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="lib/d3.v7.min.js"></script>
 <style>
   :root {
     --bg: #1a1a1a; --fg: #f5f5dc; --muted: #888; --border: #333;
@@ -51,24 +51,6 @@
   }
   .export-row { margin-bottom: 12px; display: flex; gap: 8px; }
 </style>
-  <script defer src="https://cloud.umami.is/script.js" data-website-id="58776889-f9f7-40d4-95b9-517bb6d68e53"></script>
-  <script>
-    window.addEventListener('load', function() {
-      fetch('https://ipinfo.io/json?token=992f2d449061e3')
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          if (typeof umami !== 'undefined' && data.org) {
-            umami.track('organization', {
-              org: data.org,
-              city: data.city || '',
-              region: data.region || '',
-              country: data.country || ''
-            });
-          }
-        })
-        .catch(function() {});
-    });
-  </script>
 </head>
 <body>
 <div class="tooltip" id="tip"></div>
